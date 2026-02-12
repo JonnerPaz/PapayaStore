@@ -1,0 +1,40 @@
+# === Compiled Binaries ===
+*.out
+*.exe
+*.o
+*.obj
+*.so
+*.a
+app.out
+
+# === Build Directories ===
+# In case you move to CMake or other build systems later
+build/
+bin/
+obj/
+out/
+
+# === IDE & Editor Files ===
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# CLion / JetBrains
+.idea/
+cmake-build-debug/
+cmake-build-release/
+
+# Vim/Emacs
+*~
+*.swp
+
+# === OS Generated Files ===
+.DS_Store
+Thumbs.db
+
+# === Debug & Logs ===
+*.log
+*.dmp
+vgcore.*
