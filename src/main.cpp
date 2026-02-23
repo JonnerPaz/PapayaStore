@@ -459,6 +459,13 @@ bool rifDuplicado(Tienda* tienda, const char* rif) {
 
 // Búsquedas
 int buscarProductoPorId(Tienda* tienda, int id) {
+    if (tienda == nullptr)
+        return -1;
+    for (int i = 0; i < tienda->numProductos; ++i) {
+        if (tienda->productos[i].id == id) {
+            return i;
+        }
+    }
     return -1;
 }
 
@@ -472,7 +479,30 @@ int buscarClientePorId(Tienda* tienda, int id) {
 
 // retorna array de indices del producto
 int* buscarProductosPorNombre(Tienda* tienda, const char* nombre) {
-    return nullptr;
+    if (tienda == nullptr || nombre == nullptr)
+        return nullptr;
+
+    int count = 0;
+    for (int i = 0; i < tienda->numProductos; ++i) {
+        if (contieneSubstring(tienda->productos[i].nombre, nombre)) {
+            count++;
+        }
+    }
+
+    if (count == 0)
+        return nullptr;
+
+    int* result = new int[count + 1];
+    result[0] = count; // el índice 0 guarda la cantidad de elementos
+
+    int pos = 1;
+    for (int i = 0; i < tienda->numProductos; ++i) {
+        if (contieneSubstring(tienda->productos[i].nombre, nombre)) {
+            result[pos++] = i;
+        }
+    }
+
+    return result;
 }
 
 //// UTILIDADES
@@ -482,10 +512,33 @@ void obtenerFechaActual(char* fecha) {
 }
 
 void convertirAMinusculas(char* cadena) {
+    if (cadena == nullptr)
+        return;
+    for (int i = 0; cadena[i] != '\0'; ++i) {
+        if (cadena[i] >= 'A' && cadena[i] <= 'Z') {
+            cadena[i] = cadena[i] + ('a' - 'A');
+        }
+    }
 }
 
 bool contieneSubstring(const char* cadena, const char* subcadena) {
-    return false;
+    if (cadena == nullptr || subcadena == nullptr)
+        return false;
+
+    char* copyCadena = new char[strlen(cadena) + 1];
+    strcpy(copyCadena, cadena);
+    convertirAMinusculas(copyCadena);
+
+    char* copySubcadena = new char[strlen(subcadena) + 1];
+    strcpy(copySubcadena, subcadena);
+    convertirAMinusculas(copySubcadena);
+
+    bool result = (strstr(copyCadena, copySubcadena) != nullptr);
+
+    delete[] copyCadena;
+    delete[] copySubcadena;
+
+    return result;
 }
 
 int main() {
