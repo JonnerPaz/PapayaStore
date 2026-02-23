@@ -1,3 +1,5 @@
+enum TipoDeTransaccion { COMPRA, VENTA };
+
 struct Producto {
     int id;                 // Identificador único (autoincremental)
     char codigo[20];        // Código del producto (ej: "PROD-001")
@@ -30,15 +32,15 @@ struct Cliente {
 };
 
 struct Transaccion {
-    int id;                // Identificador único (autoincremental)
-    char tipo[10];         // "COMPRA" o "VENTA"
-    int idProducto;        // ID del producto involucrado
-    int idRelacionado;     // ID del proveedor (compra) o cliente (venta)
-    int cantidad;          // Cantidad de unidades
-    float precioUnitario;  // Precio por unidad en esta transacción
-    float total;           // cantidad * precioUnitario
-    char fecha[11];        // Formato: YYYY-MM-DD
-    char descripcion[200]; // Notas adicionales (opcional)
+    int id;                 // Identificador único (autoincremental)
+    TipoDeTransaccion tipo; // COMPRA o VENTA
+    int idProducto;         // ID del producto involucrado
+    int idRelacionado;      // ID del proveedor (compra) o cliente (venta)
+    int cantidad;           // Cantidad de unidades
+    float precioUnitario;   // Precio por unidad en esta transacción
+    float total;            // cantidad * precioUnitario
+    char fecha[11];         // Formato: YYYY-MM-DD
+    char descripcion[200];  // Notas adicionales (opcional)
 };
 
 struct Tienda {
@@ -47,20 +49,15 @@ struct Tienda {
 
     // Arrays dinámicos de entidades
     Producto* productos;
-    int numProductos;
-    int capacidadProductos;
-
     Proveedor* proveedores;
-    int numProveedores;
-    int capacidadProveedores;
-
     Cliente* clientes;
-    int numClientes;
-    int capacidadClientes;
-
     Transaccion* transacciones;
-    int numTransacciones;
-    int capacidadTransacciones;
+
+    // Control de Memoria
+    int numProductos, capacidadProductos;
+    int numClientes, capacidadClientes;
+    int numTransacciones, capacidadTransacciones;
+    int numProveedores, capacidadProveedores;
 
     // Contadores para IDs autoincrementales
     int siguienteIdProducto;
@@ -87,6 +84,10 @@ void liberarTienda(Tienda* tienda) {
 
 void crearProducto(Tienda* tienda) {
     // Implementar la lógica para crear un nuevo producto
+    // sajñfklañsjkldfjklasjdfa
+    // asjñlkdfjañslkjfasf
+    // jaslkdfjlñaskfd
+    // aslñdkfj
 }
 
 void buscarProducto(Tienda* tienda) {
