@@ -1,11 +1,18 @@
 #include <concepts>
+#include <cstddef>
 #include <cstdio>
 #include <cstring>
+#include <iomanip>
 #include <iostream>
 #include <type_traits>
 #include <variant>
 
 using namespace std;
+
+struct Tienda;
+int buscarProductoPorId(Tienda* tienda, int id);
+// retorna array de indices del producto
+int* buscarProductosPorNombre(Tienda* tienda, const char* nombre);
 
 enum TipoDeTransaccion { COMPRA, VENTA };
 
@@ -145,6 +152,11 @@ void asignarPropiedadString(string msg, char* prop, int str_length) {
 }
 
 void crearProducto(Tienda* tienda) {
+    if (tienda == nullptr) {
+        cout << "Error: La tienda no ha sido creada." << endl;
+        return;
+    }
+
     int index = tienda->siguienteIdProducto;
     char confirmar;
 
@@ -204,6 +216,83 @@ void crearProducto(Tienda* tienda) {
 }
 
 void buscarProducto(Tienda* tienda) {
+    while (true) {
+        cout << "Buscar producto" << endl;
+        cout << "1. Id" << endl
+             << "2. Nombre" << endl
+             << "3. Listar todos" << endl
+             << "0. Cancelar" << endl;
+
+        char opcion;
+        cin >> opcion;
+
+        switch (opcion) {
+            // id
+        case '1': {
+            cout << "Ingrese el id del producto: ";
+
+            int id;
+            cin >> id;
+            if (id <= 0) {
+                cout << "El id debe ser mayor a 0. Intente nuevamente: ";
+                break;
+            }
+
+            int index = buscarProductoPorId(tienda, id);
+            if (index == -1) {
+                cout << "Producto no encontrado." << endl;
+                return;
+            }
+
+            Producto& producto = tienda->productos[index];
+            cout << "Producto encontrado:" << endl;
+            cout << "Id: " << producto.id << endl;
+            cout << "Nombre: " << producto.nombre << endl;
+            cout << "Codigo: " << producto.codigo << endl;
+            cout << "Descripcion: " << producto.descripcion << endl;
+            cout << "Precio: " << producto.precio << endl;
+            cout << "Stock: " << producto.stock << endl;
+            break;
+        }
+        case '2': {
+            cout << "Ingrese el nombre del producto: ";
+            char* nombre = new char[100];
+            cin.ignore();
+            cin.getline(nombre, 100);
+
+            // array de indices del producto
+            int* index = buscarProductosPorNombre(tienda, nombre);
+            if (index == nullptr) {
+                cout << "Producto no encontrado." << endl;
+                return;
+            }
+
+            cout << "Productos encontrados:" << endl;
+            for (int i = 0; i < *index; i++) {
+                // El array index contiene los indices de los productos
+                // por eso se usa index[i]
+                Producto& producto = tienda->productos[index[i]];
+                cout << "Id: " << producto.id << endl;
+                cout << "Nombre: " << producto.nombre << endl;
+                cout << "Codigo: " << producto.codigo << endl;
+                cout << "Descripcion: " << producto.descripcion << endl;
+                cout << "Precio: " << producto.precio << endl;
+                cout << "Stock: " << producto.stock << endl;
+            }
+            break;
+        }
+
+        case '3':
+            // Listar todos los productos
+            break;
+        case '0':
+            // Cancelar
+            return;
+        default:
+            cout << "Opcion no valida" << endl;
+            break;
+        }
+    }
 }
 
 void actualizarProducto(Tienda* tienda) {
