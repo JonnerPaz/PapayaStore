@@ -38,3 +38,7 @@ Thumbs.db
 *.log
 *.dmp
 vgcore.*
+
+webhook/.netlify
+webhook/.env
+node_modules
