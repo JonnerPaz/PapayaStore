@@ -1,16 +1,20 @@
 #include <cstdio>
 #include <cstring>
+#include <iostream>
+
+using namespace std;
+
 enum TipoDeTransaccion { COMPRA, VENTA };
 
 struct Producto {
     int id;                 // Identificador único (autoincremental)
-    char codigo[20];        // Código del producto (ej: "PROD-001")
     char nombre[100];       // Nombre del producto
+    char codigo[20];        // Código del producto (ej: "PROD-001")
     char descripcion[200];  // Descripción del producto
+    char fechaRegistro[11]; // Formato: YYYY-MM-DD
     int idProveedor;        // ID del proveedor asociado
     float precio;           // Precio unitario
     int stock;              // Cantidad en inventario
-    char fechaRegistro[11]; // Formato: YYYY-MM-DD
 };
 
 struct Proveedor {
@@ -87,10 +91,11 @@ void inicializarTienda(Tienda* tienda, const char* nombre, const char* rif) {
     tienda->numProveedores = 0;
     tienda->numClientes = 0;
 
-    tienda->siguienteIdProducto = 1;
-    tienda->siguienteIdProveedor = 1;
-    tienda->siguienteIdCliente = 1;
-    tienda->siguienteIdTransaccion = 1;
+    // empiezan en 0 porque es el primer elemento del array
+    tienda->siguienteIdProducto = 0;
+    tienda->siguienteIdProveedor = 0;
+    tienda->siguienteIdCliente = 0;
+    tienda->siguienteIdTransaccion = 0;
 }
 
 void liberarTienda(Tienda* tienda) {
@@ -116,11 +121,86 @@ void liberarTienda(Tienda* tienda) {
 }
 
 void crearProducto(Tienda* tienda) {
-    // Implementar la lógica para crear un nuevo producto
-    // sajñfklañsjkldfjklasjdfa
-    // asjñlkdfjañslkjfasf
-    // jaslkdfjlñaskfd
-    // aslñdkfj
+    char* nombre = new char[100];
+    char* codigo = new char[20];
+    char* descripcion = new char[200];
+    int* idProveedor = new int;
+    int index = tienda->siguienteIdProducto;
+    char confirmar;
+
+    cout << "Ingrese el nombre del producto (q para cancelar): ";
+    cin.ignore();
+    cin.getline(nombre, 100);
+    cout << endl;
+
+    cout << "Ingrese el codigo del producto (q para cancelar): ";
+    cin.getline(codigo, 20);
+    cout << endl;
+
+    cout << "Ingrese la descripcion del producto (q para cancelar): ";
+    cin.getline(descripcion, 200);
+    cout << endl;
+
+    float precio = 0;
+    while (precio <= 0) {
+        cout << "Ingrese el precio del producto (q para cancelar): ";
+        cin >> precio;
+        cout << endl;
+
+        if (precio <= 0) {
+            cout << "El precio debe ser mayor que 0" << endl;
+        }
+    }
+
+    int stock = 0;
+    while (stock < 0) {
+        cout << "Ingrese el stock del producto (q para cancelar): ";
+        cin >> stock;
+        cout << endl;
+
+        if (stock < 0) {
+            cout << "El stock debe ser mayor que 0" << endl;
+        }
+    }
+
+    cout << "Ingresar el id del proveedor (q para cancelar): ";
+    cin >> *idProveedor;
+    cout << endl;
+
+    cout << "Los datos del producto son: " << endl;
+    cout << "Nombre: " << nombre << endl;
+    cout << "Codigo: " << codigo << endl;
+    cout << "Descripcion: " << descripcion << endl;
+    cout << "Precio: " << precio << endl;
+    cout << "Stock: " << stock << endl;
+    cout << "Proveedor: " << *idProveedor << endl;
+
+    cout << "Está seguro de crear el producto? (s/n): ";
+    cin >> confirmar;
+
+    if (confirmar == 's' || confirmar == 'S') {
+        Producto& producto = tienda->productos[index];
+        producto.id = tienda->siguienteIdProducto;
+        strncpy(producto.nombre, nombre, sizeof(producto.nombre) - 1);
+        strncpy(producto.codigo, codigo, sizeof(producto.codigo) - 1);
+        strncpy(producto.descripcion, descripcion, sizeof(producto.descripcion) - 1);
+        producto.precio = precio;
+        producto.stock = stock;
+
+        // siguiente producto tiene su espacio en el array
+        tienda->siguienteIdProducto++;
+    } else {
+        cout << "Producto no creado." << endl;
+    }
+
+    delete[] nombre;
+    delete[] codigo;
+    delete[] descripcion;
+    delete idProveedor;
+    nombre = nullptr;
+    codigo = nullptr;
+    descripcion = nullptr;
+    idProveedor = nullptr;
 }
 
 void buscarProducto(Tienda* tienda) {
