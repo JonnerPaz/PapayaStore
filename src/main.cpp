@@ -1,6 +1,9 @@
+#include <concepts>
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <type_traits>
+#include <variant>
 
 using namespace std;
 
@@ -120,52 +123,49 @@ void liberarTienda(Tienda* tienda) {
     tienda->siguienteIdTransaccion = 1;
 }
 
+template <typename T>
+concept AsignarNum = std::same_as<T, float&> || std::same_as<T, int&>;
+void asignarPropiedadNum(string msg, AsignarNum auto& prop) {
+    cout << msg << endl;
+    while (prop <= 0) {
+        cin >> prop;
+        if (prop < 0) {
+            cout << "El valor debe ser mayor o igual a 0. Intente nuevamente: ";
+        }
+        prop = 0;
+    }
+    cout << endl;
+}
+
+void asignarPropiedadString(string msg, char* prop, int str_length) {
+    cout << msg << endl;
+    cin.ignore();
+    cin.getline(prop, str_length);
+    cout << endl;
+}
+
 void crearProducto(Tienda* tienda) {
-    char* nombre = new char[100];
-    char* codigo = new char[20];
-    char* descripcion = new char[200];
-    int* idProveedor = new int;
     int index = tienda->siguienteIdProducto;
     char confirmar;
 
-    cout << "Ingrese el nombre del producto (q para cancelar): ";
-    cin.ignore();
-    cin.getline(nombre, 100);
-    cout << endl;
+    char* nombre = new char[100];
+    asignarPropiedadString("Ingrese el nombre del producto (q para cancelar): ", nombre, 100);
 
-    cout << "Ingrese el codigo del producto (q para cancelar): ";
-    cin.getline(codigo, 20);
-    cout << endl;
+    char* codigo = new char[20];
+    asignarPropiedadString("Ingrese el código del producto (q para cancelar): ", codigo, 20);
 
-    cout << "Ingrese la descripcion del producto (q para cancelar): ";
-    cin.getline(descripcion, 200);
-    cout << endl;
+    char* descripcion = new char[200];
+    asignarPropiedadString("Ingrese la descripcion del producto (q para cancelar): ", descripcion,
+                           200);
 
-    float precio = 0;
-    while (precio <= 0) {
-        cout << "Ingrese el precio del producto (q para cancelar): ";
-        cin >> precio;
-        cout << endl;
+    float* precio = new float;
+    asignarPropiedadNum<float&>("Ingrese el precio del producto (q para cancelar): ", *precio);
 
-        if (precio <= 0) {
-            cout << "El precio debe ser mayor que 0" << endl;
-        }
-    }
+    int* stock = new int;
+    asignarPropiedadNum<int&>("Ingrese el stock del producto (q para cancelar): ", *stock);
 
-    int stock = 0;
-    while (stock < 0) {
-        cout << "Ingrese el stock del producto (q para cancelar): ";
-        cin >> stock;
-        cout << endl;
-
-        if (stock < 0) {
-            cout << "El stock debe ser mayor que 0" << endl;
-        }
-    }
-
-    cout << "Ingresar el id del proveedor (q para cancelar): ";
-    cin >> *idProveedor;
-    cout << endl;
+    int* idProveedor = new int;
+    asignarPropiedadNum<int&>("Ingresar el id del proveedor (q para cancelar): ", *idProveedor);
 
     cout << "Los datos del producto son: " << endl;
     cout << "Nombre: " << nombre << endl;
@@ -184,8 +184,8 @@ void crearProducto(Tienda* tienda) {
         strncpy(producto.nombre, nombre, sizeof(producto.nombre) - 1);
         strncpy(producto.codigo, codigo, sizeof(producto.codigo) - 1);
         strncpy(producto.descripcion, descripcion, sizeof(producto.descripcion) - 1);
-        producto.precio = precio;
-        producto.stock = stock;
+        producto.precio = *precio;
+        producto.stock = *stock;
 
         // siguiente producto tiene su espacio en el array
         tienda->siguienteIdProducto++;
