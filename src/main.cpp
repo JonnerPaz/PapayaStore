@@ -1,3 +1,5 @@
+#include <cstdio>
+#include <cstring>
 enum TipoDeTransaccion { COMPRA, VENTA };
 
 struct Producto {
@@ -67,19 +69,50 @@ struct Tienda {
 };
 
 void inicializarTienda(Tienda* tienda, const char* nombre, const char* rif) {
+    const int CAPACIDAD_INICIAL = 5;
+
+    tienda->capacidadClientes = CAPACIDAD_INICIAL;
+    tienda->capacidadProductos = CAPACIDAD_INICIAL;
+    tienda->capacidadProveedores = CAPACIDAD_INICIAL;
+    tienda->capacidadTransacciones = CAPACIDAD_INICIAL;
+
     // Inicializar los arrays dinámicos
-    tienda->productos = new Producto[5];
-    tienda->proveedores = new Proveedor[5];
-    tienda->clientes = new Cliente[5];
-    tienda->transacciones = new Transaccion[5];
+    tienda->productos = new Producto[CAPACIDAD_INICIAL];
+    tienda->proveedores = new Proveedor[CAPACIDAD_INICIAL];
+    tienda->clientes = new Cliente[CAPACIDAD_INICIAL];
+    tienda->transacciones = new Transaccion[CAPACIDAD_INICIAL];
+
+    tienda->numTransacciones = 0;
+    tienda->numProductos = 0;
+    tienda->numProveedores = 0;
+    tienda->numClientes = 0;
+
+    tienda->siguienteIdProducto = 1;
+    tienda->siguienteIdProveedor = 1;
+    tienda->siguienteIdCliente = 1;
+    tienda->siguienteIdTransaccion = 1;
 }
 
 void liberarTienda(Tienda* tienda) {
-    // Liberar los arrays dinámicos
     delete[] tienda->productos;
     delete[] tienda->proveedores;
     delete[] tienda->clientes;
     delete[] tienda->transacciones;
+
+    tienda->clientes = nullptr;
+    tienda->productos = nullptr;
+    tienda->proveedores = nullptr;
+    tienda->transacciones = nullptr;
+
+    tienda->numTransacciones = 0;
+    tienda->numClientes = 0;
+    tienda->numProductos = 0;
+    tienda->numProveedores = 0;
+
+    tienda->siguienteIdProducto = 1;
+    tienda->siguienteIdProveedor = 1;
+    tienda->siguienteIdCliente = 1;
+    tienda->siguienteIdTransaccion = 1;
 }
 
 void crearProducto(Tienda* tienda) {
