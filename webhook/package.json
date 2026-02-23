@@ -1,0 +1,26 @@
+{
+  "name": "09-github-webhooks",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "dev": "tsx watch src/app.ts",
+    "build": "rimraf ./dist && tsc",
+    "start": "npm run build && node dist/app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.3.0",
+    "rimraf": "^5.0.1",
+    "tsx": "^4.21.0"
+  },
+  "dependencies": {
+    "@netlify/functions": "^5.1.2",
+    "dotenv": "^16.3.1",
+    "express": "^5.2.1"
+  }
+}
