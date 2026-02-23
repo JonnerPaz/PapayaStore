@@ -13,8 +13,17 @@ struct Tienda;
 int buscarProductoPorId(Tienda* tienda, int id);
 // retorna array de indices del producto
 int* buscarProductosPorNombre(Tienda* tienda, const char* nombre);
+void listarProductos(Tienda* tienda);
+void convertirAMinusculas(char* cadena);
+bool contieneSubstring(const char* cadena, const char* subcadena);
 
 enum TipoDeTransaccion { COMPRA, VENTA };
+enum Busqueda {
+    BusquedaId = '1',
+    BusquedaNombre = '2',
+    BusquedaMostrar = '3',
+    BusquedaCancelada = '0'
+};
 
 struct Producto {
     int id;                 // Identificador único (autoincremental)
@@ -124,31 +133,10 @@ void liberarTienda(Tienda* tienda) {
     tienda->numProductos = 0;
     tienda->numProveedores = 0;
 
-    tienda->siguienteIdProducto = 1;
-    tienda->siguienteIdProveedor = 1;
-    tienda->siguienteIdCliente = 1;
-    tienda->siguienteIdTransaccion = 1;
-}
-
-template <typename T>
-concept AsignarNum = std::same_as<T, float&> || std::same_as<T, int&>;
-void asignarPropiedadNum(string msg, AsignarNum auto& prop) {
-    cout << msg << endl;
-    while (prop <= 0) {
-        cin >> prop;
-        if (prop < 0) {
-            cout << "El valor debe ser mayor o igual a 0. Intente nuevamente: ";
-        }
-        prop = 0;
-    }
-    cout << endl;
-}
-
-void asignarPropiedadString(string msg, char* prop, int str_length) {
-    cout << msg << endl;
-    cin.ignore();
-    cin.getline(prop, str_length);
-    cout << endl;
+    tienda->siguienteIdProducto = 0;
+    tienda->siguienteIdProveedor = 0;
+    tienda->siguienteIdCliente = 0;
+    tienda->siguienteIdTransaccion = 0;
 }
 
 void crearProducto(Tienda* tienda) {
@@ -222,13 +210,14 @@ void buscarProducto(Tienda* tienda) {
              << "2. Nombre" << endl
              << "3. Listar todos" << endl
              << "0. Cancelar" << endl;
+        cout << "Seleccione una opción: ";
 
         char opcion;
         cin >> opcion;
 
         switch (opcion) {
             // id
-        case '1': {
+        case BusquedaId: {
             cout << "Ingrese el id del producto: ";
 
             int id;
@@ -241,7 +230,7 @@ void buscarProducto(Tienda* tienda) {
             int index = buscarProductoPorId(tienda, id);
             if (index == -1) {
                 cout << "Producto no encontrado." << endl;
-                return;
+                break;
             }
 
             Producto& producto = tienda->productos[index];
@@ -254,23 +243,25 @@ void buscarProducto(Tienda* tienda) {
             cout << "Stock: " << producto.stock << endl;
             break;
         }
-        case '2': {
+        case BusquedaNombre: {
             cout << "Ingrese el nombre del producto: ";
-            char* nombre = new char[100];
-            cin.ignore();
+            char nombre[100];
+            if (cin.peek() == '\n')
+                cin.ignore();
             cin.getline(nombre, 100);
 
-            // array de indices del producto
+            // array de indices del producto. Asumimos que index[0] es la cantidad de encontrados
+            // y a partir de index[1] estan los indices reales en el array de la tienda
             int* index = buscarProductosPorNombre(tienda, nombre);
-            if (index == nullptr) {
+            if (index == nullptr || index[0] == 0) {
                 cout << "Producto no encontrado." << endl;
-                return;
+                if (index != nullptr)
+                    delete[] index;
+                break;
             }
 
             cout << "Productos encontrados:" << endl;
-            for (int i = 0; i < *index; i++) {
-                // El array index contiene los indices de los productos
-                // por eso se usa index[i]
+            for (int i = 1; i <= index[0]; i++) {
                 Producto& producto = tienda->productos[index[i]];
                 cout << "Id: " << producto.id << endl;
                 cout << "Nombre: " << producto.nombre << endl;
@@ -279,18 +270,22 @@ void buscarProducto(Tienda* tienda) {
                 cout << "Precio: " << producto.precio << endl;
                 cout << "Stock: " << producto.stock << endl;
             }
+            delete[] index;
             break;
         }
 
-        case '3':
-            // Listar todos los productos
+        case BusquedaMostrar: {
+            listarProductos(tienda);
             break;
-        case '0':
-            // Cancelar
+        }
+        case BusquedaCancelada: {
+            cout << "Cancelada la búsqueda" << endl;
             return;
-        default:
+        }
+        default: {
             cout << "Opcion no valida" << endl;
             break;
+        }
         }
     }
 }
@@ -363,6 +358,8 @@ void redimensionarClientes(Tienda* tienda) {
 
 void redimensionarTransacciones(Tienda* tienda) {
 }
+
+///////////// FIN FUNCIONES CRUD DEL PROGRAMA //////////
 
 // VALIDACIONES
 bool validarEmail(const char* email) {
