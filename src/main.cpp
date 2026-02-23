@@ -1,11 +1,9 @@
 #include <concepts>
-#include <cstddef>
-#include <cstdio>
 #include <cstring>
-#include <iomanip>
+#include <format>
 #include <iostream>
+#include <limits>
 #include <type_traits>
-#include <variant>
 
 using namespace std;
 
@@ -23,6 +21,14 @@ enum Busqueda {
     BusquedaNombre = '2',
     BusquedaMostrar = '3',
     BusquedaCancelada = '0'
+};
+enum Actualizar {
+    ActualizarNombre = '1',
+    ActualizarCodigo = '2',
+    ActualizarDescripcion = '3',
+    ActualizarPrecio = '4',
+    ActualizarStock = '5',
+    ActualizarCancelada = '0'
 };
 
 struct Producto {
@@ -247,7 +253,8 @@ void crearProducto(Tienda* tienda) {
 }
 
 void buscarProducto(Tienda* tienda) {
-    while (true) {
+    char opcion;
+    do {
         cout << "Buscar producto" << endl;
         cout << "1. Id" << endl
              << "2. Nombre" << endl
@@ -255,9 +262,7 @@ void buscarProducto(Tienda* tienda) {
              << "0. Cancelar" << endl;
         cout << "Seleccione una opción: ";
 
-        char opcion;
         cin >> opcion;
-
         switch (opcion) {
             // id
         case BusquedaId: {
@@ -330,10 +335,121 @@ void buscarProducto(Tienda* tienda) {
             break;
         }
         }
+    } while (opcion != BusquedaCancelada);
+}
+
+template <typename T> void manejarPropiedad(const string& nombrePropiedad, T& propiedad) {
+    char confirmar;
+
+    //  Descripcion, Nombre, Codigo
+    if constexpr (std::is_array_v<T> && std::is_same_v<std::remove_extent_t<T>, char>) {
+        char tempProp[200];
+        cout << format("Ingrese el nuevo {}: ", nombrePropiedad);
+        if (cin.peek() == '\n')
+            cin.ignore();
+        cin.getline(tempProp, sizeof(T));
+
+        cout << format("Viejo {}: {}", nombrePropiedad, propiedad) << endl;
+        cout << format("Nuevo {}: {}", nombrePropiedad, tempProp) << endl;
+
+        cout << format("Está seguro que desea actualizar el {}? (s/n): ", nombrePropiedad);
+        cin >> confirmar;
+        if (confirmar == 's' || confirmar == 'S') {
+            strncpy(propiedad, tempProp, sizeof(T) - 1);
+            propiedad[sizeof(T) - 1] = '\0';
+            cout << format("{} actualizado a: {}", nombrePropiedad, propiedad) << endl;
+        } else {
+            cout << "Actualización cancelada." << endl;
+        }
+        // Int, Float
+    } else if constexpr (std::is_arithmetic_v<T>) {
+        T tempProp;
+        cout << "Ingrese el nuevo " << nombrePropiedad << ": ";
+        while (true) {
+            cin >> tempProp;
+            if (cin.fail()) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "El valor debe ser numérico. Intente nuevamente: ";
+                continue;
+            }
+            if (tempProp >= 0)
+                break;
+            cout << "El valor debe ser mayor o igual a 0. Intente nuevamente: ";
+        }
+
+        cout << format("Viejo {}: {}", nombrePropiedad, propiedad) << endl;
+        cout << format("Nuevo {}: {}", nombrePropiedad, tempProp) << endl;
+
+        cout << format("Está seguro que desea actualizar el {}? (s/n): ", nombrePropiedad);
+        cin >> confirmar;
+        if (confirmar == 's' || confirmar == 'S') {
+            propiedad = tempProp;
+            cout << format("{} actualizado a: {}", nombrePropiedad, propiedad) << endl;
+        } else {
+            cout << "Actualizacion cancelada." << endl;
+        }
     }
 }
 
 void actualizarProducto(Tienda* tienda) {
+    if (tienda == nullptr)
+        return;
+
+    cout << "Ingresa el id del producto a actualizar: ";
+    int id;
+    cin >> id;
+
+    if (id <= 0) {
+        cout << "El id debe ser mayor a 0. Intente nuevamente: ";
+        return;
+    }
+
+    int index = buscarProductoPorId(tienda, id);
+    if (index == -1) {
+        cout << "Producto a actualizar no encontrado." << endl;
+        return;
+    }
+
+    Producto& producto = tienda->productos[index];
+    cout << format("Producto con el id {} encontrado: {}", id, producto.nombre) << endl;
+
+    char opcion;
+    do {
+        cout << "¿Qué desea actualizar?: " << endl;
+        cout << "1. Nombre" << endl;
+        cout << "2. Codigo" << endl;
+        cout << "3. Descripcion" << endl;
+        cout << "4. Precio" << endl;
+        cout << "5. Stock" << endl;
+        cout << "0. Cancelar" << endl;
+
+        cin >> opcion;
+
+        switch (opcion) {
+        case ActualizarNombre:
+            manejarPropiedad("nombre", producto.nombre);
+            break;
+        case ActualizarCodigo:
+            manejarPropiedad("codigo", producto.codigo);
+            break;
+        case ActualizarDescripcion:
+            manejarPropiedad("descripcion", producto.descripcion);
+            break;
+        case ActualizarPrecio:
+            manejarPropiedad("precio", producto.precio);
+            break;
+        case ActualizarStock:
+            manejarPropiedad("stock", producto.stock);
+            break;
+        case ActualizarCancelada:
+            cout << "Se canceló la actualizacion." << endl;
+            break;
+        default:
+            cout << "Opcion no valida" << endl;
+            break;
+        }
+    } while (opcion != ActualizarCancelada);
 }
 
 void actualizarStockProducto(Tienda* tienda) {
