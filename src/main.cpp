@@ -91,6 +91,40 @@ struct Tienda {
     int siguienteIdTransaccion;
 };
 
+// templates utilizados en el programa
+template <typename T>
+// remove_reference_t remueve las referencias de T y devuelve T
+// Ej. si T es int& -> devuelve int
+concept AsignarNum = std::is_arithmetic_v<std::remove_reference_t<T>>;
+
+void asignarPropiedadNum(string msg, AsignarNum auto& prop) {
+    cout << msg << endl;
+    while (true) {
+        cin >> prop;
+        if (cin.fail()) {
+            cin.clear();
+            cin.ignore(1000, '\n');
+            cout << "El valor debe ser numérico. Intente nuevamente: ";
+            continue;
+        }
+        if (prop >= 0) {
+            break;
+        }
+        cout << "El valor debe ser mayor o igual a 0. Intente nuevamente: ";
+    }
+    cout << endl;
+}
+
+void asignarPropiedadString(string msg, char* prop, int str_length) {
+    cout << msg << endl;
+    if (cin.peek() == '\n') {
+        cin.ignore();
+    }
+    cin.getline(prop, str_length);
+    cout << endl;
+}
+
+///// FUNCIONES CRUD DEL PROGRAMA
 void inicializarTienda(Tienda* tienda, const char* nombre, const char* rif) {
     const int CAPACIDAD_INICIAL = 5;
 
@@ -145,27 +179,40 @@ void crearProducto(Tienda* tienda) {
         return;
     }
 
-    int index = tienda->siguienteIdProducto;
+    if (tienda->numProductos >= tienda->capacidadProductos) {
+        cout << "Error: Capacidad maxima de productos alcanzada." << endl;
+        // TODO: implementar redimensionamiento
+        // Idealmente redimensionarProductos(tienda);
+        return;
+    }
+
+    int index = tienda->numProductos;
     char confirmar;
 
-    char* nombre = new char[100];
+    char nombre[100];
     asignarPropiedadString("Ingrese el nombre del producto (q para cancelar): ", nombre, 100);
+    if (nombre[0] == 'q' && nombre[1] == '\0')
+        return;
 
-    char* codigo = new char[20];
+    char codigo[20];
     asignarPropiedadString("Ingrese el código del producto (q para cancelar): ", codigo, 20);
+    if (codigo[0] == 'q' && codigo[1] == '\0')
+        return;
 
-    char* descripcion = new char[200];
+    char descripcion[200];
     asignarPropiedadString("Ingrese la descripcion del producto (q para cancelar): ", descripcion,
                            200);
+    if (descripcion[0] == 'q' && descripcion[1] == '\0')
+        return;
 
-    float* precio = new float;
-    asignarPropiedadNum<float&>("Ingrese el precio del producto (q para cancelar): ", *precio);
+    float precio;
+    asignarPropiedadNum("Ingrese el precio del producto: ", precio);
 
-    int* stock = new int;
-    asignarPropiedadNum<int&>("Ingrese el stock del producto (q para cancelar): ", *stock);
+    int stock;
+    asignarPropiedadNum("Ingrese el stock del producto: ", stock);
 
-    int* idProveedor = new int;
-    asignarPropiedadNum<int&>("Ingresar el id del proveedor (q para cancelar): ", *idProveedor);
+    int idProveedor;
+    asignarPropiedadNum("Ingresar el id del proveedor: ", idProveedor);
 
     cout << "Los datos del producto son: " << endl;
     cout << "Nombre: " << nombre << endl;
@@ -173,7 +220,7 @@ void crearProducto(Tienda* tienda) {
     cout << "Descripcion: " << descripcion << endl;
     cout << "Precio: " << precio << endl;
     cout << "Stock: " << stock << endl;
-    cout << "Proveedor: " << *idProveedor << endl;
+    cout << "Proveedor: " << idProveedor << endl;
 
     cout << "Está seguro de crear el producto? (s/n): ";
     cin >> confirmar;
@@ -181,26 +228,22 @@ void crearProducto(Tienda* tienda) {
     if (confirmar == 's' || confirmar == 'S') {
         Producto& producto = tienda->productos[index];
         producto.id = tienda->siguienteIdProducto;
+        producto.idProveedor = idProveedor;
         strncpy(producto.nombre, nombre, sizeof(producto.nombre) - 1);
+        producto.nombre[sizeof(producto.nombre) - 1] = '\0';
         strncpy(producto.codigo, codigo, sizeof(producto.codigo) - 1);
+        producto.codigo[sizeof(producto.codigo) - 1] = '\0';
         strncpy(producto.descripcion, descripcion, sizeof(producto.descripcion) - 1);
-        producto.precio = *precio;
-        producto.stock = *stock;
+        producto.descripcion[sizeof(producto.descripcion) - 1] = '\0';
+        producto.precio = precio;
+        producto.stock = stock;
 
-        // siguiente producto tiene su espacio en el array
         tienda->siguienteIdProducto++;
+        tienda->numProductos++;
+        cout << "Producto creado con exito." << endl;
     } else {
         cout << "Producto no creado." << endl;
     }
-
-    delete[] nombre;
-    delete[] codigo;
-    delete[] descripcion;
-    delete idProveedor;
-    nombre = nullptr;
-    codigo = nullptr;
-    descripcion = nullptr;
-    idProveedor = nullptr;
 }
 
 void buscarProducto(Tienda* tienda) {
