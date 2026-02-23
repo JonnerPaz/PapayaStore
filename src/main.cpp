@@ -340,6 +340,23 @@ void actualizarStockProducto(Tienda* tienda) {
 }
 
 void listarProductos(Tienda* tienda) {
+    if (tienda == nullptr) {
+        cout << "Error: La tienda no ha sido creada." << endl;
+        return;
+    }
+
+    if (tienda->numProductos == 0) {
+        cout << "No hay productos registrados." << endl;
+        return;
+    }
+
+    cout << "--- Lista de Productos (" << tienda->numProductos << ") ---" << endl;
+    for (int i = 0; i < tienda->numProductos; ++i) {
+        Producto& p = tienda->productos[i];
+        cout << "Id: " << p.id << " | Nombre: " << p.nombre << " | Codigo: " << p.codigo
+             << " | Precio: $" << p.precio << " | Stock: " << p.stock << endl;
+    }
+    cout << "--------------------------" << endl;
 }
 
 void eliminarProducto(Tienda* tienda) {
