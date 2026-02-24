@@ -7,9 +7,7 @@
 using namespace std;
 
 struct Tienda;
-int buscarProductoPorId(Tienda* tienda, int id);
-int buscarProveedorPorId(Tienda* tienda, int id);
-int buscarClientePorId(Tienda* tienda, int id);
+template <typename T> int buscarEntidadPorId(T* array, int count, int id);
 int leerId(const char* msg);
 void obtenerFechaActual(char* fecha);
 // retorna array de indices del producto
@@ -308,7 +306,7 @@ void buscarProducto(Tienda* tienda) {
                 break;
             }
 
-            int index = buscarProductoPorId(tienda, id);
+            int index = buscarEntidadPorId(tienda->productos, tienda->numProductos, id);
             if (index == -1) {
                 cout << "Producto no encontrado." << endl;
                 break;
@@ -434,7 +432,7 @@ void actualizarProducto(Tienda* tienda) {
         return;
     }
 
-    int index = buscarProductoPorId(tienda, id);
+    int index = buscarEntidadPorId(tienda->productos, tienda->numProductos, id);
     if (index == -1) {
         cout << "Producto a actualizar no encontrado." << endl;
         return;
@@ -501,7 +499,7 @@ void actualizarStockProducto(Tienda* tienda) {
         return;
     }
 
-    int index = buscarProductoPorId(tienda, id);
+    int index = buscarEntidadPorId(tienda->productos, tienda->numProductos, id);
     if (index == -1) {
         cout << "Producto no encontrado." << endl;
         return;
@@ -611,7 +609,7 @@ void eliminarProducto(Tienda* tienda) {
         return;
     }
 
-    int index = buscarProductoPorId(tienda, id);
+    int index = buscarEntidadPorId(tienda->productos, tienda->numProductos, id);
     if (index == -1) {
         cout << "Producto no encontrado." << endl;
         return;
@@ -709,7 +707,7 @@ void buscarProveedor(Tienda* tienda) {
         cout << "Id invalido." << endl;
         return;
     }
-    int index = buscarProveedorPorId(tienda, id);
+    int index = buscarEntidadPorId(tienda->proveedores, tienda->numProveedores, id);
     if (index == -1) {
         cout << "Proveedor no encontrado." << endl;
         return;
@@ -733,7 +731,7 @@ void actualizarProveedor(Tienda* tienda) {
         cout << "Id invalido." << endl;
         return;
     }
-    int index = buscarProveedorPorId(tienda, id);
+    int index = buscarEntidadPorId(tienda->proveedores, tienda->numProveedores, id);
     if (index == -1) {
         cout << "Proveedor no encontrado." << endl;
         return;
@@ -796,7 +794,7 @@ void eliminarProveedor(Tienda* tienda) {
         cout << "Id invalido." << endl;
         return;
     }
-    int index = buscarProveedorPorId(tienda, id);
+    int index = buscarEntidadPorId(tienda->proveedores, tienda->numProveedores, id);
     if (index == -1) {
         cout << "Proveedor no encontrado." << endl;
         return;
@@ -868,7 +866,7 @@ void buscarCliente(Tienda* tienda) {
         return;
     }
 
-    int index = buscarClientePorId(tienda, id);
+    int index = buscarEntidadPorId(tienda->clientes, tienda->numClientes, id);
     if (index == -1) {
         cout << "Cliente no encontrado." << endl;
         return;
@@ -890,7 +888,7 @@ void actualizarCliente(Tienda* tienda) {
         return;
     }
 
-    int index = buscarClientePorId(tienda, id);
+    int index = buscarEntidadPorId(tienda->clientes, tienda->numClientes, id);
     if (index == -1) {
         cout << "Cliente no encontrado." << endl;
         return;
@@ -952,7 +950,7 @@ void eliminarCliente(Tienda* tienda) {
         return;
     }
 
-    int index = buscarClientePorId(tienda, id);
+    int index = buscarEntidadPorId(tienda->clientes, tienda->numClientes, id);
     if (index == -1) {
         cout << "Cliente no encontrado." << endl;
         return;
@@ -1066,22 +1064,14 @@ bool rifDuplicado(Tienda* tienda, const char* rif) {
 }
 
 // Búsquedas
-int buscarProductoPorId(Tienda* tienda, int id) {
-    if (tienda == nullptr)
+// Casi todas las entidades tienen un id (cliente, proveedor, producto)
+template <typename T> int buscarEntidadPorId(T* array, int count, int id) {
+    if (array == nullptr)
         return -1;
-    for (int i = 0; i < tienda->numProductos; ++i) {
-        if (tienda->productos[i].id == id) {
+    for (int i = 0; i < count; ++i) {
+        if (array[i].id == id)
             return i;
-        }
     }
-    return -1;
-}
-
-int buscarProveedorPorId(Tienda* tienda, int id) {
-    return -1;
-}
-
-int buscarClientePorId(Tienda* tienda, int id) {
     return -1;
 }
 
