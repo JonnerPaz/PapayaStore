@@ -145,6 +145,16 @@ template <size_t N> void copiarString(char (&destino)[N], const char* origen) {
     destino[N - 1] = '\0';
 }
 
+// Helper template para desplazar elementos a la izquierda al eliminar
+// Actualiza el count a la cantidad de elementos restantes.
+// CUIDADO DE PASAR LA CUENTA DE UN ARRAY DIFERENTE AL ARRAY
+template <typename T> void eliminarElementoDeArray(T* array, int index, int& count) {
+    for (int i = index; i < count - 1; ++i) {
+        array[i] = array[i + 1];
+    }
+    count--;
+}
+
 ///// FUNCIONES CRUD DEL PROGRAMA
 void inicializarTienda(Tienda* tienda, const char* nombre, const char* rif) {
     const int CAPACIDAD_INICIAL = 5;
@@ -625,11 +635,7 @@ void eliminarProducto(Tienda* tienda) {
     cin >> confirmar;
 
     if (confirmar == 's' || confirmar == 'S') {
-        // Eliminar físicamente moviendo elementos a la izquierda
-        for (int i = index; i < tienda->numProductos - 1; ++i) {
-            tienda->productos[i] = tienda->productos[i + 1];
-        }
-        tienda->numProductos--;
+        eliminarElementoDeArray(tienda->productos, index, tienda->numProductos);
         cout << "Producto eliminado exitosamente." << endl;
     } else {
         cout << "Eliminación cancelada." << endl;
@@ -792,10 +798,7 @@ void eliminarProveedor(Tienda* tienda) {
     char confirmar;
     cin >> confirmar;
     if (confirmar == 's' || confirmar == 'S') {
-        for (int i = index; i < tienda->numProveedores - 1; ++i) {
-            tienda->proveedores[i] = tienda->proveedores[i + 1];
-        }
-        tienda->numProveedores--;
+        eliminarElementoDeArray(tienda->proveedores, index, tienda->numProveedores);
         cout << "Proveedor eliminado exitosamente." << endl;
     } else {
         cout << "Eliminación cancelada." << endl;
@@ -952,10 +955,7 @@ void eliminarCliente(Tienda* tienda) {
     char confirmar;
     cin >> confirmar;
     if (confirmar == 's' || confirmar == 'S') {
-        for (int i = index; i < tienda->numClientes - 1; ++i) {
-            tienda->clientes[i] = tienda->clientes[i + 1];
-        }
-        tienda->numClientes--;
+        eliminarElementoDeArray(tienda->clientes, index, tienda->numClientes);
         cout << "Cliente eliminado exitosamente." << endl;
     } else {
         cout << "Eliminación cancelada." << endl;
