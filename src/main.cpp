@@ -1120,25 +1120,27 @@ bool contieneSubstring(const char* cadena, const char* subcadena) {
 int leerId(const char* msg) {
     while (true) {
         cout << msg << " (q para salir): ";
-        int id;
-        cin >> id;
 
-        if (cin.peek() == 'q') {
+        // si el primer caracter es 'q', se sale
+        if (cin.peek() == 'q' || cin.peek() == 'Q') {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
             return -1;
         }
 
+        int id;
+        cin >> id;
         if (cin.fail()) {
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "El id debe ser un número" << endl;
-            cout << "Habrás querido salir? presiona 'q' para salir" << endl;
+            cout << "El id debe ser un número." << endl;
+            cout << "¿Habrás querido salir? Presiona 'q' para salir." << endl;
             continue;
         }
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
         if (id <= 0) {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "El id debe ser numérico y mayor o igual a 0. Intente nuevamente" << endl;
+            cout << "El id debe ser numérico y mayor a 0. Intente nuevamente." << endl;
+            continue;
         }
 
         return id;
