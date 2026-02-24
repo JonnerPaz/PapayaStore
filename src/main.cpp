@@ -109,17 +109,19 @@ template <typename T>
 // remove_reference_t remueve las referencias de T y devuelve T
 // Ej. si T es int& -> devuelve int
 concept AsignarNum = std::is_arithmetic_v<std::remove_reference_t<T>>;
-
-void asignarPropiedadNum(string msg, AsignarNum auto& prop) {
+void asignarPropiedadNum(const char* msg, AsignarNum auto& prop) {
     cout << msg << endl;
     while (true) {
         cin >> prop;
         if (cin.fail()) {
             cin.clear();
-            cin.ignore(1000, '\n');
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
             cout << "El valor debe ser numérico. Intente nuevamente: ";
             continue;
         }
+        // Clean buffer no matter if cin fail or not
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
         if (prop >= 0) {
             break;
         }
@@ -128,12 +130,18 @@ void asignarPropiedadNum(string msg, AsignarNum auto& prop) {
     cout << endl;
 }
 
-void asignarPropiedadString(string msg, char* prop, int str_length) {
+template <size_t N> void asignarPropiedadString(const char* msg, char (&prop)[N]) {
     cout << msg << endl;
     if (cin.peek() == '\n') {
         cin.ignore();
     }
-    cin.getline(prop, str_length);
+
+    cin.getline(prop, N);
+
+    if (cin.fail()) {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    }
     cout << endl;
 }
 
@@ -218,18 +226,17 @@ void crearProducto(Tienda* tienda) {
     char confirmar;
 
     char nombre[100];
-    asignarPropiedadString("Ingrese el nombre del producto (q para cancelar): ", nombre, 100);
+    asignarPropiedadString("Ingrese el nombre del producto (q para cancelar): ", nombre);
     if (nombre[0] == 'q' && nombre[1] == '\0')
         return;
 
     char codigo[20];
-    asignarPropiedadString("Ingrese el código del producto (q para cancelar): ", codigo, 20);
+    asignarPropiedadString("Ingrese el código del producto (q para cancelar): ", codigo);
     if (codigo[0] == 'q' && codigo[1] == '\0')
         return;
 
     char descripcion[200];
-    asignarPropiedadString("Ingrese la descripcion del producto (q para cancelar): ", descripcion,
-                           200);
+    asignarPropiedadString("Ingrese la descripcion del producto (q para cancelar): ", descripcion);
     if (descripcion[0] == 'q' && descripcion[1] == '\0')
         return;
 
@@ -655,21 +662,21 @@ void crearProveedor(Tienda* tienda) {
     int index = tienda->numProveedores;
 
     char nombre[100];
-    asignarPropiedadString("Ingrese el nombre del proveedor (q para cancelar): ", nombre, 100);
+    asignarPropiedadString("Ingrese el nombre del proveedor (q para cancelar): ", nombre);
     if (nombre[0] == 'q' && nombre[1] == '\0')
         return;
 
     char rif[20];
-    asignarPropiedadString("Ingrese el RIF del proveedor (q para cancelar): ", rif, 20);
+    asignarPropiedadString("Ingrese el RIF del proveedor (q para cancelar): ", rif);
     if (rif[0] == 'q' && rif[1] == '\0')
         return;
 
     char telefono[20];
-    asignarPropiedadString("Ingrese el telefono del proveedor: ", telefono, 20);
+    asignarPropiedadString("Ingrese el telefono del proveedor: ", telefono);
     char email[100];
-    asignarPropiedadString("Ingrese el email del proveedor: ", email, 100);
+    asignarPropiedadString("Ingrese el email del proveedor: ", email);
     char direccion[200];
-    asignarPropiedadString("Ingrese la direccion del proveedor: ", direccion, 200);
+    asignarPropiedadString("Ingrese la direccion del proveedor: ", direccion);
 
     cout << "Está seguro de crear el proveedor? (s/n): ";
     char confirmar;
@@ -816,21 +823,21 @@ void crearCliente(Tienda* tienda) {
     int index = tienda->numClientes;
 
     char nombre[100];
-    asignarPropiedadString("Ingrese el nombre del cliente (q para cancelar): ", nombre, 100);
+    asignarPropiedadString("Ingrese el nombre del cliente (q para cancelar): ", nombre);
     if (nombre[0] == 'q' && nombre[1] == '\0')
         return;
 
     char cedula[20];
-    asignarPropiedadString("Ingrese la cedula del cliente (q para cancelar): ", cedula, 20);
+    asignarPropiedadString("Ingrese la cedula del cliente (q para cancelar): ", cedula);
     if (cedula[0] == 'q' && cedula[1] == '\0')
         return;
 
     char telefono[20];
-    asignarPropiedadString("Ingrese el telefono del cliente: ", telefono, 20);
+    asignarPropiedadString("Ingrese el telefono del cliente: ", telefono);
     char email[100];
-    asignarPropiedadString("Ingrese el email del cliente: ", email, 100);
+    asignarPropiedadString("Ingrese el email del cliente: ", email);
     char direccion[200];
-    asignarPropiedadString("Ingrese la direccion del cliente: ", direccion, 200);
+    asignarPropiedadString("Ingrese la direccion del cliente: ", direccion);
 
     cout << "Está seguro de crear el cliente? (s/n): ";
     char confirmar;
