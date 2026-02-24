@@ -1,4 +1,3 @@
-#include <concepts>
 #include <cstring>
 #include <format>
 #include <iostream>
@@ -154,11 +153,11 @@ void inicializarTienda(Tienda* tienda, const char* nombre, const char* rif) {
     tienda->numProveedores = 0;
     tienda->numClientes = 0;
 
-    // empiezan en 0 porque es el primer elemento del array
-    tienda->siguienteIdProducto = 0;
-    tienda->siguienteIdProveedor = 0;
-    tienda->siguienteIdCliente = 0;
-    tienda->siguienteIdTransaccion = 0;
+    // empiezan en 1 porque el id debe ser mayor a 0
+    tienda->siguienteIdProducto = 1;
+    tienda->siguienteIdProveedor = 1;
+    tienda->siguienteIdCliente = 1;
+    tienda->siguienteIdTransaccion = 1;
 }
 
 void liberarTienda(Tienda* tienda) {
@@ -177,10 +176,10 @@ void liberarTienda(Tienda* tienda) {
     tienda->numProductos = 0;
     tienda->numProveedores = 0;
 
-    tienda->siguienteIdProducto = 0;
-    tienda->siguienteIdProveedor = 0;
-    tienda->siguienteIdCliente = 0;
-    tienda->siguienteIdTransaccion = 0;
+    tienda->siguienteIdProducto = 1;
+    tienda->siguienteIdProveedor = 1;
+    tienda->siguienteIdCliente = 1;
+    tienda->siguienteIdTransaccion = 1;
 }
 
 void crearProducto(Tienda* tienda) {
@@ -271,6 +270,13 @@ void buscarProducto(Tienda* tienda) {
 
             int id;
             cin >> id;
+            if (cin.fail()) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "El id debe ser numérico. Intente nuevamente: ";
+                break;
+            }
+
             if (id <= 0) {
                 cout << "El id debe ser mayor a 0. Intente nuevamente: ";
                 break;
@@ -400,6 +406,13 @@ void actualizarProducto(Tienda* tienda) {
     cout << "Ingresa el id del producto a actualizar: ";
     int id;
     cin >> id;
+    do {
+        if (cin.fail()) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "El id debe ser numérico. Intente nuevamente: ";
+        }
+    } while (id <= 0);
 
     if (id <= 0) {
         cout << "El id debe ser mayor a 0. Intente nuevamente: ";
@@ -459,7 +472,14 @@ void actualizarStockProducto(Tienda* tienda) {
 
     cout << "Ingrese el id del producto para actualizar el stock: ";
     int id;
-    cin >> id;
+    do {
+        cin >> id;
+        if (cin.fail()) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "El id debe ser numérico. Intente nuevamente." << endl;
+        }
+    } while (id <= 0);
 
     if (id <= 0) {
         cout << "El id debe ser mayor a 0. Intente nuevamente." << endl;
@@ -499,7 +519,7 @@ void actualizarStockProducto(Tienda* tienda) {
                     cout << "El valor debe ser numérico. Intente nuevamente: ";
                     continue;
                 }
-                if (cantidad < 0)
+                if (cantidad > 0)
                     break;
                 cout << "La cantidad debe ser mayor a 0. Intente nuevamente: ";
             }
@@ -533,6 +553,7 @@ void actualizarStockProducto(Tienda* tienda) {
             } else {
                 cout << "Operación cancelada." << endl;
             }
+            break;
         }
         case '0':
             cout << "Operación cancelada." << endl;
