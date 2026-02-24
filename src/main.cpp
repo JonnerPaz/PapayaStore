@@ -710,12 +710,97 @@ void buscarProveedor(Tienda* tienda) {
 }
 
 void actualizarProveedor(Tienda* tienda) {
+    if (tienda == nullptr)
+        return;
+    cout << "Ingrese el id del proveedor a actualizar: ";
+    int id;
+    cin >> id;
+    if (cin.fail() || id <= 0) {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Id invalido." << endl;
+        return;
+    }
+    int index = buscarProveedorPorId(tienda, id);
+    if (index == -1) {
+        cout << "Proveedor no encontrado." << endl;
+        return;
+    }
+    Proveedor& p = tienda->proveedores[index];
+
+    char opcion;
+    do {
+        cout << "¿Qué desea actualizar?: " << endl;
+        cout << "1. Nombre\n2. RIF\n3. Telefono\n4. Email\n5. Direccion\n0. Cancelar\n";
+        cin >> opcion;
+        switch (opcion) {
+        case '1':
+            manejarPropiedad("nombre", p.nombre);
+            break;
+        case '2':
+            manejarPropiedad("rif", p.rif);
+            break;
+        case '3':
+            manejarPropiedad("telefono", p.telefono);
+            break;
+        case '4':
+            manejarPropiedad("email", p.email);
+            break;
+        case '5':
+            manejarPropiedad("direccion", p.direccion);
+            break;
+        case '0':
+            cout << "Saliendo..." << endl;
+            break;
+        default:
+            cout << "Opcion no valida" << endl;
+        }
+    } while (opcion != '0');
 }
 
 void listarProveedores(Tienda* tienda) {
+    if (tienda == nullptr || tienda->numProveedores == 0) {
+        cout << "No hay proveedores registrados." << endl;
+        return;
+    }
+    cout << "--- Lista de Proveedores (" << tienda->numProveedores << ") ---" << endl;
+    for (int i = 0; i < tienda->numProveedores; ++i) {
+        Proveedor& p = tienda->proveedores[i];
+        cout << "Id: " << p.id << " | Nombre: " << p.nombre << " | RIF: " << p.rif
+             << " | Telefono: " << p.telefono << " | Email: " << p.email << endl;
+    }
+    cout << "--------------------------" << endl;
 }
 
 void eliminarProveedor(Tienda* tienda) {
+    if (tienda == nullptr)
+        return;
+    cout << "Ingrese el id del proveedor a eliminar: ";
+    int id;
+    cin >> id;
+    if (cin.fail() || id <= 0) {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Id invalido." << endl;
+        return;
+    }
+    int index = buscarProveedorPorId(tienda, id);
+    if (index == -1) {
+        cout << "Proveedor no encontrado." << endl;
+        return;
+    }
+    cout << "¿Está seguro que desea eliminar este proveedor? (s/n): ";
+    char confirmar;
+    cin >> confirmar;
+    if (confirmar == 's' || confirmar == 'S') {
+        for (int i = index; i < tienda->numProveedores - 1; ++i) {
+            tienda->proveedores[i] = tienda->proveedores[i + 1];
+        }
+        tienda->numProveedores--;
+        cout << "Proveedor eliminado exitosamente." << endl;
+    } else {
+        cout << "Eliminación cancelada." << endl;
+    }
 }
 
 void crearCliente(Tienda* tienda) {
