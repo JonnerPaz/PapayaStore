@@ -137,6 +137,14 @@ void asignarPropiedadString(string msg, char* prop, int str_length) {
     cout << endl;
 }
 
+// Helper template para copiar strings de forma segura
+// Se pasa el arreglo de char como referencia para evitar el decaimiento (decay)
+// y no copiar el array original.
+template <size_t N> void copiarString(char (&destino)[N], const char* origen) {
+    strncpy(destino, origen, N - 1);
+    destino[N - 1] = '\0';
+}
+
 ///// FUNCIONES CRUD DEL PROGRAMA
 void inicializarTienda(Tienda* tienda, const char* nombre, const char* rif) {
     const int CAPACIDAD_INICIAL = 5;
@@ -239,12 +247,9 @@ void crearProducto(Tienda* tienda) {
         Producto& producto = tienda->productos[index];
         producto.id = tienda->siguienteIdProducto;
         producto.idProveedor = idProveedor;
-        strncpy(producto.nombre, nombre, sizeof(producto.nombre) - 1);
-        producto.nombre[sizeof(producto.nombre) - 1] = '\0';
-        strncpy(producto.codigo, codigo, sizeof(producto.codigo) - 1);
-        producto.codigo[sizeof(producto.codigo) - 1] = '\0';
-        strncpy(producto.descripcion, descripcion, sizeof(producto.descripcion) - 1);
-        producto.descripcion[sizeof(producto.descripcion) - 1] = '\0';
+        copiarString(producto.nombre, nombre);
+        copiarString(producto.codigo, codigo);
+        copiarString(producto.descripcion, descripcion);
         producto.precio = precio;
         producto.stock = stock;
 
@@ -366,8 +371,7 @@ template <typename T> void manejarPropiedad(const string& nombrePropiedad, T& pr
         cout << format("Está seguro que desea actualizar el {}? (s/n): ", nombrePropiedad);
         cin >> confirmar;
         if (confirmar == 's' || confirmar == 'S') {
-            strncpy(propiedad, tempProp, sizeof(T) - 1);
-            propiedad[sizeof(T) - 1] = '\0';
+            copiarString(propiedad, tempProp);
             cout << format("{} actualizado a: {}", nombrePropiedad, propiedad) << endl;
         } else {
             cout << "Actualización cancelada." << endl;
@@ -667,16 +671,11 @@ void crearProveedor(Tienda* tienda) {
     if (confirmar == 's' || confirmar == 'S') {
         Proveedor& prov = tienda->proveedores[index];
         prov.id = tienda->siguienteIdProveedor++;
-        strncpy(prov.nombre, nombre, sizeof(prov.nombre) - 1);
-        prov.nombre[sizeof(prov.nombre) - 1] = '\0';
-        strncpy(prov.rif, rif, sizeof(prov.rif) - 1);
-        prov.rif[sizeof(prov.rif) - 1] = '\0';
-        strncpy(prov.telefono, telefono, sizeof(prov.telefono) - 1);
-        prov.telefono[sizeof(prov.telefono) - 1] = '\0';
-        strncpy(prov.email, email, sizeof(prov.email) - 1);
-        prov.email[sizeof(prov.email) - 1] = '\0';
-        strncpy(prov.direccion, direccion, sizeof(prov.direccion) - 1);
-        prov.direccion[sizeof(prov.direccion) - 1] = '\0';
+        copiarString(prov.nombre, nombre);
+        copiarString(prov.rif, rif);
+        copiarString(prov.telefono, telefono);
+        copiarString(prov.email, email);
+        copiarString(prov.direccion, direccion);
         obtenerFechaActual(prov.fechaRegistro);
         tienda->numProveedores++;
         cout << "Proveedor creado con exito." << endl;
@@ -836,16 +835,11 @@ void crearCliente(Tienda* tienda) {
     if (confirmar == 's' || confirmar == 'S') {
         Cliente& cli = tienda->clientes[index];
         cli.id = tienda->siguienteIdCliente++;
-        strncpy(cli.nombre, nombre, sizeof(cli.nombre) - 1);
-        cli.nombre[sizeof(cli.nombre) - 1] = '\0';
-        strncpy(cli.cedula, cedula, sizeof(cli.cedula) - 1);
-        cli.cedula[sizeof(cli.cedula) - 1] = '\0';
-        strncpy(cli.telefono, telefono, sizeof(cli.telefono) - 1);
-        cli.telefono[sizeof(cli.telefono) - 1] = '\0';
-        strncpy(cli.email, email, sizeof(cli.email) - 1);
-        cli.email[sizeof(cli.email) - 1] = '\0';
-        strncpy(cli.direccion, direccion, sizeof(cli.direccion) - 1);
-        cli.direccion[sizeof(cli.direccion) - 1] = '\0';
+        copiarString(cli.nombre, nombre);
+        copiarString(cli.cedula, cedula);
+        copiarString(cli.telefono, telefono);
+        copiarString(cli.email, email);
+        copiarString(cli.direccion, direccion);
         obtenerFechaActual(cli.fechaRegistro);
         tienda->numClientes++;
         cout << "Cliente creado con exito." << endl;
