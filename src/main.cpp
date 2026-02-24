@@ -453,6 +453,95 @@ void actualizarProducto(Tienda* tienda) {
 }
 
 void actualizarStockProducto(Tienda* tienda) {
+    if (tienda == nullptr)
+        return;
+
+    cout << "Ingrese el id del producto para actualizar el stock: ";
+    int id;
+    cin >> id;
+
+    if (id <= 0) {
+        cout << "El id debe ser mayor a 0. Intente nuevamente." << endl;
+        return;
+    }
+
+    int index = buscarProductoPorId(tienda, id);
+    if (index == -1) {
+        cout << "Producto no encontrado." << endl;
+        return;
+    }
+
+    Producto& producto = tienda->productos[index];
+    cout << format("Producto: {} | Stock actual: {}", producto.nombre, producto.stock) << endl;
+
+    char opcion;
+    do {
+        cout << "Seleccione la operación a realizar: " << endl;
+        cout << "1. Incrementar stock" << endl;
+        cout << "2. Disminuir stock" << endl;
+        cout << "0. Cancelar" << endl;
+        cout << "Seleccione una opción: ";
+
+        cin >> opcion;
+
+        switch (opcion) {
+        case '1': // Hecho a propósito
+        case '2': {
+            int cantidad;
+            cout << "Ingrese la cantidad a modificar: ";
+
+            while (true) {
+                cin >> cantidad;
+                if (cin.fail()) {
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cout << "El valor debe ser numérico. Intente nuevamente: ";
+                    continue;
+                }
+                if (cantidad < 0)
+                    break;
+                cout << "La cantidad debe ser mayor a 0. Intente nuevamente: ";
+            }
+
+            int nuevoStock = producto.stock;
+            if (opcion == '1') {
+                nuevoStock += cantidad;
+            }
+
+            if (opcion == '2') {
+                nuevoStock -= cantidad;
+                if (nuevoStock < 0) {
+                    cout << format("Error: El stock no puede ser negativo. Faltan unidades. Stock "
+                                   "actual: {}",
+                                   producto.stock)
+                         << endl;
+                    break;
+                }
+            }
+
+            cout << format("Stock actual: {} | Nuevo stock: {}", producto.stock, nuevoStock)
+                 << endl;
+            cout << "¿Está seguro de aplicar este cambio al stock? (s/n): ";
+            char confirmar;
+            cin >> confirmar;
+
+            if (confirmar == 's' || confirmar == 'S') {
+                producto.stock = nuevoStock;
+                cout << "Stock actualizado exitosamente." << endl;
+
+            } else {
+                cout << "Operación cancelada." << endl;
+            }
+        }
+        case '0':
+            cout << "Operación cancelada." << endl;
+            break;
+        default:
+            cout << "Opción no válida." << endl;
+            break;
+        }
+
+    } while (opcion != '0');
 }
 
 void listarProductos(Tienda* tienda) {
