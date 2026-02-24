@@ -924,9 +924,48 @@ void actualizarCliente(Tienda* tienda) {
 }
 
 void listarClientes(Tienda* tienda) {
+    if (tienda == nullptr || tienda->numClientes == 0) {
+        cout << "No hay clientes registrados." << endl;
+        return;
+    }
+    cout << "--- Lista de Clientes (" << tienda->numClientes << ") ---" << endl;
+    for (int i = 0; i < tienda->numClientes; ++i) {
+        Cliente& cliente = tienda->clientes[i];
+        cout << "Id: " << cliente.id << " | Nombre: " << cliente.nombre
+             << " | Cedula: " << cliente.cedula << " | Telefono: " << cliente.telefono
+             << " | Email: " << cliente.email << endl;
+    }
+    cout << "--------------------------" << endl;
 }
 
 void eliminarCliente(Tienda* tienda) {
+    if (tienda == nullptr)
+        return;
+
+    int id = leerId("Ingrese el id del cliente a eliminar");
+    if (id <= 0) {
+        cout << "No se actualizara ningun producto." << endl;
+        return;
+    }
+
+    int index = buscarClientePorId(tienda, id);
+    if (index == -1) {
+        cout << "Cliente no encontrado." << endl;
+        return;
+    }
+
+    cout << "¿Está seguro que desea eliminar este cliente? (s/n): ";
+    char confirmar;
+    cin >> confirmar;
+    if (confirmar == 's' || confirmar == 'S') {
+        for (int i = index; i < tienda->numClientes - 1; ++i) {
+            tienda->clientes[i] = tienda->clientes[i + 1];
+        }
+        tienda->numClientes--;
+        cout << "Cliente eliminado exitosamente." << endl;
+    } else {
+        cout << "Eliminación cancelada." << endl;
+    }
 }
 
 void registrarCompra(Tienda* tienda) {
