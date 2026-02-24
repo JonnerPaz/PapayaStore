@@ -14,6 +14,10 @@ int* buscarProductosPorNombre(Tienda* tienda, const char* nombre);
 void listarProductos(Tienda* tienda);
 void convertirAMinusculas(char* cadena);
 bool contieneSubstring(const char* cadena, const char* subcadena);
+void redimensionarProductos(Tienda* tienda);
+void redimensionarProveedores(Tienda* tienda);
+void redimensionarClientes(Tienda* tienda);
+void redimensionarTransacciones(Tienda* tienda);
 
 enum TipoDeTransaccion { COMPRA, VENTA };
 enum Busqueda {
@@ -186,10 +190,7 @@ void crearProducto(Tienda* tienda) {
     }
 
     if (tienda->numProductos >= tienda->capacidadProductos) {
-        cout << "Error: Capacidad maxima de productos alcanzada." << endl;
-        // TODO: implementar redimensionamiento
-        // Idealmente redimensionarProductos(tienda);
-        return;
+        redimensionarProductos(tienda);
     }
 
     int index = tienda->numProductos;
@@ -665,12 +666,43 @@ void cancelarTransaccion(Tienda* tienda) {
 }
 
 void redimensionarProductos(Tienda* tienda) {
+    if (tienda == nullptr)
+        return;
+    // doble capacidad
+    int nuevaCapacidad = tienda->capacidadProductos * 2;
+    Producto* nuevosProductos = new Producto[nuevaCapacidad];
+    for (int i = 0; i < tienda->numProductos; ++i) {
+        nuevosProductos[i] = tienda->productos[i];
+    }
+    delete[] tienda->productos;
+    tienda->productos = nuevosProductos;
+    tienda->capacidadProductos = nuevaCapacidad;
 }
 
 void redimensionarProveedores(Tienda* tienda) {
+    if (tienda == nullptr)
+        return;
+    int nuevaCapacidad = tienda->capacidadProveedores * 2;
+    Proveedor* nuevosProveedores = new Proveedor[nuevaCapacidad];
+    for (int i = 0; i < tienda->numProveedores; ++i) {
+        nuevosProveedores[i] = tienda->proveedores[i];
+    }
+    delete[] tienda->proveedores;
+    tienda->proveedores = nuevosProveedores;
+    tienda->capacidadProveedores = nuevaCapacidad;
 }
 
 void redimensionarClientes(Tienda* tienda) {
+    if (tienda == nullptr)
+        return;
+    int nuevaCapacidad = tienda->capacidadClientes * 2;
+    Cliente* nuevosClientes = new Cliente[nuevaCapacidad];
+    for (int i = 0; i < tienda->numClientes; ++i) {
+        nuevosClientes[i] = tienda->clientes[i];
+    }
+    delete[] tienda->clientes;
+    tienda->clientes = nuevosClientes;
+    tienda->capacidadClientes = nuevaCapacidad;
 }
 
 void redimensionarTransacciones(Tienda* tienda) {
