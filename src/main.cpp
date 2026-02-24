@@ -173,6 +173,9 @@ template <typename T> void redimensionarEntidad(T*& array, int& capacidad, int n
 void inicializarTienda(Tienda* tienda, const char* nombre, const char* rif) {
     const int CAPACIDAD_INICIAL = 5;
 
+    strncpy(tienda->nombre, nombre, 100);
+    strncpy(tienda->rif, rif, 20);
+
     tienda->capacidadClientes = CAPACIDAD_INICIAL;
     tienda->capacidadProductos = CAPACIDAD_INICIAL;
     tienda->capacidadProveedores = CAPACIDAD_INICIAL;
