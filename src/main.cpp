@@ -15,10 +15,6 @@ int* buscarProductosPorNombre(Tienda* tienda, const char* nombre);
 void listarProductos(Tienda* tienda);
 void convertirAMinusculas(char* cadena);
 bool contieneSubstring(const char* cadena, const char* subcadena);
-void redimensionarProductos(Tienda* tienda);
-void redimensionarProveedores(Tienda* tienda);
-void redimensionarClientes(Tienda* tienda);
-void redimensionarTransacciones(Tienda* tienda);
 
 enum TipoDeTransaccion { COMPRA, VENTA };
 enum Busqueda {
@@ -161,6 +157,18 @@ template <typename T> void eliminarElementoDeArray(T* array, int index, int& cou
     count--;
 }
 
+// Helper template para redimensionar arrays dinámicos
+template <typename T> void redimensionarEntidad(T*& array, int& capacidad, int numElementos) {
+    int nuevaCapacidad = capacidad * 2;
+    T* nuevoArray = new T[nuevaCapacidad];
+    for (int i = 0; i < numElementos; ++i) {
+        nuevoArray[i] = array[i];
+    }
+    delete[] array;
+    array = nuevoArray;
+    capacidad = nuevaCapacidad;
+}
+
 ///// FUNCIONES CRUD DEL PROGRAMA
 void inicializarTienda(Tienda* tienda, const char* nombre, const char* rif) {
     const int CAPACIDAD_INICIAL = 5;
@@ -216,8 +224,12 @@ void crearProducto(Tienda* tienda) {
         return;
     }
 
-    if (tienda->numProductos >= tienda->capacidadProductos) {
-        redimensionarProductos(tienda);
+    int& totalDeProductos = tienda->numProductos;
+    int& capacidadProductos = tienda->capacidadProductos;
+    Producto*& productos = tienda->productos;
+
+    if (totalDeProductos >= capacidadProductos) {
+        redimensionarEntidad(productos, capacidadProductos, totalDeProductos);
     }
 
     int index = tienda->numProductos;
@@ -652,10 +664,14 @@ void crearProveedor(Tienda* tienda) {
         cout << "Error: La tienda no ha sido creada." << endl;
         return;
     }
+    int& totalDeProveedores = tienda->numProveedores;
+    int& capacidadProveedores = tienda->capacidadProveedores;
+    // es un puntero DE LA REFERENCIA
+    Proveedor*& proveedores = tienda->proveedores;
 
     // Aumentar espacio si es necesario
-    if (tienda->numProveedores >= tienda->capacidadProveedores) {
-        redimensionarProveedores(tienda);
+    if (totalDeProveedores >= capacidadProveedores) {
+        redimensionarEntidad(proveedores, capacidadProveedores, totalDeProveedores);
     }
     int index = tienda->numProveedores;
 
@@ -816,7 +832,7 @@ void crearCliente(Tienda* tienda) {
         return;
     }
     if (tienda->numClientes >= tienda->capacidadClientes) {
-        redimensionarClientes(tienda);
+        redimensionarEntidad(tienda->clientes, tienda->capacidadClientes, tienda->numClientes);
     }
     int index = tienda->numClientes;
 
@@ -980,49 +996,6 @@ void listarTransacciones(Tienda* tienda) {
 }
 
 void cancelarTransaccion(Tienda* tienda) {
-}
-
-void redimensionarProductos(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
-    // doble capacidad
-    int nuevaCapacidad = tienda->capacidadProductos * 2;
-    Producto* nuevosProductos = new Producto[nuevaCapacidad];
-    for (int i = 0; i < tienda->numProductos; ++i) {
-        nuevosProductos[i] = tienda->productos[i];
-    }
-    delete[] tienda->productos;
-    tienda->productos = nuevosProductos;
-    tienda->capacidadProductos = nuevaCapacidad;
-}
-
-void redimensionarProveedores(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
-    int nuevaCapacidad = tienda->capacidadProveedores * 2;
-    Proveedor* nuevosProveedores = new Proveedor[nuevaCapacidad];
-    for (int i = 0; i < tienda->numProveedores; ++i) {
-        nuevosProveedores[i] = tienda->proveedores[i];
-    }
-    delete[] tienda->proveedores;
-    tienda->proveedores = nuevosProveedores;
-    tienda->capacidadProveedores = nuevaCapacidad;
-}
-
-void redimensionarClientes(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
-    int nuevaCapacidad = tienda->capacidadClientes * 2;
-    Cliente* nuevosClientes = new Cliente[nuevaCapacidad];
-    for (int i = 0; i < tienda->numClientes; ++i) {
-        nuevosClientes[i] = tienda->clientes[i];
-    }
-    delete[] tienda->clientes;
-    tienda->clientes = nuevosClientes;
-    tienda->capacidadClientes = nuevaCapacidad;
-}
-
-void redimensionarTransacciones(Tienda* tienda) {
 }
 
 ///////////// FIN FUNCIONES CRUD DEL PROGRAMA //////////
