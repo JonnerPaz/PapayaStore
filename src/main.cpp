@@ -633,9 +633,80 @@ void eliminarProducto(Tienda* tienda) {
 }
 
 void crearProveedor(Tienda* tienda) {
+    if (tienda == nullptr) {
+        cout << "Error: La tienda no ha sido creada." << endl;
+        return;
+    }
+
+    // Aumentar espacio si es necesario
+    if (tienda->numProveedores >= tienda->capacidadProveedores) {
+        redimensionarProveedores(tienda);
+    }
+    int index = tienda->numProveedores;
+
+    char nombre[100];
+    asignarPropiedadString("Ingrese el nombre del proveedor (q para cancelar): ", nombre, 100);
+    if (nombre[0] == 'q' && nombre[1] == '\0')
+        return;
+
+    char rif[20];
+    asignarPropiedadString("Ingrese el RIF del proveedor (q para cancelar): ", rif, 20);
+    if (rif[0] == 'q' && rif[1] == '\0')
+        return;
+
+    char telefono[20];
+    asignarPropiedadString("Ingrese el telefono del proveedor: ", telefono, 20);
+    char email[100];
+    asignarPropiedadString("Ingrese el email del proveedor: ", email, 100);
+    char direccion[200];
+    asignarPropiedadString("Ingrese la direccion del proveedor: ", direccion, 200);
+
+    cout << "Está seguro de crear el proveedor? (s/n): ";
+    char confirmar;
+    cin >> confirmar;
+    if (confirmar == 's' || confirmar == 'S') {
+        Proveedor& prov = tienda->proveedores[index];
+        prov.id = tienda->siguienteIdProveedor++;
+        strncpy(prov.nombre, nombre, sizeof(prov.nombre) - 1);
+        prov.nombre[sizeof(prov.nombre) - 1] = '\0';
+        strncpy(prov.rif, rif, sizeof(prov.rif) - 1);
+        prov.rif[sizeof(prov.rif) - 1] = '\0';
+        strncpy(prov.telefono, telefono, sizeof(prov.telefono) - 1);
+        prov.telefono[sizeof(prov.telefono) - 1] = '\0';
+        strncpy(prov.email, email, sizeof(prov.email) - 1);
+        prov.email[sizeof(prov.email) - 1] = '\0';
+        strncpy(prov.direccion, direccion, sizeof(prov.direccion) - 1);
+        prov.direccion[sizeof(prov.direccion) - 1] = '\0';
+        obtenerFechaActual(prov.fechaRegistro);
+        tienda->numProveedores++;
+        cout << "Proveedor creado con exito." << endl;
+    } else {
+        cout << "Proveedor no creado." << endl;
+    }
 }
 
 void buscarProveedor(Tienda* tienda) {
+    if (tienda == nullptr)
+        return;
+    cout << "Ingrese el id del proveedor a buscar: ";
+    int id;
+    cin >> id;
+    if (cin.fail() || id <= 0) {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Id invalido." << endl;
+        return;
+    }
+    int index = buscarProveedorPorId(tienda, id);
+    if (index == -1) {
+        cout << "Proveedor no encontrado." << endl;
+        return;
+    }
+    Proveedor& p = tienda->proveedores[index];
+    cout << "Proveedor encontrado:" << endl;
+    cout << "Id: " << p.id << "\nNombre: " << p.nombre << "\nRIF: " << p.rif
+         << "\nTelefono: " << p.telefono << "\nEmail: " << p.email << "\nDireccion: " << p.direccion
+         << "\nFecha de Registro: " << p.fechaRegistro << endl;
 }
 
 void actualizarProveedor(Tienda* tienda) {
