@@ -1,9 +1,11 @@
 #include <concepts>
+#include <cstddef>
+#include <cstdio>
 #include <cstring>
-#include <format>
+#include <iomanip>
 #include <iostream>
-#include <limits>
 #include <type_traits>
+#include <variant>
 
 using namespace std;
 
@@ -14,10 +16,6 @@ int* buscarProductosPorNombre(Tienda* tienda, const char* nombre);
 void listarProductos(Tienda* tienda);
 void convertirAMinusculas(char* cadena);
 bool contieneSubstring(const char* cadena, const char* subcadena);
-void redimensionarProductos(Tienda* tienda);
-void redimensionarProveedores(Tienda* tienda);
-void redimensionarClientes(Tienda* tienda);
-void redimensionarTransacciones(Tienda* tienda);
 
 enum TipoDeTransaccion { COMPRA, VENTA };
 enum Busqueda {
@@ -25,14 +23,6 @@ enum Busqueda {
     BusquedaNombre = '2',
     BusquedaMostrar = '3',
     BusquedaCancelada = '0'
-};
-enum Actualizar {
-    ActualizarNombre = '1',
-    ActualizarCodigo = '2',
-    ActualizarDescripcion = '3',
-    ActualizarPrecio = '4',
-    ActualizarStock = '5',
-    ActualizarCancelada = '0'
 };
 
 struct Producto {
@@ -190,7 +180,10 @@ void crearProducto(Tienda* tienda) {
     }
 
     if (tienda->numProductos >= tienda->capacidadProductos) {
-        redimensionarProductos(tienda);
+        cout << "Error: Capacidad maxima de productos alcanzada." << endl;
+        // TODO: implementar redimensionamiento
+        // Idealmente redimensionarProductos(tienda);
+        return;
     }
 
     int index = tienda->numProductos;
@@ -254,8 +247,7 @@ void crearProducto(Tienda* tienda) {
 }
 
 void buscarProducto(Tienda* tienda) {
-    char opcion;
-    do {
+    while (true) {
         cout << "Buscar producto" << endl;
         cout << "1. Id" << endl
              << "2. Nombre" << endl
@@ -263,7 +255,9 @@ void buscarProducto(Tienda* tienda) {
              << "0. Cancelar" << endl;
         cout << "Seleccione una opción: ";
 
+        char opcion;
         cin >> opcion;
+
         switch (opcion) {
             // id
         case BusquedaId: {
@@ -336,213 +330,13 @@ void buscarProducto(Tienda* tienda) {
             break;
         }
         }
-    } while (opcion != BusquedaCancelada);
-}
-
-template <typename T> void manejarPropiedad(const string& nombrePropiedad, T& propiedad) {
-    char confirmar;
-
-    //  Descripcion, Nombre, Codigo
-    if constexpr (std::is_array_v<T> && std::is_same_v<std::remove_extent_t<T>, char>) {
-        char tempProp[200];
-        cout << format("Ingrese el nuevo {}: ", nombrePropiedad);
-        if (cin.peek() == '\n')
-            cin.ignore();
-        cin.getline(tempProp, sizeof(T));
-
-        cout << format("Viejo {}: {}", nombrePropiedad, propiedad) << endl;
-        cout << format("Nuevo {}: {}", nombrePropiedad, tempProp) << endl;
-
-        cout << format("Está seguro que desea actualizar el {}? (s/n): ", nombrePropiedad);
-        cin >> confirmar;
-        if (confirmar == 's' || confirmar == 'S') {
-            strncpy(propiedad, tempProp, sizeof(T) - 1);
-            propiedad[sizeof(T) - 1] = '\0';
-            cout << format("{} actualizado a: {}", nombrePropiedad, propiedad) << endl;
-        } else {
-            cout << "Actualización cancelada." << endl;
-        }
-        // Int, Float
-    } else if constexpr (std::is_arithmetic_v<T>) {
-        T tempProp;
-        cout << "Ingrese el nuevo " << nombrePropiedad << ": ";
-        while (true) {
-            cin >> tempProp;
-            if (cin.fail()) {
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                cout << "El valor debe ser numérico. Intente nuevamente: ";
-                continue;
-            }
-            if (tempProp >= 0)
-                break;
-            cout << "El valor debe ser mayor o igual a 0. Intente nuevamente: ";
-        }
-
-        cout << format("Viejo {}: {}", nombrePropiedad, propiedad) << endl;
-        cout << format("Nuevo {}: {}", nombrePropiedad, tempProp) << endl;
-
-        cout << format("Está seguro que desea actualizar el {}? (s/n): ", nombrePropiedad);
-        cin >> confirmar;
-        if (confirmar == 's' || confirmar == 'S') {
-            propiedad = tempProp;
-            cout << format("{} actualizado a: {}", nombrePropiedad, propiedad) << endl;
-        } else {
-            cout << "Actualizacion cancelada." << endl;
-        }
     }
 }
 
 void actualizarProducto(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
-
-    cout << "Ingresa el id del producto a actualizar: ";
-    int id;
-    cin >> id;
-
-    if (id <= 0) {
-        cout << "El id debe ser mayor a 0. Intente nuevamente: ";
-        return;
-    }
-
-    int index = buscarProductoPorId(tienda, id);
-    if (index == -1) {
-        cout << "Producto a actualizar no encontrado." << endl;
-        return;
-    }
-
-    Producto& producto = tienda->productos[index];
-    cout << format("Producto con el id {} encontrado: {}", id, producto.nombre) << endl;
-
-    char opcion;
-    do {
-        cout << "¿Qué desea actualizar?: " << endl;
-        cout << "1. Nombre" << endl;
-        cout << "2. Codigo" << endl;
-        cout << "3. Descripcion" << endl;
-        cout << "4. Precio" << endl;
-        cout << "5. Stock" << endl;
-        cout << "0. Cancelar" << endl;
-
-        cin >> opcion;
-
-        switch (opcion) {
-        case ActualizarNombre:
-            manejarPropiedad("nombre", producto.nombre);
-            break;
-        case ActualizarCodigo:
-            manejarPropiedad("codigo", producto.codigo);
-            break;
-        case ActualizarDescripcion:
-            manejarPropiedad("descripcion", producto.descripcion);
-            break;
-        case ActualizarPrecio:
-            manejarPropiedad("precio", producto.precio);
-            break;
-        case ActualizarStock:
-            manejarPropiedad("stock", producto.stock);
-            break;
-        case ActualizarCancelada:
-            cout << "Se canceló la actualizacion." << endl;
-            break;
-        default:
-            cout << "Opcion no valida" << endl;
-            break;
-        }
-    } while (opcion != ActualizarCancelada);
 }
 
 void actualizarStockProducto(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
-
-    cout << "Ingrese el id del producto para actualizar el stock: ";
-    int id;
-    cin >> id;
-
-    if (id <= 0) {
-        cout << "El id debe ser mayor a 0. Intente nuevamente." << endl;
-        return;
-    }
-
-    int index = buscarProductoPorId(tienda, id);
-    if (index == -1) {
-        cout << "Producto no encontrado." << endl;
-        return;
-    }
-
-    Producto& producto = tienda->productos[index];
-    cout << format("Producto: {} | Stock actual: {}", producto.nombre, producto.stock) << endl;
-
-    char opcion;
-    do {
-        cout << "Seleccione la operación a realizar: " << endl;
-        cout << "1. Incrementar stock" << endl;
-        cout << "2. Disminuir stock" << endl;
-        cout << "0. Cancelar" << endl;
-        cout << "Seleccione una opción: ";
-
-        cin >> opcion;
-
-        switch (opcion) {
-        case '1': // Hecho a propósito
-        case '2': {
-            int cantidad;
-            cout << "Ingrese la cantidad a modificar: ";
-
-            while (true) {
-                cin >> cantidad;
-                if (cin.fail()) {
-                    cin.clear();
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                    cout << "El valor debe ser numérico. Intente nuevamente: ";
-                    continue;
-                }
-                if (cantidad < 0)
-                    break;
-                cout << "La cantidad debe ser mayor a 0. Intente nuevamente: ";
-            }
-
-            int nuevoStock = producto.stock;
-            if (opcion == '1') {
-                nuevoStock += cantidad;
-            }
-
-            if (opcion == '2') {
-                nuevoStock -= cantidad;
-                if (nuevoStock < 0) {
-                    cout << format("Error: El stock no puede ser negativo. Faltan unidades. Stock "
-                                   "actual: {}",
-                                   producto.stock)
-                         << endl;
-                    break;
-                }
-            }
-
-            cout << format("Stock actual: {} | Nuevo stock: {}", producto.stock, nuevoStock)
-                 << endl;
-            cout << "¿Está seguro de aplicar este cambio al stock? (s/n): ";
-            char confirmar;
-            cin >> confirmar;
-
-            if (confirmar == 's' || confirmar == 'S') {
-                producto.stock = nuevoStock;
-                cout << "Stock actualizado exitosamente." << endl;
-
-            } else {
-                cout << "Operación cancelada." << endl;
-            }
-        }
-        case '0':
-            cout << "Operación cancelada." << endl;
-            break;
-        default:
-            cout << "Opción no válida." << endl;
-            break;
-        }
-
-    } while (opcion != '0');
 }
 
 void listarProductos(Tienda* tienda) {
@@ -566,58 +360,6 @@ void listarProductos(Tienda* tienda) {
 }
 
 void eliminarProducto(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
-
-    cout << "Ingrese el id del producto a eliminar: ";
-    int id;
-    cin >> id;
-
-    if (id <= 0) {
-        cout << "El id debe ser mayor a 0. Intente nuevamente." << endl;
-        return;
-    }
-
-    int index = buscarProductoPorId(tienda, id);
-    if (index == -1) {
-        cout << "Producto no encontrado." << endl;
-        return;
-    }
-
-    Producto& producto = tienda->productos[index];
-    cout << "Datos del producto a eliminar:" << endl;
-    cout << "Id: " << producto.id << endl;
-    cout << "Nombre: " << producto.nombre << endl;
-    cout << "Codigo: " << producto.codigo << endl;
-    cout << "Stock actual: " << producto.stock << endl;
-
-    bool tieneTransacciones = false;
-    for (int i = 0; i < tienda->numTransacciones; ++i) {
-        if (tienda->transacciones[i].idProducto == id) {
-            tieneTransacciones = true;
-            break;
-        }
-    }
-
-    if (tieneTransacciones) {
-        cout << "\n¡ADVERTENCIA! Este producto tiene transacciones asociadas." << endl;
-        cout << "Eliminarlo puede causar inconsistencias en el historial de transacciones." << endl;
-    }
-
-    cout << "\n¿Está seguro que desea eliminar este producto? (s/n): ";
-    char confirmar;
-    cin >> confirmar;
-
-    if (confirmar == 's' || confirmar == 'S') {
-        // Eliminar físicamente moviendo elementos a la izquierda
-        for (int i = index; i < tienda->numProductos - 1; ++i) {
-            tienda->productos[i] = tienda->productos[i + 1];
-        }
-        tienda->numProductos--;
-        cout << "Producto eliminado exitosamente." << endl;
-    } else {
-        cout << "Eliminación cancelada." << endl;
-    }
 }
 
 void crearProveedor(Tienda* tienda) {
@@ -666,43 +408,12 @@ void cancelarTransaccion(Tienda* tienda) {
 }
 
 void redimensionarProductos(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
-    // doble capacidad
-    int nuevaCapacidad = tienda->capacidadProductos * 2;
-    Producto* nuevosProductos = new Producto[nuevaCapacidad];
-    for (int i = 0; i < tienda->numProductos; ++i) {
-        nuevosProductos[i] = tienda->productos[i];
-    }
-    delete[] tienda->productos;
-    tienda->productos = nuevosProductos;
-    tienda->capacidadProductos = nuevaCapacidad;
 }
 
 void redimensionarProveedores(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
-    int nuevaCapacidad = tienda->capacidadProveedores * 2;
-    Proveedor* nuevosProveedores = new Proveedor[nuevaCapacidad];
-    for (int i = 0; i < tienda->numProveedores; ++i) {
-        nuevosProveedores[i] = tienda->proveedores[i];
-    }
-    delete[] tienda->proveedores;
-    tienda->proveedores = nuevosProveedores;
-    tienda->capacidadProveedores = nuevaCapacidad;
 }
 
 void redimensionarClientes(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
-    int nuevaCapacidad = tienda->capacidadClientes * 2;
-    Cliente* nuevosClientes = new Cliente[nuevaCapacidad];
-    for (int i = 0; i < tienda->numClientes; ++i) {
-        nuevosClientes[i] = tienda->clientes[i];
-    }
-    delete[] tienda->clientes;
-    tienda->clientes = nuevosClientes;
-    tienda->capacidadClientes = nuevaCapacidad;
 }
 
 void redimensionarTransacciones(Tienda* tienda) {
@@ -712,8 +423,43 @@ void redimensionarTransacciones(Tienda* tienda) {
 
 // VALIDACIONES
 bool validarEmail(const char* email) {
-    // Implementar la lógica para validar el correo electrónica
+    //Seguridad para ver si el puntero existe
+    if (email == nullptr)
+    {
+    return false;
+    }
+    int PosicionAt = -1;                 //verificar y darle valor al "@"
+    bool TienePuntoDespues = false;      //para comprobar que tenga "." despues del "@"
+    int longitud = strlen(email);        //para que el ciclo for sepa hasta donde buscar
+    
+    //la funcion "for" para recorrer todo el email
+    for (int i = 0; i < longitud; i++)
+    {
+    if (email[i] == '@')
+        {
+    //verificacion si ya habia un @ y hay dos @
+        if(PosicionAt != -1) return false;   
+        PosicionAt = i;
+        }
+    //verificacion de si hay un '.' despues de ya tener el '@'   
+    if (PosicionAt != -1 && email[i] == '.')
+        {
+        if(i > PosicionAt + 1)
+            {
+             TienePuntoDespues = true;
+            }
+        }
+    
+    }
+    // verificacion de los errores 
+    if (PosicionAt > 0 && PosicionAt < longitud -1 && TienePuntoDespues)
+    {
     return true;
+    }
+    // si el email es invalido
+    cout << "ERROR: Formato de email invalido." << endl;
+    return false;
+    
 }
 
 bool validarFecha(const char* fecha) {
