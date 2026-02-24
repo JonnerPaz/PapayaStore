@@ -804,12 +804,123 @@ void eliminarProveedor(Tienda* tienda) {
 }
 
 void crearCliente(Tienda* tienda) {
+    if (tienda == nullptr) {
+        cout << "Error: La tienda no ha sido creada." << endl;
+        return;
+    }
+    if (tienda->numClientes >= tienda->capacidadClientes) {
+        redimensionarClientes(tienda);
+    }
+    int index = tienda->numClientes;
+
+    char nombre[100];
+    asignarPropiedadString("Ingrese el nombre del cliente (q para cancelar): ", nombre, 100);
+    if (nombre[0] == 'q' && nombre[1] == '\0')
+        return;
+
+    char cedula[20];
+    asignarPropiedadString("Ingrese la cedula del cliente (q para cancelar): ", cedula, 20);
+    if (cedula[0] == 'q' && cedula[1] == '\0')
+        return;
+
+    char telefono[20];
+    asignarPropiedadString("Ingrese el telefono del cliente: ", telefono, 20);
+    char email[100];
+    asignarPropiedadString("Ingrese el email del cliente: ", email, 100);
+    char direccion[200];
+    asignarPropiedadString("Ingrese la direccion del cliente: ", direccion, 200);
+
+    cout << "Está seguro de crear el cliente? (s/n): ";
+    char confirmar;
+    cin >> confirmar;
+    if (confirmar == 's' || confirmar == 'S') {
+        Cliente& cli = tienda->clientes[index];
+        cli.id = tienda->siguienteIdCliente++;
+        strncpy(cli.nombre, nombre, sizeof(cli.nombre) - 1);
+        cli.nombre[sizeof(cli.nombre) - 1] = '\0';
+        strncpy(cli.cedula, cedula, sizeof(cli.cedula) - 1);
+        cli.cedula[sizeof(cli.cedula) - 1] = '\0';
+        strncpy(cli.telefono, telefono, sizeof(cli.telefono) - 1);
+        cli.telefono[sizeof(cli.telefono) - 1] = '\0';
+        strncpy(cli.email, email, sizeof(cli.email) - 1);
+        cli.email[sizeof(cli.email) - 1] = '\0';
+        strncpy(cli.direccion, direccion, sizeof(cli.direccion) - 1);
+        cli.direccion[sizeof(cli.direccion) - 1] = '\0';
+        obtenerFechaActual(cli.fechaRegistro);
+        tienda->numClientes++;
+        cout << "Cliente creado con exito." << endl;
+    } else {
+        cout << "Cliente no creado." << endl;
+    }
 }
 
 void buscarCliente(Tienda* tienda) {
+    if (tienda == nullptr)
+        return;
+
+    int id = leerId("Ingrese el id del cliente a buscar");
+    if (id <= 0) {
+        cout << "No se actualizara ningun producto." << endl;
+        return;
+    }
+
+    int index = buscarClientePorId(tienda, id);
+    if (index == -1) {
+        cout << "Cliente no encontrado." << endl;
+        return;
+    }
+    Cliente& c = tienda->clientes[index];
+    cout << "Cliente encontrado:" << endl;
+    cout << "Id: " << c.id << "\nNombre: " << c.nombre << "\nCedula: " << c.cedula
+         << "\nTelefono: " << c.telefono << "\nEmail: " << c.email << "\nDireccion: " << c.direccion
+         << "\nFecha de Registro: " << c.fechaRegistro << endl;
 }
 
 void actualizarCliente(Tienda* tienda) {
+    if (tienda == nullptr)
+        return;
+
+    int id = leerId("Ingrese el id del cliente a actualizar");
+    if (id <= 0) {
+        cout << "No se actualizara ningun producto." << endl;
+        return;
+    }
+
+    int index = buscarClientePorId(tienda, id);
+    if (index == -1) {
+        cout << "Cliente no encontrado." << endl;
+        return;
+    }
+    Cliente& clientes = tienda->clientes[index];
+
+    char opcion;
+    do {
+        cout << "¿Qué desea actualizar?: " << endl;
+        cout << "1. Nombre\n2. Cedula\n3. Telefono\n4. Email\n5. Direccion\n0. Cancelar\n";
+        cin >> opcion;
+        switch (opcion) {
+        case '1':
+            manejarPropiedad("nombre", clientes.nombre);
+            break;
+        case '2':
+            manejarPropiedad("cedula", clientes.cedula);
+            break;
+        case '3':
+            manejarPropiedad("telefono", clientes.telefono);
+            break;
+        case '4':
+            manejarPropiedad("email", clientes.email);
+            break;
+        case '5':
+            manejarPropiedad("direccion", clientes.direccion);
+            break;
+        case '0':
+            cout << "Saliendo..." << endl;
+            break;
+        default:
+            cout << "Opcion no valida" << endl;
+        }
+    } while (opcion != '0');
 }
 
 void listarClientes(Tienda* tienda) {
