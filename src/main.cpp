@@ -1147,6 +1147,199 @@ int leerId(const char* msg) {
     }
 }
 
+void menuProductos(Tienda* tienda) {
+    char opcion;
+    do {
+        cout << "\n=== Gestión de Productos ===" << endl;
+        cout << "1. Crear Producto" << endl;
+        cout << "2. Buscar Producto" << endl;
+        cout << "3. Actualizar Producto" << endl;
+        cout << "4. Actualizar Stock" << endl;
+        cout << "5. Listar Productos" << endl;
+        cout << "6. Eliminar Producto" << endl;
+        cout << "0. Volver al Menú Principal" << endl;
+        cout << "Seleccione una opción: ";
+        cin >> opcion;
+
+        switch (opcion) {
+        case '1':
+            crearProducto(tienda);
+            break;
+        case '2':
+            buscarProducto(tienda);
+            break;
+        case '3':
+            actualizarProducto(tienda);
+            break;
+        case '4':
+            actualizarStockProducto(tienda);
+            break;
+        case '5':
+            listarProductos(tienda);
+            break;
+        case '6':
+            eliminarProducto(tienda);
+            break;
+        case '0':
+            cout << "Volviendo..." << endl;
+            break;
+        default:
+            cout << "Opción inválida." << endl;
+        }
+    } while (opcion != '0');
+}
+
+void menuProveedores(Tienda* tienda) {
+    char opcion;
+    do {
+        cout << "\n=== Gestión de Proveedores ===" << endl;
+        cout << "1. Crear Proveedor" << endl;
+        cout << "2. Buscar Proveedor" << endl;
+        cout << "3. Actualizar Proveedor" << endl;
+        cout << "4. Listar Proveedores" << endl;
+        cout << "5. Eliminar Proveedor" << endl;
+        cout << "0. Volver al Menú Principal" << endl;
+        cout << "Seleccione una opción: ";
+        cin >> opcion;
+
+        switch (opcion) {
+        case '1':
+            crearProveedor(tienda);
+            break;
+        case '2':
+            buscarProveedor(tienda);
+            break;
+        case '3':
+            actualizarProveedor(tienda);
+            break;
+        case '4':
+            listarProveedores(tienda);
+            break;
+        case '5':
+            eliminarProveedor(tienda);
+            break;
+        case '0':
+            cout << "Volviendo..." << endl;
+            break;
+        default:
+            cout << "Opción inválida." << endl;
+        }
+    } while (opcion != '0');
+}
+
+void menuClientes(Tienda* tienda) {
+    char opcion;
+    do {
+        cout << "\n=== Gestión de Clientes ===" << endl;
+        cout << "1. Crear Cliente" << endl;
+        cout << "2. Buscar Cliente" << endl;
+        cout << "3. Actualizar Cliente" << endl;
+        cout << "4. Listar Clientes" << endl;
+        cout << "5. Eliminar Cliente" << endl;
+        cout << "0. Volver al Menú Principal" << endl;
+        cout << "Seleccione una opción: ";
+        cin >> opcion;
+
+        switch (opcion) {
+        case '1':
+            crearCliente(tienda);
+            break;
+        case '2':
+            buscarCliente(tienda);
+            break;
+        case '3':
+            actualizarCliente(tienda);
+            break;
+        case '4':
+            listarClientes(tienda);
+            break;
+        case '5':
+            eliminarCliente(tienda);
+            break;
+        case '0':
+            cout << "Volviendo..." << endl;
+            break;
+        default:
+            cout << "Opción inválida." << endl;
+        }
+    } while (opcion != '0');
+}
+
+void menuTransacciones(Tienda* tienda) {
+    char opcion;
+    do {
+        cout << "\n=== Gestión de Transacciones ===" << endl;
+        cout << "1. Registrar Compra" << endl;
+        cout << "2. Registrar Venta" << endl;
+        cout << "3. Buscar Transacciones" << endl;
+        cout << "4. Listar Transacciones" << endl;
+        cout << "5. Cancelar Transacción" << endl;
+        cout << "0. Volver al Menú Principal" << endl;
+        cout << "Seleccione una opción: ";
+        cin >> opcion;
+
+        switch (opcion) {
+        case '1':
+            registrarCompra(tienda);
+            break;
+        case '2':
+            registrarVenta(tienda);
+            break;
+        case '3':
+            buscarTransacciones(tienda);
+            break;
+        case '4':
+            listarTransacciones(tienda);
+            break;
+        case '5':
+            cancelarTransaccion(tienda);
+            break;
+        case '0':
+            cout << "Volviendo..." << endl;
+            break;
+        default:
+            cout << "Opción inválida." << endl;
+        }
+    } while (opcion != '0');
+}
+
 int main() {
+    Tienda tienda;
+    inicializarTienda(&tienda, "Papaya Store", "J-123456789");
+
+    char opcion;
+    do {
+        cout << "\n=== PAPAYA STORE - Menú Principal ===" << endl;
+        cout << "1. Gestión de Productos" << endl;
+        cout << "2. Gestión de Proveedores" << endl;
+        cout << "3. Gestión de Clientes" << endl;
+        cout << "4. Gestión de Transacciones" << endl;
+        cout << "0. Salir" << endl;
+        cout << "Seleccione una opción: ";
+        cin >> opcion;
+
+        switch (opcion) {
+        case '1':
+            menuProductos(&tienda);
+            break;
+        case '2':
+            menuProveedores(&tienda);
+            break;
+        case '3':
+            menuClientes(&tienda);
+            break;
+        case '4':
+            menuTransacciones(&tienda);
+            break;
+        case '0':
+            cout << "Saliendo del sistema..." << endl;
+            break;
+        default:
+            cout << "Opción inválida. Intente de nuevo." << endl;
+        }
+    } while (opcion != '0');
+
+    liberarTienda(&tienda);
+    cout << "Saliendo del sistema..." << endl;
     return 0;
 }
