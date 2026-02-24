@@ -565,6 +565,58 @@ void listarProductos(Tienda* tienda) {
 }
 
 void eliminarProducto(Tienda* tienda) {
+    if (tienda == nullptr)
+        return;
+
+    cout << "Ingrese el id del producto a eliminar: ";
+    int id;
+    cin >> id;
+
+    if (id <= 0) {
+        cout << "El id debe ser mayor a 0. Intente nuevamente." << endl;
+        return;
+    }
+
+    int index = buscarProductoPorId(tienda, id);
+    if (index == -1) {
+        cout << "Producto no encontrado." << endl;
+        return;
+    }
+
+    Producto& producto = tienda->productos[index];
+    cout << "Datos del producto a eliminar:" << endl;
+    cout << "Id: " << producto.id << endl;
+    cout << "Nombre: " << producto.nombre << endl;
+    cout << "Codigo: " << producto.codigo << endl;
+    cout << "Stock actual: " << producto.stock << endl;
+
+    bool tieneTransacciones = false;
+    for (int i = 0; i < tienda->numTransacciones; ++i) {
+        if (tienda->transacciones[i].idProducto == id) {
+            tieneTransacciones = true;
+            break;
+        }
+    }
+
+    if (tieneTransacciones) {
+        cout << "\n¡ADVERTENCIA! Este producto tiene transacciones asociadas." << endl;
+        cout << "Eliminarlo puede causar inconsistencias en el historial de transacciones." << endl;
+    }
+
+    cout << "\n¿Está seguro que desea eliminar este producto? (s/n): ";
+    char confirmar;
+    cin >> confirmar;
+
+    if (confirmar == 's' || confirmar == 'S') {
+        // Eliminar físicamente moviendo elementos a la izquierda
+        for (int i = index; i < tienda->numProductos - 1; ++i) {
+            tienda->productos[i] = tienda->productos[i + 1];
+        }
+        tienda->numProductos--;
+        cout << "Producto eliminado exitosamente." << endl;
+    } else {
+        cout << "Eliminación cancelada." << endl;
+    }
 }
 
 void crearProveedor(Tienda* tienda) {
