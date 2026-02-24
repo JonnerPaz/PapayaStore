@@ -8,6 +8,10 @@ using namespace std;
 
 struct Tienda;
 int buscarProductoPorId(Tienda* tienda, int id);
+int buscarProveedorPorId(Tienda* tienda, int id);
+int buscarClientePorId(Tienda* tienda, int id);
+int leerId(const char* msg);
+void obtenerFechaActual(char* fecha);
 // retorna array de indices del producto
 int* buscarProductosPorNombre(Tienda* tienda, const char* nombre);
 void listarProductos(Tienda* tienda);
@@ -403,19 +407,9 @@ void actualizarProducto(Tienda* tienda) {
     if (tienda == nullptr)
         return;
 
-    cout << "Ingresa el id del producto a actualizar: ";
-    int id;
-    cin >> id;
-    do {
-        if (cin.fail()) {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "El id debe ser numérico. Intente nuevamente: ";
-        }
-    } while (id <= 0);
-
+    int id = leerId("Ingresa el id del producto a actualizar");
     if (id <= 0) {
-        cout << "El id debe ser mayor a 0. Intente nuevamente: ";
+        cout << "No se actualizara ningun producto." << endl;
         return;
     }
 
@@ -590,12 +584,9 @@ void eliminarProducto(Tienda* tienda) {
     if (tienda == nullptr)
         return;
 
-    cout << "Ingrese el id del producto a eliminar: ";
-    int id;
-    cin >> id;
-
+    int id = leerId("Ingresa el id del producto a actualizar");
     if (id <= 0) {
-        cout << "El id debe ser mayor a 0. Intente nuevamente." << endl;
+        cout << "No se eliminó el producto." << endl;
         return;
     }
 
@@ -849,6 +840,36 @@ bool contieneSubstring(const char* cadena, const char* subcadena) {
     delete[] copySubcadena;
 
     return result;
+}
+
+// lee un id y valida que sea un numero y mayor o igual a 0
+// si el usuario ingresa 'q', retorna -1
+int leerId(const char* msg) {
+    while (true) {
+        cout << msg << " (q para salir): ";
+        int id;
+        cin >> id;
+
+        if (cin.peek() == 'q') {
+            return -1;
+        }
+
+        if (cin.fail()) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "El id debe ser un número" << endl;
+            cout << "Habrás querido salir? presiona 'q' para salir" << endl;
+            continue;
+        }
+
+        if (id <= 0) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "El id debe ser numérico y mayor o igual a 0. Intente nuevamente" << endl;
+        }
+
+        return id;
+    }
 }
 
 int main() {
