@@ -1087,8 +1087,12 @@ bool existeProducto(Tienda* tienda, int id) {
 }
 
 bool existeProveedor(Tienda* tienda, int id) {
-    // Implementar la lógica para verificar la existencia del proveedor
-    return true;
+    //Verificación de seguridad básica
+    if (tienda == nullptr || tienda->proveedores == nullptr) {
+        return false;
+    }
+    //utilizamos el template anterior   
+    return buscarEntidadPorId(tienda->proveedores, tienda->numProveedores, id) != -1;
 }
 
 bool existeCliente(Tienda* tienda, int id) {
