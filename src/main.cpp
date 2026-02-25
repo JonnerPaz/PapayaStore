@@ -1073,18 +1073,14 @@ bool validarFecha(const char* fecha) {
 }
 
 bool existeProducto(Tienda* tienda, int id) {
-   //verificacion de seguridad
-   if (tienda == nullptr || tienda->productos == nullptr) {
-        return false;
-
-        for (int i = 0; i < tienda->numProductos; ++i) {
-            if (tienda->productos[i].id == id) {
-                return true;
-            }
-        }
-    }
-    return false;
+    //verificacion de seguridad
+    if (tienda == nullptr || tienda->productos == nullptr) {
+            return false;
+        }   
+    //usamos el template anterior
+    return buscarEntidadPorId(tienda->productos, tienda->numProductos, id) != -1;
 }
+
 
 bool existeProveedor(Tienda* tienda, int id) {
     //Verificación de seguridad básica
@@ -1100,6 +1096,7 @@ bool existeCliente(Tienda* tienda, int id) {
     if (tienda == nullptr || tienda->clientes == nullptr) {
         return false;
     }
+    //utilizamos el template anterior
     return buscarEntidadPorId(tienda->clientes, tienda->numClientes, id) != -1;
 }
 
