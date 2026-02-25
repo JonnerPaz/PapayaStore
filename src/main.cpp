@@ -3,6 +3,9 @@
 #include <iostream>
 #include <limits>
 #include <type_traits>
+#include <chrono>
+#include <string>
+#include <sstream>
 
 using namespace std;
 
@@ -1044,8 +1047,29 @@ bool validarEmail(const char* email) {
     
 }
 bool validarFecha(const char* fecha) {
-    // Implementar la lógica para validar la fecha
-    return true;
+    //estos solo estan vivios mientras se este utilizando esta funcion
+    using namespace std;
+    using namespace std::chrono;
+
+    //extraemos los datos de YYYY-MM-DD
+    stringstream ss(fecha);
+    int y, m, d;
+    char dash1, dash2;
+
+    //verificar si es correcto el formato
+    if (!(ss >> y >> dash1 >> m >> dash2 >> d)) {
+        return false; 
+    }
+
+    //para ver que tenga los guiones donde van 
+    if (dash1 != '-' || dash2 != '-') {
+        return false;
+
+        // year_month_day representa una fecha en el calendario civil
+       year_month_day ymd{year{y}, month{(unsigned)m}, day{(unsigned)d}};
+        return ymd.ok();
+
+    }
 }
 
 bool existeProducto(Tienda* tienda, int id) {
