@@ -1100,8 +1100,12 @@ bool existeCliente(Tienda* tienda, int id) {
 }
 
 bool codigoDuplicado(Tienda* tienda, const char* codigo) {
-    // Implementar la lógica para verificar la duplicidad de códigos
-    return true;
+        //Verificamos que la tienda exista
+        if (tienda == nullptr) {
+            return false;
+    }
+        //utilizamos el template anterior
+        return existeStringDuplicado(tienda->productos, tienda->numProductos, codigo, &Producto::codigo);
 }
 
 bool rifDuplicado(Tienda* tienda, const char* rif) {
