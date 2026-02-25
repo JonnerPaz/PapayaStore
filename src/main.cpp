@@ -1005,10 +1005,44 @@ void cancelarTransaccion(Tienda* tienda) {
 
 // VALIDACIONES
 bool validarEmail(const char* email) {
-    // Implementar la lógica para validar el correo electrónica
+    //Seguridad para ver si el puntero existe
+    if (email == nullptr)
+    {
+    return false;
+    }
+    int PosicionAt = -1;                 //verificar y darle valor al "@"
+    bool TienePuntoDespues = false;      //para comprobar que tenga "." despues del "@"
+    int longitud = strlen(email);        //para que el ciclo for sepa hasta donde buscar
+    
+    //la funcion "for" para recorrer todo el email
+    for (int i = 0; i < longitud; i++)
+    {
+    if (email[i] == '@')
+        {
+    //verificacion si ya habia un @ y hay dos @
+        if(PosicionAt != -1) return false;   
+        PosicionAt = i;
+        }
+    //verificacion de si hay un '.' despues de ya tener el '@'   
+    if (PosicionAt != -1 && email[i] == '.')
+        {
+        if(i > PosicionAt + 1)
+            {
+             TienePuntoDespues = true;
+            }
+        }
+    
+    }
+    // verificacion de los errores 
+    if (PosicionAt > 0 && PosicionAt < longitud -1 && TienePuntoDespues)
+    {
     return true;
+    }
+    // si el email es invalido
+    cout << "ERROR: Formato de email invalido." << endl;
+    return false;
+    
 }
-
 bool validarFecha(const char* fecha) {
     // Implementar la lógica para validar la fecha
     return true;
