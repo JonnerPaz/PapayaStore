@@ -1096,8 +1096,11 @@ bool existeProveedor(Tienda* tienda, int id) {
 }
 
 bool existeCliente(Tienda* tienda, int id) {
-    // Implementar la lógica para verificar la existencia del cliente
-    return true;
+    //Verificación de seguridad
+    if (tienda == nullptr || tienda->clientes == nullptr) {
+        return false;
+    }
+    return buscarEntidadPorId(tienda->clientes, tienda->numClientes, id) != -1;
 }
 
 bool codigoDuplicado(Tienda* tienda, const char* codigo) {
