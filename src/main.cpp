@@ -1109,8 +1109,13 @@ bool codigoDuplicado(Tienda* tienda, const char* codigo) {
 }
 
 bool rifDuplicado(Tienda* tienda, const char* rif) {
-    // Implementar la lógica para verificar la duplicidad de RIF
-    return true;
+        //Verificación de seguridad
+        if (tienda == nullptr) {
+            return false;
+
+        //usamos el template anterior
+        return existeStringDuplicado(tienda->proveedores, tienda->numProveedores, rif, &Proveedor::rif);
+    }
 }
 
 // Búsquedas
