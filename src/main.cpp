@@ -1081,7 +1081,6 @@ bool existeProducto(Tienda* tienda, int id) {
     return buscarEntidadPorId(tienda->productos, tienda->numProductos, id) != -1;
 }
 
-
 bool existeProveedor(Tienda* tienda, int id) {
     //Verificación de seguridad básica
     if (tienda == nullptr || tienda->proveedores == nullptr) {
@@ -1111,6 +1110,9 @@ bool rifDuplicado(Tienda* tienda, const char* rif) {
 }
 
 // Búsquedas
+// =======================================================
+//                 SECCIÓN DE TEMPLATES 
+// =======================================================
 // Casi todas las entidades tienen un id (cliente, proveedor, producto)
 template <typename T> int buscarEntidadPorId(T* array, int count, int id) {
     if (array == nullptr)
@@ -1120,6 +1122,17 @@ template <typename T> int buscarEntidadPorId(T* array, int count, int id) {
             return i;
     }
     return -1;
+}
+//para las entidades que revisan si si hay strngis duplicados(codigo,rif)
+template <typename T, size_t N>
+bool existeStringDuplicado(T* array, int count, const char* valorBusqueda, char (T::*miembro)[N]) {
+    for (int i = 0; i < count; ++i) {
+        // La sintaxis (array[i].*miembro) permite entrar al campo que le indiquemos
+        if (strcmp(array[i].*miembro, valorBusqueda) == 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // retorna array de indices del producto
