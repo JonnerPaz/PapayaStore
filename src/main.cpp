@@ -1073,8 +1073,17 @@ bool validarFecha(const char* fecha) {
 }
 
 bool existeProducto(Tienda* tienda, int id) {
-    // Implementar la lógica para verificar la existencia del producto
-    return true;
+   //verificacion de seguridad
+   if (tienda == nullptr || tienda->productos == nullptr) {
+        return false;
+
+        for (int i = 0; i < tienda->numProductos; ++i) {
+            if (tienda->productos[i].id == id) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 bool existeProveedor(Tienda* tienda, int id) {
