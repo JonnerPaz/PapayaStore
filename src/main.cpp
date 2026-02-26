@@ -994,6 +994,52 @@ void eliminarCliente(Tienda* tienda) {
 }
 
 void registrarCompra(Tienda* tienda) {
+    //pregunta de seguridad
+    if (tienda == nullptr)return;
+
+    //la operacion de mudanza de datos donde actualizamos el espacio y memoria de estos
+    if (tienda->numTransacciones >= tienda->capacidadTransacciones) {
+        redimensionarEntidad(tienda->transacciones, tienda->numTransacciones, tienda->capacidadTransacciones);
+    }
+    cout << "\n===REGISTRAR COMPRA (Entrada de Mercancia)===" << endl;
+
+    int idProd = leerId("Ingrese ID del Producto: ");
+    int idxProd = buscarEntidadPorId(tienda->productos, tienda->numProductos, idProd);
+
+    if (idxProd == -1) {
+        cout << "Error: El producto con ID " << idProd << " no existe." << endl;
+        return;
+    }
+    //referencia para hacer el texto mas legible
+    Producto& producto = tienda->productos[idxProd];
+    
+    int idProv = leerId("Ingrese ID del Proveedor: ");
+        if (!existeProveedor(tienda, idProv)) {
+            cout << "Error: El proveedor no existe en el sistema." << endl;
+            return;
+        }
+    int cantidad = leerId("Cantidad comprada: ");
+        if (cantidad <= 0) {
+            cout << "Error: La cantidad debe ser mayor a 0." << endl;
+            return;
+    } 
+    //referencia 
+    Transaccion& t = tienda->transacciones[tienda->numTransacciones];        
+       
+    t.id = tienda->siguienteIdTransaccion++;
+    t.idProducto = idProd;
+    t.idRelacionado = idProv; // En compras, guardamos el ID del proveedor
+    t.cantidad = cantidad;
+    t.precioUnitario = producto.precio;
+    t.total = t.cantidad * t.precioUnitario;
+    obtenerFechaActual(t.fecha);
+    
+    producto.stock += cantidad;
+
+    tienda->numTransacciones++;
+
+    cout << "Compra registrada ID: " << t.id << endl;
+    cout << "Stock actualizado de " << producto.nombre << ": " << producto.stock << endl;
 }
 
 void registrarVenta(Tienda* tienda) {
