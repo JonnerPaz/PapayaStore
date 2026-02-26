@@ -6,6 +6,7 @@
 #include <chrono>
 #include <string>
 #include <sstream>
+#include <concepts>
 
 using namespace std;
 
@@ -18,6 +19,9 @@ int* buscarProductosPorNombre(Tienda* tienda, const char* nombre);
 void listarProductos(Tienda* tienda);
 void convertirAMinusculas(char* cadena);
 bool contieneSubstring(const char* cadena, const char* subcadena);
+template <typename T, size_t N>
+bool existeStringDuplicado(T* array, int count, const char* valorBusqueda, char (T::*miembro)[N]);
+
 
 enum TipoDeTransaccion { COMPRA, VENTA };
 enum Busqueda {
@@ -1064,12 +1068,11 @@ bool validarFecha(const char* fecha) {
     //para ver que tenga los guiones donde van 
     if (dash1 != '-' || dash2 != '-') {
         return false;
-
+    }
         // year_month_day representa una fecha en el calendario civil
        year_month_day ymd{year{y}, month{(unsigned)m}, day{(unsigned)d}};
         return ymd.ok();
-
-    }
+ 
 }
 
 bool existeProducto(Tienda* tienda, int id) {
@@ -1112,10 +1115,10 @@ bool rifDuplicado(Tienda* tienda, const char* rif) {
         //Verificación de seguridad
         if (tienda == nullptr) {
             return false;
-
+        }        
         //usamos el template anterior
         return existeStringDuplicado(tienda->proveedores, tienda->numProveedores, rif, &Proveedor::rif);
-    }
+    
 }
 
 // Búsquedas
@@ -1436,3 +1439,4 @@ int main() {
     cout << "Saliendo del sistema..." << endl;
     return 0;
 }
+
