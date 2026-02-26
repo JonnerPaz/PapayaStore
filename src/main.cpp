@@ -1102,6 +1102,34 @@ void registrarVenta(Tienda* tienda) {
 }
 
 void buscarTransacciones(Tienda* tienda) {
+    //pregunta de seguridad
+    if (tienda == nullptr || tienda->numTransacciones == 0) {
+        cout << "\n[!] No hay transacciones registradas en el sistema." << endl;
+        return;
+    }
+    
+    //funcion de leer el id
+    int idBuscar = leerId("\nIngrese el ID de la transaccion a buscar: ");
+    //template de buscar entidad
+    int idx = buscarEntidadPorId(tienda->transacciones, tienda->numTransacciones, idBuscar);
+
+    if (idx == -1) {
+        cout << "Error: La transaccion con ID " << idBuscar << " no existe." << endl;
+        return;
+    }
+    Transaccion& t = tienda->transacciones[idx]; 
+    //mostrar la informacion
+    cout << "\n========================================" << endl;
+    cout << "       DETALLE DE TRANSACCION #" << t.id << endl;
+    cout << "========================================" << endl;
+    cout << "Fecha:      " << t.fecha << endl;
+    cout << "Producto ID: " << t.idProducto << endl;
+    cout << "ID Asociado: " << t.idRelacionado << " (Cliente/Proveedor)" << endl;
+    cout << "----------------------------------------" << endl;
+    cout << "Cantidad:    " << t.cantidad << endl;
+    cout << "Precio Un.:  $" << t.precioUnitario << endl;
+    cout << "TOTAL:       $" << t.total << endl;
+    cout << "========================================" << endl;
 }
 
 void listarTransacciones(Tienda* tienda) {
