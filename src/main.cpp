@@ -1161,7 +1161,55 @@ void listarTransacciones(Tienda* tienda) {
 
 
 void cancelarTransaccion(Tienda* tienda) {
+    //pregunta de verificacion
+    if (tienda == nullptr || tienda->numTransacciones == 0) {
+        cout << "\n[!] No hay transacciones para cancelar." << endl;
+        return;
+    }
+    //buscar producto
+    //funcion leer id
+    int idBuscar = leerId("\nIngrese el ID de la transaccion a CANCELAR: ");
+    //template buscar entidad
+    int idx = buscarEntidadPorId(tienda->transacciones, tienda->numTransacciones, idBuscar);
+
+    if (idx == -1) {
+        cout << "Error: Transaccion no encontrada." << endl;
+        return;
+    }
+
+    Transaccion& t = tienda->transacciones[idx];
+    int idxProd = buscarEntidadPorId(tienda->productos, tienda->numProductos, t.idProducto);
+
+    if (idxProd == -1) {
+        cout << "Error: El producto de esta transaccion ya no existe en el sistema." << endl;
+        return;
+    }
+    Producto& producto = tienda->productos[idxProd];
+
+    //REVERTIR EL STOCK (La parte lógica)
+    //Para saber si fue venta o compra, comparamos con los IDs de clientes
+    if (existeCliente(tienda, t.idRelacionado)) {
+        // Si el ID relacionado es un cliente, fue una VENTA -> Devolvemos al stock
+        producto.stock += t.cantidad;
+        cout << "[SISTEMA] Venta cancelada. Se devolvieron " << t.cantidad << " unidades al stock." << endl;
+    } else {
+        // Si no es cliente, asumimos PROVEEDOR -> Fue una COMPRA -> Quitamos del stock
+        if (producto.stock < t.cantidad) {
+            cout << "Error: No se puede cancelar la compra. El stock actual es menor a lo que quieres quitar." << endl;
+            return;
+        }
+        producto.stock -= t.cantidad;
+        cout << "[SISTEMA] Compra cancelada. Se retiraron " << t.cantidad << " unidades del stock." << endl;
+    }
+    //eliminar la transaccion
+    //Movemos todas las transacciones siguientes una posición a la izquierda
+    for (int i = idx; i < tienda->numTransacciones - 1; i++) {
+        tienda->transacciones[i] = tienda->transacciones[i + 1];
+    }
+    tienda->numTransacciones--;
+    cout << "\n[!] Transaccion #" << idBuscar << " eliminada del historial con exito." << endl;
 }
+
 
 ///////////// FIN FUNCIONES CRUD DEL PROGRAMA //////////
 
