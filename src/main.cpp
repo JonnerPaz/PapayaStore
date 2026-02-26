@@ -1003,6 +1003,7 @@ void registrarCompra(Tienda* tienda) {
     }
     cout << "\n===REGISTRAR COMPRA (Entrada de Mercancia)===" << endl;
 
+    //buscar el producto
     int idProd = leerId("Ingrese ID del Producto: ");
     int idxProd = buscarEntidadPorId(tienda->productos, tienda->numProductos, idProd);
 
@@ -1043,6 +1044,61 @@ void registrarCompra(Tienda* tienda) {
 }
 
 void registrarVenta(Tienda* tienda) {
+    //pregunta de validacion
+    if (tienda == nullptr) return;
+
+    //la operacion de mudanza de datos donde actualizamos el espacio y memoria de estos
+    if (tienda->numTransacciones >= tienda->capacidadTransacciones) {
+        redimensionarEntidad(tienda->transacciones, tienda->numTransacciones, tienda->capacidadTransacciones);
+    }
+    cout << "\n===REGISTRAR VENTA (Salida de Mercancia)===" << endl;
+    
+    //buscar producto
+    int idProd = leerId("Ingrese ID del Producto: ");
+    int idxProd = buscarEntidadPorId(tienda->productos, tienda->numProductos, idProd);  
+
+    if (idxProd == -1) {
+        cout << "Error: El producto no existe." << endl;
+        return;
+    }
+    Producto& producto = tienda->productos[idxProd];
+
+    //validar stock
+    int cantidad = leerId("Cantidad a vender: ");
+    if (cantidad <= 0) {
+        cout << "Error: La cantidad debe ser mayor a 0." << endl;
+        return;
+    }
+
+    if (producto.stock < cantidad) {
+        cout << "Error: Stock insuficiente. Solo hay " << producto.stock << " unidades." << endl;
+        return;
+    }
+
+    //validar cliente
+    int idCli = leerId("Ingrese ID del Cliente: ");
+    if (!existeCliente(tienda, idCli)) {
+        cout << "Error: El cliente no existe." << endl;
+        return;
+    }
+        //referencia
+        Transaccion& t = tienda->transacciones[tienda->numTransacciones];
+
+        t.id = tienda->siguienteIdTransaccion++;
+    t.idProducto = idProd;
+    t.idRelacionado = idCli; // Aquí guardamos al cliente
+    t.cantidad = cantidad;
+    t.precioUnitario = producto.precio;
+    t.total = t.cantidad * t.precioUnitario;
+    obtenerFechaActual(t.fecha);
+
+    //restamos el espacio en el stock
+    producto.stock -= cantidad;
+
+    tienda->numTransacciones++;
+
+    //confirmamos venta
+    cout << "¡Venta exitosa! Total: " << t.total << " | Stock restante: " << producto.stock << endl;    
 }
 
 void buscarTransacciones(Tienda* tienda) {
