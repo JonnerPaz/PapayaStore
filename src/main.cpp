@@ -1133,7 +1133,32 @@ void buscarTransacciones(Tienda* tienda) {
 }
 
 void listarTransacciones(Tienda* tienda) {
+    //pregunda de verificacion
+    if (tienda == nullptr || tienda->numTransacciones == 0) {
+        cout << "\n[!] El historial de transacciones esta vacio." << endl;
+        return;
+    }
+    cout << "\n================================================================================" << endl;
+    cout << "                         HISTORIAL COMPLETO DE MOVIMIENTOS" << endl;
+    cout << "================================================================================" << endl;
+    cout << "ID\t=Fecha=\t\t=Prod=\t=Cant=\t=Precio=\t=Total=\t=Asociado=" << endl;
+    //El ciclo que recorre el arreglo
+    for (int i = 0; i < tienda->numTransacciones; i++) {
+        //referencia
+        const Transaccion& t = tienda->transacciones[i];
+
+        cout << t.id << "\t" 
+             << t.fecha << "\t" 
+             << t.idProducto << "\t" 
+             << t.cantidad << "\t" 
+             << t.precioUnitario << "\t" 
+             << t.total << "\t" 
+             << t.idRelacionado << endl;
+    }
+    cout << "================================================================================" << endl;
+    cout << "Total de registros: " << tienda->numTransacciones << endl;
 }
+
 
 void cancelarTransaccion(Tienda* tienda) {
 }
