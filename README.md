@@ -1,74 +1,71 @@
-# PapayaStore
+<div align="center">
+  <h1>🍎 Papaya Store</h1>
+  <p><b>Sistema de Gestión de Inventario en C++20</b></p>
+  <p><i>Proyecto de Programación II - Universidad Rafael Urdaneta (URU)</i></p>
+  <p>Desarrollado por <b>Jonner Paz</b> y <b>Andrés Martínez</b></p>
+</div>
 
-PapayaStore es un programa de inventario realizado por ***Jonner Paz*** y ***Andrés Martínez***
-para la materia de programación II de la Universidad Rafael Urdaneta.
+---
 
-🍎 Papaya Store - Sistema de Gestión de Inventario
-¡Bienvenido a Papaya Store! Este es un robusto sistema de gestión empresarial desarrollado en C++20. El software permite administrar el ciclo completo de una tienda: desde la llegada de mercancía por proveedores hasta la venta final al cliente, garantizando la integridad de los datos y una gestión eficiente de la memoria dinámica.
+¡Bienvenido a **Papaya Store**! Este es un robusto sistema de gestión empresarial desarrollado en consola con **C++**. El software permite administrar el ciclo completo de una tienda: desde la llegada de mercancía por proveedores hasta la venta final al cliente, garantizando la integridad de los datos y una gestión eficiente de la memoria dinámica.
 
-🚀 Características Principales
-Gestión Integral (CRUD): Control total sobre Productos, Proveedores y Clientes.
+## 🚀 Características Principales
 
-Sistema de Transacciones Inteligente: * Registro de Compras (Entradas) y Ventas (Salidas).
+*   **📦 Gestión Integral:** Control total sobre **Productos**, **Proveedores** y **Clientes**.
+*   **💳 Sistema de Transacciones Inteligente:**
+    *   Registro de **Compras** y **Ventas**.
+    *   **Validación de Stock:** No se permiten ventas si no hay existencias.
+*   **🔍 Búsquedas Avanzadas:**
+    *   Búsqueda exacta por ID.
+    *   Búsqueda por nombre
+*   **🛡️ Validaciones Robustas:**
+    *   Verificación de email.
+    *   Validación de fechas 
+    *   Prevención RIF duplicados.
 
-Validación de Stock: No se permiten ventas si no hay existencias.
+## 🛠️ Detalles Técnicos
 
-Cancelación Reversiva: Al cancelar una transacción, el stock se restaura automáticamente.
+El código implementa conceptos de C++ para asegurar escalabilidad y limpieza, adhiriéndose a restricciones educativas:
 
-Búsquedas Avanzadas: * Búsqueda por ID.
+*   **Memoria Dinámica Manual:** Uso exclusivo de punteros (`new[]` / `delete[]`) y arrays dinámicos que crecen automáticamente (`redimensionarEntidad`) al alcanzar su capacidad.
+*   **Templates y Conceptos:** Implementación de funciones genéricas para buscar cualquier entidad por ID y validación de tipos aritméticos mediante `std::concepts`.
+*   **Seguridad de Entrada:** Manejo riguroso de `cin.fail()` y limpieza de buffer para evitar bucles infinitos por entradas de usuario erróneas.
+*   **Formato Moderno:** Uso de `std::format` (C++20) para una salida de consola elegante, tabulada y legible.
 
-Búsqueda por coincidencia parcial de nombres (insensible a mayúsculas/minúsculas).
+### 📂 Arquitectura Central
+El corazón del sistema reside en la estructura `Tienda`, que actúa como contenedor principal:
 
-Validaciones Robustas: * Verificación de formato de Email.
-
-Validación de fechas reales (usando std::chrono).
-
-Prevención de códigos y RIF duplicados.
-
-🛠️ Detalles Técnicos (Para Desarrolladores)
-El código implementa conceptos avanzados de C++ para asegurar escalabilidad y limpieza:
-
-Memoria Dinámica: Uso de arrays dinámicos que crecen automáticamente (redimensionarEntidad) cuando se alcanza el límite de capacidad.
-
-Templates y Conceptos: Implementación de funciones genéricas para buscar cualquier entidad por ID y validación de tipos aritméticos mediante std::concepts.
-
-Seguridad de Entrada: Manejo de cin.fail() y limpieza de buffer para evitar bucles infinitos por entradas erróneas.
-
-C++ Moderno: Uso de std::format para una salida de consola elegante y legible.
-
-📂 Estructura del Proyecto
-El corazón del sistema reside en la estructura Tienda, que actúa como contenedor principal:
-
-C++
+```cpp
 struct Tienda {
-    Producto* productos;       // Array dinámico
-    Proveedor* proveedores;    // Array dinámico
-    Cliente* clientes;         // Array dinámico
+    Producto* productos;        // Array dinámico
+    Proveedor* proveedores;     // Array dinámico
+    Cliente* clientes;          // Array dinámico
     Transaccion* transacciones; // Historial de movimientos
-    // ... contadores y capacidades
+    // ... contadores (num) y capacidades máximas
 };
-🚦 Instalación y Uso
-Requisitos
-Compilador compatible con C++20 (GCC 10+, Clang 10+ o MSVC 19.29+).
+```
 
-Compilación
-Clona o descarga el archivo y ejecuta en tu terminal:
+## 🚦 Instalación y Uso
 
-Bash
-g++ -std=c++20 main.cpp -o PapayaStore
-Ejecución
-Bash
-./PapayaStore
-📖 Guía de Uso Rápida
-Inicialización: El sistema arranca con la configuración de "Papaya Store".
+### Requisitos
+*   Compilador compatible con **C++20** (GCC 10+, Clang 10+ o MSVC 19.29+).
 
-Registro: Antes de vender, asegúrate de registrar al menos un Proveedor y un Producto.
+### Compilación
+Abre tu terminal en la raíz del proyecto y ejecuta:
 
-Compras: Usa el módulo de transacciones para cargar stock inicial mediante una "Compra".
+```bash
+g++ -std=c++20 -Wall -Wextra src/main.cpp -o papaya
+```
 
-Ventas: Registra a un Cliente y procede a realizar la venta. El sistema calculará los totales automáticamente.
+### Ejecución
+```bash
+./papaya
+```
 
-Mantenimiento: Puedes actualizar precios o descripciones en el módulo de Productos en cualquier momento.
+## 📖 Guía de Uso Rápida
 
-⚠️ Notas de Seguridad
-Cierre Seguro: Siempre usa la opción "0. Salir" del menú principal. Esto dispara la función liberarTienda(), la cual libera todos los punteros y evita el consumo innecesario de RAM tras cerrar el programa.
+1.  **Inicialización:** El sistema arranca cargando la configuración base de la tienda en memoria.
+2.  **Registro:** Antes de poder vender algo, asegúrate de registrar al menos un **Proveedor** y un **Producto**.
+3.  **Compras (Abastecimiento):** Usa el módulo de transacciones para cargar el stock inicial de tus productos mediante una nueva "Compra".
+4.  **Ventas:** Registra a un **Cliente** en el sistema y procede a realizar la venta. Papaya Store calculará los totales y descontará el inventario automáticamente.
+5.  **Mantenimiento:** Puedes actualizar precios, descripciones o datos de contacto en sus respectivos módulos en cualquier momento.
