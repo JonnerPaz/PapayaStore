@@ -1,14 +1,22 @@
+#include <chrono>
 #include <cstring>
 #include <format>
 #include <iostream>
 #include <limits>
-#include <type_traits>
-#include <chrono>
-#include <string>
 #include <sstream>
-#include <concepts>
+#include <string>
+#include <type_traits>
 
 using namespace std;
+
+// ANSI Escape Codes
+const char* CLEAR_SCREEN = "\033[2J\033[H";
+const char* COLOR_RESET = "\033[0m";
+const char* COLOR_CYAN = "\033[36m";
+const char* COLOR_GREEN = "\033[32m";
+const char* COLOR_YELLOW = "\033[33m";
+const char* COLOR_RED = "\033[31m";
+const char* COLOR_MAGENTA = "\033[35m";
 
 struct Tienda;
 template <typename T> int buscarEntidadPorId(T* array, int count, int id);
@@ -21,7 +29,8 @@ void convertirAMinusculas(char* cadena);
 bool contieneSubstring(const char* cadena, const char* subcadena);
 template <typename T, size_t N>
 bool existeStringDuplicado(T* array, int count, const char* valorBusqueda, char (T::*miembro)[N]);
-
+bool existeProveedor(Tienda* tienda, int id);
+bool existeCliente(Tienda* tienda, int id);
 
 enum TipoDeTransaccion { COMPRA, VENTA };
 enum Busqueda {
@@ -36,6 +45,7 @@ enum Actualizar {
     ActualizarDescripcion = '3',
     ActualizarPrecio = '4',
     ActualizarStock = '5',
+    ActualizarProveedor = '6',
     ActualizarCancelada = '0'
 };
 
@@ -105,19 +115,26 @@ struct Tienda {
     int siguienteIdTransaccion;
 };
 
+enum TipoPropiedadLista { PropiedadId, PropiedadNombre, PropiedadAmbos };
+
+template <typename T>
+void mostrarListaEntidades(const char* titulo, T* array, int count,
+                           TipoPropiedadLista tipoProp = PropiedadAmbos);
+
 // templates utilizados en el programa
 template <typename T>
 // remove_reference_t remueve las referencias de T y devuelve T
 // Ej. si T es int& -> devuelve int
 concept AsignarNum = std::is_arithmetic_v<std::remove_reference_t<T>>;
 void asignarPropiedadNum(const char* msg, AsignarNum auto& prop) {
-    cout << msg << endl;
+    cout << msg;
     while (true) {
         cin >> prop;
         if (cin.fail()) {
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "El valor debe ser numérico. Intente nuevamente: ";
+            cout << CLEAR_SCREEN << COLOR_RED
+                 << "El valor debe ser numérico. Intente nuevamente: " << COLOR_RESET << endl;
             continue;
         }
         // Clean buffer no matter if cin fail or not
@@ -126,13 +143,14 @@ void asignarPropiedadNum(const char* msg, AsignarNum auto& prop) {
         if (prop >= 0) {
             break;
         }
-        cout << "El valor debe ser mayor o igual a 0. Intente nuevamente: ";
+        cout << CLEAR_SCREEN << COLOR_RED
+             << "El valor debe ser mayor o igual a 0. Intente nuevamente: " << COLOR_RESET << endl;
     }
     cout << endl;
 }
 
 template <size_t N> void asignarPropiedadString(const char* msg, char (&prop)[N]) {
-    cout << msg << endl;
+    cout << msg;
     if (cin.peek() == '\n') {
         cin.ignore();
     }
@@ -228,9 +246,23 @@ void liberarTienda(Tienda* tienda) {
     tienda->siguienteIdTransaccion = 1;
 }
 
+// Forward declarations para validaciones
+bool codigoDuplicado(Tienda* tienda, const char* codigo);
+bool rifDuplicado(Tienda* tienda, const char* rif);
+bool validarEmail(const char* email);
+
 void crearProducto(Tienda* tienda) {
     if (tienda == nullptr) {
-        cout << "Error: La tienda no ha sido creada." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Error: La tienda no ha sido creada." << COLOR_RESET
+             << endl;
+        return;
+    }
+
+    if (tienda->numProveedores == 0) {
+        cout << CLEAR_SCREEN << COLOR_RED
+             << "Error: No hay proveedores registrados. Debe crear al menos un proveedor antes de "
+                "registrar un producto."
+             << COLOR_RESET << endl;
         return;
     }
 
@@ -251,9 +283,21 @@ void crearProducto(Tienda* tienda) {
         return;
 
     char codigo[20];
-    asignarPropiedadString("Ingrese el código del producto (q para cancelar): ", codigo);
-    if (codigo[0] == 'q' && codigo[1] == '\0')
-        return;
+    while (true) {
+        asignarPropiedadString("Ingrese el código del producto (q para cancelar): ", codigo);
+        if (codigo[0] == 'q' && codigo[1] == '\0')
+            return;
+        if (codigo[0] == '\0') {
+            cout << COLOR_RED << "Error: El código no puede estar vacío." << COLOR_RESET << endl;
+            continue;
+        }
+        if (codigoDuplicado(tienda, codigo)) {
+            cout << COLOR_RED << "Error: Ya existe un producto con el código " << codigo
+                 << COLOR_RESET << endl;
+        } else {
+            break;
+        }
+    }
 
     char descripcion[200];
     asignarPropiedadString("Ingrese la descripcion del producto (q para cancelar): ", descripcion);
@@ -266,8 +310,28 @@ void crearProducto(Tienda* tienda) {
     int stock;
     asignarPropiedadNum("Ingrese el stock del producto: ", stock);
 
+    // muestra los proveedores que hay
+    // para que el usuario escoja el proveedor del producto más abajo
+    mostrarListaEntidades("Proveedores", tienda->proveedores, tienda->numProveedores);
+
     int idProveedor;
-    asignarPropiedadNum("Ingresar el id del proveedor: ", idProveedor);
+    while (true) {
+        idProveedor = leerId("Ingresar el id del proveedor");
+        if (idProveedor <= 0) {
+            cout << CLEAR_SCREEN << COLOR_RED << "Creación de producto cancelada." << COLOR_RESET
+                 << endl;
+            return;
+        }
+
+        if (existeProveedor(tienda, idProveedor)) {
+            break;
+        }
+
+        cout << CLEAR_SCREEN << COLOR_RED << "Error: El proveedor con ID " << idProveedor
+             << " no existe. Intente nuevamente." << COLOR_RESET << endl;
+
+        mostrarListaEntidades("Proveedores", tienda->proveedores, tienda->numProveedores);
+    }
 
     cout << "Los datos del producto son: " << endl;
     cout << "Nombre: " << nombre << endl;
@@ -277,7 +341,7 @@ void crearProducto(Tienda* tienda) {
     cout << "Stock: " << stock << endl;
     cout << "Proveedor: " << idProveedor << endl;
 
-    cout << "Está seguro de crear el producto? (s/n): ";
+    cout << COLOR_YELLOW << "Está seguro de crear el producto? (s/n): " << COLOR_RESET;
     cin >> confirmar;
 
     if (confirmar == 's' || confirmar == 'S') {
@@ -289,6 +353,7 @@ void crearProducto(Tienda* tienda) {
         copiarString(producto.descripcion, descripcion);
         producto.precio = precio;
         producto.stock = stock;
+        obtenerFechaActual(producto.fechaRegistro);
 
         tienda->siguienteIdProducto++;
         tienda->numProductos++;
@@ -301,30 +366,21 @@ void crearProducto(Tienda* tienda) {
 void buscarProducto(Tienda* tienda) {
     char opcion;
     do {
-        cout << "Buscar producto" << endl;
-        cout << "1. Id" << endl
-             << "2. Nombre" << endl
-             << "3. Listar todos" << endl
-             << "0. Cancelar" << endl;
+        cout << COLOR_CYAN << "Seleccione el criterio de busqueda: " << COLOR_RESET << endl;
+        cout << COLOR_YELLOW << "1." << COLOR_RESET << " Id" << endl
+             << COLOR_YELLOW << "2." << COLOR_RESET << " Nombre" << endl
+             << COLOR_YELLOW << "3." << COLOR_RESET << " Listar todos" << endl
+             << COLOR_RED << "0." << COLOR_RESET << " Cancelar" << endl;
         cout << "Seleccione una opción: ";
 
         cin >> opcion;
         switch (opcion) {
-            // id
         case BusquedaId: {
-            cout << "Ingrese el id del producto: ";
-
-            int id;
-            cin >> id;
-            if (cin.fail()) {
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                cout << "El id debe ser numérico. Intente nuevamente: ";
-                break;
-            }
-
+            mostrarListaEntidades("Productos", tienda->productos, tienda->numProductos,
+                                  PropiedadId);
+            int id = leerId("Ingrese el id del producto");
             if (id <= 0) {
-                cout << "El id debe ser mayor a 0. Intente nuevamente: ";
+                cout << CLEAR_SCREEN << COLOR_RED << "Búsqueda cancelada." << COLOR_RESET << endl;
                 break;
             }
 
@@ -336,15 +392,17 @@ void buscarProducto(Tienda* tienda) {
 
             Producto& producto = tienda->productos[index];
             cout << "Producto encontrado:" << endl;
-            cout << "Id: " << producto.id << endl;
-            cout << "Nombre: " << producto.nombre << endl;
-            cout << "Codigo: " << producto.codigo << endl;
-            cout << "Descripcion: " << producto.descripcion << endl;
-            cout << "Precio: " << producto.precio << endl;
-            cout << "Stock: " << producto.stock << endl;
+            cout << COLOR_YELLOW << "Id: " << COLOR_RESET << producto.id << endl;
+            cout << COLOR_YELLOW << "Nombre: " << COLOR_RESET << producto.nombre << endl;
+            cout << COLOR_YELLOW << "Codigo: " << COLOR_RESET << producto.codigo << endl;
+            cout << COLOR_YELLOW << "Descripcion: " << COLOR_RESET << producto.descripcion << endl;
+            cout << COLOR_YELLOW << "Precio: " << COLOR_RESET << producto.precio << endl;
+            cout << COLOR_YELLOW << "Stock: " << COLOR_RESET << producto.stock << endl << endl;
             break;
         }
         case BusquedaNombre: {
+            mostrarListaEntidades("Productos", tienda->productos, tienda->numProductos,
+                                  PropiedadNombre);
             cout << "Ingrese el nombre del producto: ";
             char nombre[100];
             if (cin.peek() == '\n')
@@ -364,12 +422,14 @@ void buscarProducto(Tienda* tienda) {
             cout << "Productos encontrados:" << endl;
             for (int i = 1; i <= index[0]; i++) {
                 Producto& producto = tienda->productos[index[i]];
-                cout << "Id: " << producto.id << endl;
-                cout << "Nombre: " << producto.nombre << endl;
-                cout << "Codigo: " << producto.codigo << endl;
-                cout << "Descripcion: " << producto.descripcion << endl;
-                cout << "Precio: " << producto.precio << endl;
-                cout << "Stock: " << producto.stock << endl;
+
+                cout << COLOR_YELLOW << "Id: " << COLOR_RESET << producto.id << endl;
+                cout << COLOR_YELLOW << "Nombre: " << COLOR_RESET << producto.nombre << endl;
+                cout << COLOR_YELLOW << "Codigo: " << COLOR_RESET << producto.codigo << endl;
+                cout << COLOR_YELLOW << "Descripcion: " << COLOR_RESET << producto.descripcion
+                     << endl;
+                cout << COLOR_YELLOW << "Precio: " << COLOR_RESET << producto.precio << endl;
+                cout << COLOR_YELLOW << "Stock: " << COLOR_RESET << producto.stock << endl << endl;
             }
             delete[] index;
             break;
@@ -380,11 +440,11 @@ void buscarProducto(Tienda* tienda) {
             break;
         }
         case BusquedaCancelada: {
-            cout << "Cancelada la búsqueda" << endl;
+            cout << COLOR_GREEN << "Cancelada la búsqueda" << COLOR_RESET << endl;
             return;
         }
         default: {
-            cout << "Opcion no valida" << endl;
+            cout << CLEAR_SCREEN << COLOR_RED << "Opcion no valida" << COLOR_RESET << endl;
             break;
         }
         }
@@ -397,10 +457,15 @@ template <typename T> void manejarPropiedad(const string& nombrePropiedad, T& pr
     //  Descripcion, Nombre, Codigo
     if constexpr (std::is_array_v<T> && std::is_same_v<std::remove_extent_t<T>, char>) {
         char tempProp[200];
-        cout << format("Ingrese el nuevo {}: ", nombrePropiedad);
+        cout << format("Ingrese el nuevo {} (q para cancelar): ", nombrePropiedad);
         if (cin.peek() == '\n')
             cin.ignore();
         cin.getline(tempProp, sizeof(T));
+
+        if (tempProp[0] == 'q' && tempProp[1] == '\0') {
+            cout << "Actualización cancelada." << endl;
+            return;
+        }
 
         cout << format("Viejo {}: {}", nombrePropiedad, propiedad) << endl;
         cout << format("Nuevo {}: {}", nombrePropiedad, tempProp) << endl;
@@ -422,12 +487,15 @@ template <typename T> void manejarPropiedad(const string& nombrePropiedad, T& pr
             if (cin.fail()) {
                 cin.clear();
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                cout << "El valor debe ser numérico. Intente nuevamente: ";
+                cout << CLEAR_SCREEN << COLOR_RED
+                     << "El valor debe ser numérico. Intente nuevamente: " << COLOR_RESET << endl;
                 continue;
             }
             if (tempProp >= 0)
                 break;
-            cout << "El valor debe ser mayor o igual a 0. Intente nuevamente: ";
+            cout << CLEAR_SCREEN << COLOR_RED
+                 << "El valor debe ser mayor o igual a 0. Intente nuevamente: " << COLOR_RESET
+                 << endl;
         }
 
         cout << format("Viejo {}: {}", nombrePropiedad, propiedad) << endl;
@@ -448,15 +516,18 @@ void actualizarProducto(Tienda* tienda) {
     if (tienda == nullptr)
         return;
 
+    mostrarListaEntidades("Productos", tienda->productos, tienda->numProductos);
+
     int id = leerId("Ingresa el id del producto a actualizar");
     if (id <= 0) {
-        cout << "No se actualizara ningun producto." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Actualización cancelada." << COLOR_RESET << endl;
         return;
     }
 
     int index = buscarEntidadPorId(tienda->productos, tienda->numProductos, id);
     if (index == -1) {
-        cout << "Producto a actualizar no encontrado." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Producto a actualizar no encontrado." << COLOR_RESET
+             << endl;
         return;
     }
 
@@ -465,13 +536,15 @@ void actualizarProducto(Tienda* tienda) {
 
     char opcion;
     do {
-        cout << "¿Qué desea actualizar?: " << endl;
-        cout << "1. Nombre" << endl;
-        cout << "2. Codigo" << endl;
-        cout << "3. Descripcion" << endl;
-        cout << "4. Precio" << endl;
-        cout << "5. Stock" << endl;
-        cout << "0. Cancelar" << endl;
+        cout << COLOR_CYAN << "¿Qué desea actualizar?: " << COLOR_RESET << endl;
+        cout << COLOR_YELLOW << "1." << COLOR_RESET << " Nombre" << endl;
+        cout << COLOR_YELLOW << "2." << COLOR_RESET << " Codigo" << endl;
+        cout << COLOR_YELLOW << "3." << COLOR_RESET << " Descripcion" << endl;
+        cout << COLOR_YELLOW << "4." << COLOR_RESET << " Precio" << endl;
+        cout << COLOR_YELLOW << "5." << COLOR_RESET << " Stock" << endl;
+        cout << COLOR_YELLOW << "6." << COLOR_RESET << " Proveedor" << endl;
+        cout << COLOR_RED << "0." << COLOR_RESET << " Cancelar" << endl;
+        cout << "Seleccione una opción: ";
 
         cin >> opcion;
 
@@ -491,11 +564,29 @@ void actualizarProducto(Tienda* tienda) {
         case ActualizarStock:
             manejarPropiedad("stock", producto.stock);
             break;
+        case ActualizarProveedor: {
+            mostrarListaEntidades("Proveedores Disponibles", tienda->proveedores,
+                                  tienda->numProveedores, PropiedadAmbos);
+            int idNuevoProveedor = leerId("Ingrese el ID del nuevo proveedor (q para cancelar)");
+            if (idNuevoProveedor <= 0) {
+                cout << "Actualización cancelada." << endl;
+            } else {
+                int provIndex = buscarEntidadPorId(tienda->proveedores, tienda->numProveedores,
+                                                   idNuevoProveedor);
+                if (provIndex == -1) {
+                    cout << COLOR_RED << "Error: Proveedor no encontrado." << COLOR_RESET << endl;
+                } else {
+                    producto.idProveedor = idNuevoProveedor;
+                    cout << "Proveedor actualizado con éxito." << endl;
+                }
+            }
+            break;
+        }
         case ActualizarCancelada:
-            cout << "Se canceló la actualizacion." << endl;
+            cout << COLOR_GREEN << "Se canceló la actualizacion." << COLOR_RESET << endl;
             break;
         default:
-            cout << "Opcion no valida" << endl;
+            cout << CLEAR_SCREEN << COLOR_RED << "Opcion no valida" << COLOR_RESET << endl;
             break;
         }
     } while (opcion != ActualizarCancelada);
@@ -505,25 +596,17 @@ void actualizarStockProducto(Tienda* tienda) {
     if (tienda == nullptr)
         return;
 
-    cout << "Ingrese el id del producto para actualizar el stock: ";
-    int id;
-    do {
-        cin >> id;
-        if (cin.fail()) {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "El id debe ser numérico. Intente nuevamente." << endl;
-        }
-    } while (id <= 0);
+    mostrarListaEntidades("Productos", tienda->productos, tienda->numProductos);
 
+    int id = leerId("Ingrese el id del producto para actualizar el stock");
     if (id <= 0) {
-        cout << "El id debe ser mayor a 0. Intente nuevamente." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
         return;
     }
 
     int index = buscarEntidadPorId(tienda->productos, tienda->numProductos, id);
     if (index == -1) {
-        cout << "Producto no encontrado." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Producto no encontrado." << COLOR_RESET << endl;
         return;
     }
 
@@ -532,10 +615,10 @@ void actualizarStockProducto(Tienda* tienda) {
 
     char opcion;
     do {
-        cout << "Seleccione la operación a realizar: " << endl;
-        cout << "1. Incrementar stock" << endl;
-        cout << "2. Disminuir stock" << endl;
-        cout << "0. Cancelar" << endl;
+        cout << COLOR_CYAN << "Seleccione la operación a realizar: " << COLOR_RESET << endl;
+        cout << COLOR_YELLOW << "1." << COLOR_RESET << " Incrementar stock" << endl;
+        cout << COLOR_YELLOW << "2." << COLOR_RESET << " Disminuir stock" << endl;
+        cout << COLOR_RED << "0." << COLOR_RESET << " Cancelar" << endl;
         cout << "Seleccione una opción: ";
 
         cin >> opcion;
@@ -551,12 +634,16 @@ void actualizarStockProducto(Tienda* tienda) {
                 if (cin.fail()) {
                     cin.clear();
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                    cout << "El valor debe ser numérico. Intente nuevamente: ";
+                    cout << CLEAR_SCREEN << COLOR_RED
+                         << "El valor debe ser numérico. Intente nuevamente: " << COLOR_RESET
+                         << endl;
                     continue;
                 }
                 if (cantidad > 0)
                     break;
-                cout << "La cantidad debe ser mayor a 0. Intente nuevamente: ";
+                cout << CLEAR_SCREEN << COLOR_RED
+                     << "La cantidad debe ser mayor a 0. Intente nuevamente: " << COLOR_RESET
+                     << endl;
             }
 
             int nuevoStock = producto.stock;
@@ -567,10 +654,11 @@ void actualizarStockProducto(Tienda* tienda) {
             if (opcion == '2') {
                 nuevoStock -= cantidad;
                 if (nuevoStock < 0) {
-                    cout << format("Error: El stock no puede ser negativo. Faltan unidades. Stock "
+                    cout << CLEAR_SCREEN << COLOR_RED
+                         << format("Error: El stock no puede ser negativo. Faltan unidades. Stock "
                                    "actual: {}",
                                    producto.stock)
-                         << endl;
+                         << COLOR_RESET << endl;
                     break;
                 }
             }
@@ -591,10 +679,10 @@ void actualizarStockProducto(Tienda* tienda) {
             break;
         }
         case '0':
-            cout << "Operación cancelada." << endl;
+            cout << COLOR_GREEN << "Operación cancelada." << COLOR_RESET << endl;
             break;
         default:
-            cout << "Opción no válida." << endl;
+            cout << CLEAR_SCREEN << COLOR_RED << "Opción no válida." << COLOR_RESET << endl;
             break;
         }
 
@@ -603,7 +691,8 @@ void actualizarStockProducto(Tienda* tienda) {
 
 void listarProductos(Tienda* tienda) {
     if (tienda == nullptr) {
-        cout << "Error: La tienda no ha sido creada." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Error: La tienda no ha sido creada." << COLOR_RESET
+             << endl;
         return;
     }
 
@@ -613,27 +702,34 @@ void listarProductos(Tienda* tienda) {
     }
 
     cout << "--- Lista de Productos (" << tienda->numProductos << ") ---" << endl;
+    cout << format("{:<5} | {:<20} | {:<15} | {:<10} | {:<5}", "ID", "Nombre", "Codigo", "Precio",
+                   "Stock")
+         << endl;
+    cout << "----------------------------------------------------------------------" << endl;
     for (int i = 0; i < tienda->numProductos; ++i) {
-        Producto& p = tienda->productos[i];
-        cout << "Id: " << p.id << " | Nombre: " << p.nombre << " | Codigo: " << p.codigo
-             << " | Precio: $" << p.precio << " | Stock: " << p.stock << endl;
+        Producto& producto = tienda->productos[i];
+        cout << format("{:<5} | {:<20} | {:<15} | ${:<9.2f} | {:<5}", producto.id, producto.nombre,
+                       producto.codigo, producto.precio, producto.stock)
+             << endl;
     }
-    cout << "--------------------------" << endl;
+    cout << "----------------------------------------------------------------------" << endl;
 }
 
 void eliminarProducto(Tienda* tienda) {
     if (tienda == nullptr)
         return;
 
-    int id = leerId("Ingresa el id del producto a actualizar");
+    mostrarListaEntidades("Productos", tienda->productos, tienda->numProductos);
+
+    int id = leerId("Ingresa el id del producto a eliminar");
     if (id <= 0) {
-        cout << "No se eliminó el producto." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Eliminación cancelada." << COLOR_RESET << endl;
         return;
     }
 
     int index = buscarEntidadPorId(tienda->productos, tienda->numProductos, id);
     if (index == -1) {
-        cout << "Producto no encontrado." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Producto no encontrado." << COLOR_RESET << endl;
         return;
     }
 
@@ -653,8 +749,10 @@ void eliminarProducto(Tienda* tienda) {
     }
 
     if (tieneTransacciones) {
-        cout << "\n¡ADVERTENCIA! Este producto tiene transacciones asociadas." << endl;
-        cout << "Eliminarlo puede causar inconsistencias en el historial de transacciones." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED
+             << "Error: No se puede eliminar el producto porque tiene transacciones asociadas. "
+             << "Cancele las transacciones primero si desea eliminarlo." << COLOR_RESET << endl;
+        return;
     }
 
     cout << "\n¿Está seguro que desea eliminar este producto? (s/n): ";
@@ -670,10 +768,6 @@ void eliminarProducto(Tienda* tienda) {
 }
 
 void crearProveedor(Tienda* tienda) {
-    if (tienda == nullptr) {
-        cout << "Error: La tienda no ha sido creada." << endl;
-        return;
-    }
     int& totalDeProveedores = tienda->numProveedores;
     int& capacidadProveedores = tienda->capacidadProveedores;
     // es un puntero DE LA REFERENCIA
@@ -691,14 +785,34 @@ void crearProveedor(Tienda* tienda) {
         return;
 
     char rif[20];
-    asignarPropiedadString("Ingrese el RIF del proveedor (q para cancelar): ", rif);
-    if (rif[0] == 'q' && rif[1] == '\0')
-        return;
+    while (true) {
+        asignarPropiedadString("Ingrese el RIF del proveedor (q para cancelar): ", rif);
+        if (rif[0] == 'q' && rif[1] == '\0')
+            return;
+        if (rif[0] == '\0') {
+            cout << COLOR_RED << "Error: El RIF no puede estar vacío." << COLOR_RESET << endl;
+            continue;
+        }
+        if (rifDuplicado(tienda, rif)) {
+            cout << COLOR_RED << "Error: Ya existe un proveedor con el RIF " << rif << COLOR_RESET
+                 << endl;
+        } else {
+            break;
+        }
+    }
 
     char telefono[20];
     asignarPropiedadString("Ingrese el telefono del proveedor: ", telefono);
     char email[100];
-    asignarPropiedadString("Ingrese el email del proveedor: ", email);
+    while (true) {
+        asignarPropiedadString("Ingrese el email del proveedor (vacio para omitir): ", email);
+        if (email[0] == '\0') {
+            break; // Email opcional
+        }
+        if (validarEmail(email)) {
+            break;
+        }
+    }
     char direccion[200];
     asignarPropiedadString("Ingrese la direccion del proveedor: ", direccion);
 
@@ -724,18 +838,17 @@ void crearProveedor(Tienda* tienda) {
 void buscarProveedor(Tienda* tienda) {
     if (tienda == nullptr)
         return;
-    cout << "Ingrese el id del proveedor a buscar: ";
-    int id;
-    cin >> id;
-    if (cin.fail() || id <= 0) {
-        cin.clear();
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        cout << "Id invalido." << endl;
+
+    mostrarListaEntidades("Proveedores", tienda->proveedores, tienda->numProveedores, PropiedadId);
+
+    int id = leerId("Ingrese el id del proveedor a buscar");
+    if (id <= 0) {
+        cout << CLEAR_SCREEN << COLOR_RED << "Búsqueda cancelada." << COLOR_RESET << endl;
         return;
     }
     int index = buscarEntidadPorId(tienda->proveedores, tienda->numProveedores, id);
     if (index == -1) {
-        cout << "Proveedor no encontrado." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Proveedor no encontrado." << COLOR_RESET << endl;
         return;
     }
     Proveedor& p = tienda->proveedores[index];
@@ -748,26 +861,31 @@ void buscarProveedor(Tienda* tienda) {
 void actualizarProveedor(Tienda* tienda) {
     if (tienda == nullptr)
         return;
-    cout << "Ingrese el id del proveedor a actualizar: ";
-    int id;
-    cin >> id;
-    if (cin.fail() || id <= 0) {
-        cin.clear();
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        cout << "Id invalido." << endl;
+
+    mostrarListaEntidades("Proveedores", tienda->proveedores, tienda->numProveedores);
+
+    int id = leerId("Ingrese el id del proveedor a actualizar");
+    if (id <= 0) {
+        cout << CLEAR_SCREEN << COLOR_RED << "Actualización cancelada." << COLOR_RESET << endl;
         return;
     }
     int index = buscarEntidadPorId(tienda->proveedores, tienda->numProveedores, id);
     if (index == -1) {
-        cout << "Proveedor no encontrado." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Proveedor no encontrado." << COLOR_RESET << endl;
         return;
     }
     Proveedor& p = tienda->proveedores[index];
 
     char opcion;
     do {
-        cout << "¿Qué desea actualizar?: " << endl;
-        cout << "1. Nombre\n2. RIF\n3. Telefono\n4. Email\n5. Direccion\n0. Cancelar\n";
+        cout << COLOR_CYAN << "¿Qué desea actualizar?: " << COLOR_RESET << endl;
+        cout << COLOR_YELLOW << "1." << COLOR_RESET << " Nombre\n"
+             << COLOR_YELLOW << "2." << COLOR_RESET << " RIF\n"
+             << COLOR_YELLOW << "3." << COLOR_RESET << " Telefono\n"
+             << COLOR_YELLOW << "4." << COLOR_RESET << " Email\n"
+             << COLOR_YELLOW << "5." << COLOR_RESET << " Direccion\n"
+             << COLOR_RED << "0." << COLOR_RESET << " Cancelar\n";
+        cout << "Seleccione una opción: ";
         cin >> opcion;
         switch (opcion) {
         case '1':
@@ -786,10 +904,10 @@ void actualizarProveedor(Tienda* tienda) {
             manejarPropiedad("direccion", p.direccion);
             break;
         case '0':
-            cout << "Saliendo..." << endl;
+            cout << COLOR_GREEN << "Saliendo..." << COLOR_RESET << endl;
             break;
         default:
-            cout << "Opcion no valida" << endl;
+            cout << CLEAR_SCREEN << COLOR_RED << "Opcion no valida" << COLOR_RESET << endl;
         }
     } while (opcion != '0');
 }
@@ -800,31 +918,56 @@ void listarProveedores(Tienda* tienda) {
         return;
     }
     cout << "--- Lista de Proveedores (" << tienda->numProveedores << ") ---" << endl;
+    cout << format("{:<5} | {:<20} | {:<15} | {:<15} | {:<25} | {:<15}", "ID", "Nombre", "RIF",
+                   "Telefono", "Email", "Direccion")
+         << endl;
+    cout << "--------------------------------------------------------------------------------------"
+            "-----------------"
+         << endl;
     for (int i = 0; i < tienda->numProveedores; ++i) {
-        Proveedor& p = tienda->proveedores[i];
-        cout << "Id: " << p.id << " | Nombre: " << p.nombre << " | RIF: " << p.rif
-             << " | Telefono: " << p.telefono << " | Email: " << p.email << endl;
+        Proveedor& proveedor = tienda->proveedores[i];
+        cout << format("{:<5} | {:<20} | {:<15} | {:<15} | {:<25} | {:<15}", proveedor.id,
+                       proveedor.nombre, proveedor.rif, proveedor.telefono, proveedor.email,
+                       proveedor.direccion)
+             << endl;
     }
-    cout << "--------------------------" << endl;
+    cout << "--------------------------------------------------------------------------------------"
+            "-----------------"
+         << endl;
 }
 
 void eliminarProveedor(Tienda* tienda) {
     if (tienda == nullptr)
         return;
-    cout << "Ingrese el id del proveedor a eliminar: ";
-    int id;
-    cin >> id;
-    if (cin.fail() || id <= 0) {
-        cin.clear();
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        cout << "Id invalido." << endl;
+
+    mostrarListaEntidades("Proveedores", tienda->proveedores, tienda->numProveedores);
+
+    int id = leerId("Ingrese el id del proveedor a eliminar");
+    if (id <= 0) {
+        cout << CLEAR_SCREEN << COLOR_RED << "Eliminación cancelada." << COLOR_RESET << endl;
         return;
     }
     int index = buscarEntidadPorId(tienda->proveedores, tienda->numProveedores, id);
     if (index == -1) {
-        cout << "Proveedor no encontrado." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Proveedor no encontrado." << COLOR_RESET << endl;
         return;
     }
+    bool tieneTransacciones = false;
+    for (int i = 0; i < tienda->numTransacciones; ++i) {
+        if (tienda->transacciones[i].idRelacionado == id &&
+            tienda->transacciones[i].tipo == COMPRA) {
+            tieneTransacciones = true;
+            break;
+        }
+    }
+
+    if (tieneTransacciones) {
+        cout << CLEAR_SCREEN << COLOR_RED
+             << "Error: No se puede eliminar el proveedor porque tiene transacciones asociadas. "
+             << "Cancele las transacciones primero si desea eliminarlo." << COLOR_RESET << endl;
+        return;
+    }
+
     cout << "¿Está seguro que desea eliminar este proveedor? (s/n): ";
     char confirmar;
     cin >> confirmar;
@@ -837,10 +980,6 @@ void eliminarProveedor(Tienda* tienda) {
 }
 
 void crearCliente(Tienda* tienda) {
-    if (tienda == nullptr) {
-        cout << "Error: La tienda no ha sido creada." << endl;
-        return;
-    }
     if (tienda->numClientes >= tienda->capacidadClientes) {
         redimensionarEntidad(tienda->clientes, tienda->capacidadClientes, tienda->numClientes);
     }
@@ -859,7 +998,15 @@ void crearCliente(Tienda* tienda) {
     char telefono[20];
     asignarPropiedadString("Ingrese el telefono del cliente: ", telefono);
     char email[100];
-    asignarPropiedadString("Ingrese el email del cliente: ", email);
+    while (true) {
+        asignarPropiedadString("Ingrese el email del cliente (vacio para omitir): ", email);
+        if (email[0] == '\0') {
+            break; // Email opcional
+        }
+        if (validarEmail(email)) {
+            break;
+        }
+    }
     char direccion[200];
     asignarPropiedadString("Ingrese la direccion del cliente: ", direccion);
 
@@ -867,14 +1014,14 @@ void crearCliente(Tienda* tienda) {
     char confirmar;
     cin >> confirmar;
     if (confirmar == 's' || confirmar == 'S') {
-        Cliente& cli = tienda->clientes[index];
-        cli.id = tienda->siguienteIdCliente++;
-        copiarString(cli.nombre, nombre);
-        copiarString(cli.cedula, cedula);
-        copiarString(cli.telefono, telefono);
-        copiarString(cli.email, email);
-        copiarString(cli.direccion, direccion);
-        obtenerFechaActual(cli.fechaRegistro);
+        Cliente& cliente = tienda->clientes[index];
+        cliente.id = tienda->siguienteIdCliente++;
+        copiarString(cliente.nombre, nombre);
+        copiarString(cliente.cedula, cedula);
+        copiarString(cliente.telefono, telefono);
+        copiarString(cliente.email, email);
+        copiarString(cliente.direccion, direccion);
+        obtenerFechaActual(cliente.fechaRegistro);
         tienda->numClientes++;
         cout << "Cliente creado con exito." << endl;
     } else {
@@ -886,15 +1033,17 @@ void buscarCliente(Tienda* tienda) {
     if (tienda == nullptr)
         return;
 
+    mostrarListaEntidades("Clientes", tienda->clientes, tienda->numClientes, PropiedadId);
+
     int id = leerId("Ingrese el id del cliente a buscar");
     if (id <= 0) {
-        cout << "No se actualizara ningun producto." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Búsqueda cancelada." << COLOR_RESET << endl;
         return;
     }
 
     int index = buscarEntidadPorId(tienda->clientes, tienda->numClientes, id);
     if (index == -1) {
-        cout << "Cliente no encontrado." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Cliente no encontrado." << COLOR_RESET << endl;
         return;
     }
     Cliente& c = tienda->clientes[index];
@@ -908,23 +1057,31 @@ void actualizarCliente(Tienda* tienda) {
     if (tienda == nullptr)
         return;
 
+    mostrarListaEntidades("Clientes", tienda->clientes, tienda->numClientes);
+
     int id = leerId("Ingrese el id del cliente a actualizar");
     if (id <= 0) {
-        cout << "No se actualizara ningun producto." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Actualización cancelada." << COLOR_RESET << endl;
         return;
     }
 
     int index = buscarEntidadPorId(tienda->clientes, tienda->numClientes, id);
     if (index == -1) {
-        cout << "Cliente no encontrado." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Cliente no encontrado." << COLOR_RESET << endl;
         return;
     }
     Cliente& clientes = tienda->clientes[index];
 
     char opcion;
     do {
-        cout << "¿Qué desea actualizar?: " << endl;
-        cout << "1. Nombre\n2. Cedula\n3. Telefono\n4. Email\n5. Direccion\n0. Cancelar\n";
+        cout << COLOR_CYAN << "¿Qué desea actualizar?: " << COLOR_RESET << endl;
+        cout << COLOR_YELLOW << "1." << COLOR_RESET << " Nombre\n"
+             << COLOR_YELLOW << "2." << COLOR_RESET << " Cedula\n"
+             << COLOR_YELLOW << "3." << COLOR_RESET << " Telefono\n"
+             << COLOR_YELLOW << "4." << COLOR_RESET << " Email\n"
+             << COLOR_YELLOW << "5." << COLOR_RESET << " Direccion\n"
+             << COLOR_RED << "0." << COLOR_RESET << " Cancelar\n";
+        cout << "Seleccione una opción: ";
         cin >> opcion;
         switch (opcion) {
         case '1':
@@ -943,10 +1100,10 @@ void actualizarCliente(Tienda* tienda) {
             manejarPropiedad("direccion", clientes.direccion);
             break;
         case '0':
-            cout << "Saliendo..." << endl;
+            cout << COLOR_GREEN << "Saliendo..." << COLOR_RESET << endl;
             break;
         default:
-            cout << "Opcion no valida" << endl;
+            cout << CLEAR_SCREEN << COLOR_RED << "Opcion no valida" << COLOR_RESET << endl;
         }
     } while (opcion != '0');
 }
@@ -957,28 +1114,54 @@ void listarClientes(Tienda* tienda) {
         return;
     }
     cout << "--- Lista de Clientes (" << tienda->numClientes << ") ---" << endl;
+    cout << format("{:<5} | {:<20} | {:<15} | {:<15} | {:<25}", "ID", "Nombre", "Cedula",
+                   "Telefono", "Email")
+         << endl;
+    cout << "--------------------------------------------------------------------------------------"
+            "--"
+         << endl;
     for (int i = 0; i < tienda->numClientes; ++i) {
         Cliente& cliente = tienda->clientes[i];
-        cout << "Id: " << cliente.id << " | Nombre: " << cliente.nombre
-             << " | Cedula: " << cliente.cedula << " | Telefono: " << cliente.telefono
-             << " | Email: " << cliente.email << endl;
+        cout << format("{:<5} | {:<20} | {:<15} | {:<15} | {:<25}", cliente.id, cliente.nombre,
+                       cliente.cedula, cliente.telefono, cliente.email)
+             << endl;
     }
-    cout << "--------------------------" << endl;
+    cout << "--------------------------------------------------------------------------------------"
+            "--"
+         << endl;
 }
 
 void eliminarCliente(Tienda* tienda) {
     if (tienda == nullptr)
         return;
 
+    mostrarListaEntidades("Clientes", tienda->clientes, tienda->numClientes);
+
     int id = leerId("Ingrese el id del cliente a eliminar");
     if (id <= 0) {
-        cout << "No se actualizara ningun producto." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Eliminación cancelada." << COLOR_RESET << endl;
         return;
     }
 
     int index = buscarEntidadPorId(tienda->clientes, tienda->numClientes, id);
     if (index == -1) {
-        cout << "Cliente no encontrado." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Cliente no encontrado." << COLOR_RESET << endl;
+        return;
+    }
+
+    bool tieneTransacciones = false;
+    for (int i = 0; i < tienda->numTransacciones; ++i) {
+        if (tienda->transacciones[i].idRelacionado == id &&
+            tienda->transacciones[i].tipo == VENTA) {
+            tieneTransacciones = true;
+            break;
+        }
+    }
+
+    if (tieneTransacciones) {
+        cout << CLEAR_SCREEN << COLOR_RED
+             << "Error: No se puede eliminar el cliente porque tiene transacciones asociadas. "
+             << "Cancele las transacciones primero si desea eliminarlo." << COLOR_RESET << endl;
         return;
     }
 
@@ -994,339 +1177,388 @@ void eliminarCliente(Tienda* tienda) {
 }
 
 void registrarCompra(Tienda* tienda) {
-    //pregunta de seguridad
-    if (tienda == nullptr)return;
+    // pregunta de seguridad
+    if (tienda == nullptr)
+        return;
 
-    //la operacion de mudanza de datos donde actualizamos el espacio y memoria de estos
+    // la operacion de mudanza de datos donde actualizamos el espacio y memoria de estos
     if (tienda->numTransacciones >= tienda->capacidadTransacciones) {
-        redimensionarEntidad(tienda->transacciones, tienda->numTransacciones, tienda->capacidadTransacciones);
+        redimensionarEntidad(tienda->transacciones, tienda->capacidadTransacciones,
+                             tienda->numTransacciones);
     }
     cout << "\n===REGISTRAR COMPRA (Entrada de Mercancia)===" << endl;
 
-    //buscar el producto
+    mostrarListaEntidades("Productos", tienda->productos, tienda->numProductos);
+
+    // buscar el producto
     int idProd = leerId("Ingrese ID del Producto: ");
+    if (idProd <= 0) {
+        cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
+        return;
+    }
     int idxProd = buscarEntidadPorId(tienda->productos, tienda->numProductos, idProd);
 
     if (idxProd == -1) {
-        cout << "Error: El producto con ID " << idProd << " no existe." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Error: El producto con ID " << idProd << " no existe."
+             << COLOR_RESET << endl;
         return;
     }
-    //referencia para hacer el texto mas legible
+    // referencia para hacer el texto mas legible
     Producto& producto = tienda->productos[idxProd];
-    
+
+    mostrarListaEntidades("Proveedores", tienda->proveedores, tienda->numProveedores);
+
     int idProv = leerId("Ingrese ID del Proveedor: ");
-        if (!existeProveedor(tienda, idProv)) {
-            cout << "Error: El proveedor no existe en el sistema." << endl;
-            return;
-        }
+    if (idProv <= 0) {
+        cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
+        return;
+    }
+    if (!existeProveedor(tienda, idProv)) {
+        cout << CLEAR_SCREEN << COLOR_RED << "Error: El proveedor no existe en el sistema."
+             << COLOR_RESET << endl;
+        return;
+    }
     int cantidad = leerId("Cantidad comprada: ");
-        if (cantidad <= 0) {
-            cout << "Error: La cantidad debe ser mayor a 0." << endl;
-            return;
-    } 
-    //referencia 
-    Transaccion& t = tienda->transacciones[tienda->numTransacciones];        
-       
-    t.id = tienda->siguienteIdTransaccion++;
-    t.idProducto = idProd;
-    t.idRelacionado = idProv; // En compras, guardamos el ID del proveedor
-    t.cantidad = cantidad;
-    t.precioUnitario = producto.precio;
-    t.total = t.cantidad * t.precioUnitario;
-    obtenerFechaActual(t.fecha);
-    
+    if (cantidad <= 0) {
+        cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
+        return;
+    }
+    // referencia
+    Transaccion& transaccion = tienda->transacciones[tienda->numTransacciones];
+
+    transaccion.id = tienda->siguienteIdTransaccion++;
+    transaccion.tipo = COMPRA;
+    transaccion.idProducto = idProd;
+    transaccion.idRelacionado = idProv; // En compras, guardamos el ID del proveedor
+    transaccion.cantidad = cantidad;
+    transaccion.precioUnitario = producto.precio;
+    transaccion.total = transaccion.cantidad * transaccion.precioUnitario;
+    obtenerFechaActual(transaccion.fecha);
+
     producto.stock += cantidad;
 
     tienda->numTransacciones++;
 
-    cout << "Compra registrada ID: " << t.id << endl;
+    cout << "Compra registrada ID: " << transaccion.id << endl;
     cout << "Stock actualizado de " << producto.nombre << ": " << producto.stock << endl;
 }
 
 void registrarVenta(Tienda* tienda) {
-    //pregunta de validacion
-    if (tienda == nullptr) return;
+    // pregunta de validacion
+    if (tienda == nullptr)
+        return;
 
-    //la operacion de mudanza de datos donde actualizamos el espacio y memoria de estos
+    // la operacion de mudanza de datos donde actualizamos el espacio y memoria de estos
     if (tienda->numTransacciones >= tienda->capacidadTransacciones) {
-        redimensionarEntidad(tienda->transacciones, tienda->numTransacciones, tienda->capacidadTransacciones);
+        redimensionarEntidad(tienda->transacciones, tienda->capacidadTransacciones,
+                             tienda->numTransacciones);
     }
     cout << "\n===REGISTRAR VENTA (Salida de Mercancia)===" << endl;
-    
-    //buscar producto
+
+    mostrarListaEntidades("Productos", tienda->productos, tienda->numProductos);
+
+    // buscar producto
     int idProd = leerId("Ingrese ID del Producto: ");
-    int idxProd = buscarEntidadPorId(tienda->productos, tienda->numProductos, idProd);  
+    if (idProd <= 0) {
+        cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
+        return;
+    }
+    int idxProd = buscarEntidadPorId(tienda->productos, tienda->numProductos, idProd);
 
     if (idxProd == -1) {
-        cout << "Error: El producto no existe." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Error: El producto no existe." << COLOR_RESET << endl;
         return;
     }
     Producto& producto = tienda->productos[idxProd];
 
-    //validar stock
+    // validar stock
     int cantidad = leerId("Cantidad a vender: ");
     if (cantidad <= 0) {
-        cout << "Error: La cantidad debe ser mayor a 0." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
         return;
     }
 
     if (producto.stock < cantidad) {
-        cout << "Error: Stock insuficiente. Solo hay " << producto.stock << " unidades." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Error: Stock insuficiente. Solo hay "
+             << producto.stock << " unidades." << COLOR_RESET << endl;
         return;
     }
 
-    //validar cliente
+    // validar cliente
+    mostrarListaEntidades("Clientes", tienda->clientes, tienda->numClientes);
+
     int idCli = leerId("Ingrese ID del Cliente: ");
-    if (!existeCliente(tienda, idCli)) {
-        cout << "Error: El cliente no existe." << endl;
+    if (idCli <= 0) {
+        cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
         return;
     }
-        //referencia
-        Transaccion& t = tienda->transacciones[tienda->numTransacciones];
+    if (!existeCliente(tienda, idCli)) {
+        cout << CLEAR_SCREEN << COLOR_RED << "Error: El cliente no existe." << COLOR_RESET << endl;
+        return;
+    }
+    // referencia
+    Transaccion& transaccion = tienda->transacciones[tienda->numTransacciones];
 
-        t.id = tienda->siguienteIdTransaccion++;
-    t.idProducto = idProd;
-    t.idRelacionado = idCli; // Aquí guardamos al cliente
-    t.cantidad = cantidad;
-    t.precioUnitario = producto.precio;
-    t.total = t.cantidad * t.precioUnitario;
-    obtenerFechaActual(t.fecha);
+    transaccion.id = tienda->siguienteIdTransaccion++;
+    transaccion.tipo = VENTA;
+    transaccion.idProducto = idProd;
+    transaccion.idRelacionado = idCli; // Aquí guardamos al cliente
+    transaccion.cantidad = cantidad;
+    transaccion.precioUnitario = producto.precio;
+    transaccion.total = transaccion.cantidad * transaccion.precioUnitario;
+    obtenerFechaActual(transaccion.fecha);
 
-    //restamos el espacio en el stock
+    // restamos el espacio en el stock
     producto.stock -= cantidad;
 
     tienda->numTransacciones++;
 
-    //confirmamos venta
-    cout << "¡Venta exitosa! Total: " << t.total << " | Stock restante: " << producto.stock << endl;    
+    // confirmamos venta
+    cout << "¡Venta exitosa! Total: " << transaccion.total
+         << " | Stock restante: " << producto.stock << endl;
 }
 
 void buscarTransacciones(Tienda* tienda) {
-    //pregunta de seguridad
+    // pregunta de seguridad
     if (tienda == nullptr || tienda->numTransacciones == 0) {
         cout << "\n[!] No hay transacciones registradas en el sistema." << endl;
         return;
     }
-    
-    //funcion de leer el id
+
+    // funcion de leer el id
     int idBuscar = leerId("\nIngrese el ID de la transaccion a buscar: ");
-    //template de buscar entidad
+    if (idBuscar <= 0) {
+        cout << CLEAR_SCREEN << COLOR_RED << "Búsqueda cancelada." << COLOR_RESET << endl;
+        return;
+    }
+    // template de buscar entidad
     int idx = buscarEntidadPorId(tienda->transacciones, tienda->numTransacciones, idBuscar);
 
     if (idx == -1) {
-        cout << "Error: La transaccion con ID " << idBuscar << " no existe." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Error: La transaccion con ID " << idBuscar
+             << " no existe." << COLOR_RESET << endl;
         return;
     }
-    Transaccion& t = tienda->transacciones[idx]; 
-    //mostrar la informacion
+    Transaccion& transaccion = tienda->transacciones[idx];
+    // mostrar la informacion
+    const char* tipoStr = (transaccion.tipo == COMPRA) ? "COMPRA" : "VENTA";
     cout << "\n========================================" << endl;
-    cout << "       DETALLE DE TRANSACCION #" << t.id << endl;
+    cout << "       DETALLE DE TRANSACCION #" << transaccion.id << endl;
     cout << "========================================" << endl;
-    cout << "Fecha:      " << t.fecha << endl;
-    cout << "Producto ID: " << t.idProducto << endl;
-    cout << "ID Asociado: " << t.idRelacionado << " (Cliente/Proveedor)" << endl;
+    cout << "Tipo:       " << tipoStr << endl;
+    cout << "Fecha:      " << transaccion.fecha << endl;
+    cout << "Producto ID: " << transaccion.idProducto << endl;
+    cout << "ID Asociado: " << transaccion.idRelacionado << " (Cliente/Proveedor)" << endl;
     cout << "----------------------------------------" << endl;
-    cout << "Cantidad:    " << t.cantidad << endl;
-    cout << "Precio Un.:  $" << t.precioUnitario << endl;
-    cout << "TOTAL:       $" << t.total << endl;
+    cout << "Cantidad:    " << transaccion.cantidad << endl;
+    cout << "Precio Un.:  $" << transaccion.precioUnitario << endl;
+    cout << "TOTAL:       $" << transaccion.total << endl;
     cout << "========================================" << endl;
 }
 
 void listarTransacciones(Tienda* tienda) {
-    //pregunda de verificacion
+    // pregunda de verificacion
     if (tienda == nullptr || tienda->numTransacciones == 0) {
         cout << "\n[!] El historial de transacciones esta vacio." << endl;
         return;
     }
-    cout << "\n================================================================================" << endl;
+    cout << "\n===================================================================================="
+            "====="
+         << endl;
     cout << "                         HISTORIAL COMPLETO DE MOVIMIENTOS" << endl;
-    cout << "================================================================================" << endl;
-    cout << "ID\t=Fecha=\t\t=Prod=\t=Cant=\t=Precio=\t=Total=\t=Asociado=" << endl;
-    //El ciclo que recorre el arreglo
+    cout << "======================================================================================"
+            "==="
+         << endl;
+    cout << format("{:<5} | {:<8} | {:<12} | {:<10} | {:<10} | {:<12} | {:<12} | {:<15}", "ID",
+                   "Tipo", "Fecha", "Prod ID", "Cantidad", "Precio Un.", "Total", "Asociado ID")
+         << endl;
+    cout << "--------------------------------------------------------------------------------------"
+            "---"
+         << endl;
+    // El ciclo que recorre el arreglo
     for (int i = 0; i < tienda->numTransacciones; i++) {
-        //referencia
+        // referencia
         const Transaccion& t = tienda->transacciones[i];
+        const char* tipoStr = (t.tipo == COMPRA) ? "COMPRA" : "VENTA";
 
-        cout << t.id << "\t" 
-             << t.fecha << "\t" 
-             << t.idProducto << "\t" 
-             << t.cantidad << "\t" 
-             << t.precioUnitario << "\t" 
-             << t.total << "\t" 
-             << t.idRelacionado << endl;
+        cout << format(
+                    "{:<5} | {:<8} | {:<12} | {:<10} | {:<10} | ${:<11.2f} | ${:<11.2f} | {:<15}",
+                    t.id, tipoStr, t.fecha, t.idProducto, t.cantidad, t.precioUnitario, t.total,
+                    t.idRelacionado)
+             << endl;
     }
-    cout << "================================================================================" << endl;
+    cout << "======================================================================================"
+            "==="
+         << endl;
     cout << "Total de registros: " << tienda->numTransacciones << endl;
 }
 
-
 void cancelarTransaccion(Tienda* tienda) {
-    //pregunta de verificacion
+    // pregunta de verificacion
     if (tienda == nullptr || tienda->numTransacciones == 0) {
         cout << "\n[!] No hay transacciones para cancelar." << endl;
         return;
     }
-    //buscar producto
-    //funcion leer id
+
+    // buscar producto
+    // funcion leer id
     int idBuscar = leerId("\nIngrese el ID de la transaccion a CANCELAR: ");
-    //template buscar entidad
+    if (idBuscar <= 0) {
+        cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
+        return;
+    }
+    // template buscar entidad
     int idx = buscarEntidadPorId(tienda->transacciones, tienda->numTransacciones, idBuscar);
 
     if (idx == -1) {
-        cout << "Error: Transaccion no encontrada." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Error: Transaccion no encontrada." << COLOR_RESET
+             << endl;
         return;
     }
 
-    Transaccion& t = tienda->transacciones[idx];
-    int idxProd = buscarEntidadPorId(tienda->productos, tienda->numProductos, t.idProducto);
+    Transaccion& transaccion = tienda->transacciones[idx];
+    int idxProd =
+        buscarEntidadPorId(tienda->productos, tienda->numProductos, transaccion.idProducto);
 
     if (idxProd == -1) {
-        cout << "Error: El producto de esta transaccion ya no existe en el sistema." << endl;
+        cout << CLEAR_SCREEN << COLOR_RED
+             << "Error: El producto de esta transaccion ya no existe en el sistema." << COLOR_RESET
+             << endl;
         return;
     }
     Producto& producto = tienda->productos[idxProd];
 
-    //REVERTIR EL STOCK (La parte lógica)
-    //Para saber si fue venta o compra, comparamos con los IDs de clientes
-    if (existeCliente(tienda, t.idRelacionado)) {
-        // Si el ID relacionado es un cliente, fue una VENTA -> Devolvemos al stock
-        producto.stock += t.cantidad;
-        cout << "[SISTEMA] Venta cancelada. Se devolvieron " << t.cantidad << " unidades al stock." << endl;
-    } else {
-        // Si no es cliente, asumimos PROVEEDOR -> Fue una COMPRA -> Quitamos del stock
-        if (producto.stock < t.cantidad) {
-            cout << "Error: No se puede cancelar la compra. El stock actual es menor a lo que quieres quitar." << endl;
+    // REVERTIR EL STOCK (La parte lógica)
+    if (transaccion.tipo == VENTA) {
+        // Si fue una VENTA -> Devolvemos al stock
+        producto.stock += transaccion.cantidad;
+        cout << "[SISTEMA] Venta cancelada. Se devolvieron " << transaccion.cantidad
+             << " unidades al stock." << endl;
+    } else if (transaccion.tipo == COMPRA) {
+        // Si fue una COMPRA -> Quitamos del stock
+        if (producto.stock < transaccion.cantidad) {
+            cout << "Error: No se puede cancelar la compra. El stock actual es menor a lo que "
+                    "quieres quitar."
+                 << endl;
             return;
         }
-        producto.stock -= t.cantidad;
-        cout << "[SISTEMA] Compra cancelada. Se retiraron " << t.cantidad << " unidades del stock." << endl;
+        producto.stock -= transaccion.cantidad;
+        cout << "[SISTEMA] Compra cancelada. Se retiraron " << transaccion.cantidad
+             << " unidades del stock." << endl;
     }
-    //eliminar la transaccion
-    //Movemos todas las transacciones siguientes una posición a la izquierda
-    for (int i = idx; i < tienda->numTransacciones - 1; i++) {
-        tienda->transacciones[i] = tienda->transacciones[i + 1];
-    }
-    tienda->numTransacciones--;
+    // eliminar la transaccion
+    eliminarElementoDeArray(tienda->transacciones, idx, tienda->numTransacciones);
     cout << "\n[!] Transaccion #" << idBuscar << " eliminada del historial con exito." << endl;
 }
-
 
 ///////////// FIN FUNCIONES CRUD DEL PROGRAMA //////////
 
 // VALIDACIONES
 bool validarEmail(const char* email) {
-    //Seguridad para ver si el puntero existe
-    if (email == nullptr)
-    {
-    return false;
+    // Seguridad para ver si el puntero existe
+    if (email == nullptr) {
+        return false;
     }
-    int PosicionAt = -1;                 //verificar y darle valor al "@"
-    bool TienePuntoDespues = false;      //para comprobar que tenga "." despues del "@"
-    int longitud = strlen(email);        //para que el ciclo for sepa hasta donde buscar
-    
-    //la funcion "for" para recorrer todo el email
-    for (int i = 0; i < longitud; i++)
-    {
-    if (email[i] == '@')
-        {
-    //verificacion si ya habia un @ y hay dos @
-        if(PosicionAt != -1) return false;   
-        PosicionAt = i;
+    int PosicionAt = -1;            // verificar y darle valor al "@"
+    bool TienePuntoDespues = false; // para comprobar que tenga "." despues del "@"
+    int longitud = strlen(email);   // para que el ciclo for sepa hasta donde buscar
+
+    // la funcion "for" para recorrer todo el email
+    for (int i = 0; i < longitud; i++) {
+        if (email[i] == '@') {
+            // verificacion si ya habia un @ y hay dos @
+            if (PosicionAt != -1)
+                return false;
+            PosicionAt = i;
         }
-    //verificacion de si hay un '.' despues de ya tener el '@'   
-    if (PosicionAt != -1 && email[i] == '.')
-        {
-        if(i > PosicionAt + 1)
-            {
-             TienePuntoDespues = true;
+        // verificacion de si hay un '.' despues de ya tener el '@'
+        if (PosicionAt != -1 && email[i] == '.') {
+            if (i > PosicionAt + 1) {
+                TienePuntoDespues = true;
             }
         }
-    
     }
-    // verificacion de los errores 
-    if (PosicionAt > 0 && PosicionAt < longitud -1 && TienePuntoDespues)
-    {
-    return true;
+    // verificacion de los errores
+    if (PosicionAt > 0 && PosicionAt < longitud - 1 && TienePuntoDespues) {
+        return true;
     }
     // si el email es invalido
     cout << "ERROR: Formato de email invalido." << endl;
     return false;
-    
 }
 bool validarFecha(const char* fecha) {
-    //estos solo estan vivios mientras se este utilizando esta funcion
+    // estos solo estan vivios mientras se este utilizando esta funcion
     using namespace std;
     using namespace std::chrono;
 
-    //extraemos los datos de YYYY-MM-DD
+    // extraemos los datos de YYYY-MM-DD
     stringstream ss(fecha);
     int y, m, d;
     char dash1, dash2;
 
-    //verificar si es correcto el formato
+    // verificar si es correcto el formato
     if (!(ss >> y >> dash1 >> m >> dash2 >> d)) {
-        return false; 
+        return false;
     }
 
-    //para ver que tenga los guiones donde van 
+    // para ver que tenga los guiones donde van
     if (dash1 != '-' || dash2 != '-') {
         return false;
     }
-        // year_month_day representa una fecha en el calendario civil
-       year_month_day ymd{year{y}, month{(unsigned)m}, day{(unsigned)d}};
-        return ymd.ok();
- 
+    // year_month_day representa una fecha en el calendario civil
+    year_month_day ymd{year{y}, month{(unsigned)m}, day{(unsigned)d}};
+    return ymd.ok();
 }
 
 bool existeProducto(Tienda* tienda, int id) {
-    //verificacion de seguridad
+    // verificacion de seguridad
     if (tienda == nullptr || tienda->productos == nullptr) {
-            return false;
-        }   
-    //usamos el template anterior
+        return false;
+    }
+    // usamos el template anterior
     return buscarEntidadPorId(tienda->productos, tienda->numProductos, id) != -1;
 }
 
 bool existeProveedor(Tienda* tienda, int id) {
-    //Verificación de seguridad básica
+    // Verificación de seguridad básica
     if (tienda == nullptr || tienda->proveedores == nullptr) {
         return false;
     }
-    //utilizamos el template anterior   
+    // utilizamos el template anterior
     return buscarEntidadPorId(tienda->proveedores, tienda->numProveedores, id) != -1;
 }
 
 bool existeCliente(Tienda* tienda, int id) {
-    //Verificación de seguridad
+    // Verificación de seguridad
     if (tienda == nullptr || tienda->clientes == nullptr) {
         return false;
     }
-    //utilizamos el template anterior
+    // utilizamos el template anterior
     return buscarEntidadPorId(tienda->clientes, tienda->numClientes, id) != -1;
 }
 
 bool codigoDuplicado(Tienda* tienda, const char* codigo) {
-        //Verificamos que la tienda exista
-        if (tienda == nullptr) {
-            return false;
+    // Verificamos que la tienda exista
+    if (tienda == nullptr) {
+        return false;
     }
-        //utilizamos el template anterior
-        return existeStringDuplicado(tienda->productos, tienda->numProductos, codigo, &Producto::codigo);
+    // utilizamos el template anterior
+    return existeStringDuplicado(tienda->productos, tienda->numProductos, codigo,
+                                 &Producto::codigo);
 }
 
 bool rifDuplicado(Tienda* tienda, const char* rif) {
-        //Verificación de seguridad
-        if (tienda == nullptr) {
-            return false;
-        }        
-        //usamos el template anterior
-        return existeStringDuplicado(tienda->proveedores, tienda->numProveedores, rif, &Proveedor::rif);
-    
+    // Verificación de seguridad
+    if (tienda == nullptr) {
+        return false;
+    }
+    // usamos el template anterior
+    return existeStringDuplicado(tienda->proveedores, tienda->numProveedores, rif, &Proveedor::rif);
 }
 
 // Búsquedas
 // =======================================================
-//                 SECCIÓN DE TEMPLATES 
+//                 SECCIÓN DE TEMPLATES
 // =======================================================
 // Casi todas las entidades tienen un id (cliente, proveedor, producto)
 template <typename T> int buscarEntidadPorId(T* array, int count, int id) {
@@ -1338,7 +1570,40 @@ template <typename T> int buscarEntidadPorId(T* array, int count, int id) {
     }
     return -1;
 }
-//para las entidades que revisan si si hay strngis duplicados(codigo,rif)
+
+template <typename T>
+void mostrarListaEntidades(const char* titulo, T* array, int count, TipoPropiedadLista tipoProp) {
+    if (count == 0)
+        return;
+
+    cout << "\n--- " << titulo << " Disponibles ---" << endl;
+    switch (tipoProp) {
+    case PropiedadId:
+        cout << format("{:<5}", "ID") << endl;
+        cout << "-------------------------------" << endl;
+        for (int i = 0; i < count; ++i) {
+            cout << format("{:<5}", array[i].id) << endl;
+        }
+        break;
+    case PropiedadNombre:
+        cout << format("{:<20}", "Nombre") << endl;
+        cout << "-------------------------------" << endl;
+        for (int i = 0; i < count; ++i) {
+            cout << format("{:<20}", array[i].nombre) << endl;
+        }
+        break;
+    case PropiedadAmbos:
+        cout << format("{:<5} | {:<20}", "ID", "Nombre") << endl;
+        cout << "-------------------------------" << endl;
+        for (int i = 0; i < count; ++i) {
+            cout << format("{:<5} | {:<20}", array[i].id, array[i].nombre) << endl;
+        }
+        break;
+    }
+    cout << "-------------------------------" << endl;
+}
+
+// para las entidades que revisan si si hay strngis duplicados(codigo,rif)
 template <typename T, size_t N>
 bool existeStringDuplicado(T* array, int count, const char* valorBusqueda, char (T::*miembro)[N]) {
     for (int i = 0; i < count; ++i) {
@@ -1382,6 +1647,20 @@ int* buscarProductosPorNombre(Tienda* tienda, const char* nombre) {
 
 // formato YYYY-MM-DD
 void obtenerFechaActual(char* fecha) {
+    auto ahora = std::chrono::system_clock::now();
+    // Convertimos el tiempo a formato de días (sys_days)
+    auto sys_days_now = std::chrono::time_point_cast<std::chrono::days>(ahora);
+    // Extraemos la fecha del calendario civil (year_month_day)
+    std::chrono::year_month_day ymd{sys_days_now};
+
+    // Convertimos las partes a enteros
+    int anio = static_cast<int>(ymd.year());
+    unsigned mes = static_cast<unsigned>(ymd.month());
+    unsigned dia = static_cast<unsigned>(ymd.day());
+
+    // Formateamos como "YYYY-MM-DD" y lo guardamos en el buffer (máximo 11 caracteres)
+    snprintf(fecha, 11, "%04d-%02u-%02u", anio, mes, dia);
+    fecha[10] = '\0'; // Aseguramos el null-termination por si acaso
 }
 
 void convertirAMinusculas(char* cadena) {
@@ -1419,44 +1698,49 @@ bool contieneSubstring(const char* cadena, const char* subcadena) {
 int leerId(const char* msg) {
     while (true) {
         cout << msg << " (q para salir): ";
+        string input;
+        cin >> input;
 
-        // si el primer caracter es 'q', se sale
-        if (cin.peek() == 'q' || cin.peek() == 'Q') {
+        if (input == "q" || input == "Q") {
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
             return -1;
         }
 
-        int id;
-        cin >> id;
-        if (cin.fail()) {
+        try {
+            int id = stoi(input);
+            cout << std::format("id: {}", id) << endl;
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+            if (id <= 0) {
+                cout << CLEAR_SCREEN << COLOR_RED
+                     << "El id debe ser numérico y mayor a 0. Intente nuevamente." << COLOR_RESET
+                     << endl;
+                continue;
+            }
+
+            return id;
+        } catch (const invalid_argument& e) {
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "El id debe ser un número." << endl;
-            cout << "¿Habrás querido salir? Presiona 'q' para salir." << endl;
+            cout << CLEAR_SCREEN << COLOR_RED << "El id debe ser numérico." << COLOR_RESET << endl;
+            cout << COLOR_YELLOW << "¿Habrás querido salir? Presiona 'q' para salir." << COLOR_RESET
+                 << endl;
             continue;
         }
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
-
-        if (id <= 0) {
-            cout << "El id debe ser numérico y mayor a 0. Intente nuevamente." << endl;
-            continue;
-        }
-
-        return id;
     }
 }
 
 void menuProductos(Tienda* tienda) {
     char opcion;
     do {
-        cout << "\n=== Gestión de Productos ===" << endl;
-        cout << "1. Crear Producto" << endl;
-        cout << "2. Buscar Producto" << endl;
-        cout << "3. Actualizar Producto" << endl;
-        cout << "4. Actualizar Stock" << endl;
-        cout << "5. Listar Productos" << endl;
-        cout << "6. Eliminar Producto" << endl;
-        cout << "0. Volver al Menú Principal" << endl;
+        cout << COLOR_CYAN << "\n=== Gestión de Productos ===" << COLOR_RESET << endl;
+        cout << COLOR_YELLOW << "1." << COLOR_RESET << " Crear Producto" << endl;
+        cout << COLOR_YELLOW << "2." << COLOR_RESET << " Buscar Producto" << endl;
+        cout << COLOR_YELLOW << "3." << COLOR_RESET << " Actualizar Producto" << endl;
+        cout << COLOR_YELLOW << "4." << COLOR_RESET << " Actualizar Stock" << endl;
+        cout << COLOR_YELLOW << "5." << COLOR_RESET << " Listar Productos" << endl;
+        cout << COLOR_YELLOW << "6." << COLOR_RESET << " Eliminar Producto" << endl;
+        cout << COLOR_RED << "0." << COLOR_RESET << " Volver al Menú Principal" << endl;
         cout << "Seleccione una opción: ";
         cin >> opcion;
 
@@ -1480,10 +1764,10 @@ void menuProductos(Tienda* tienda) {
             eliminarProducto(tienda);
             break;
         case '0':
-            cout << "Volviendo..." << endl;
+            cout << COLOR_GREEN << "Volviendo..." << COLOR_RESET << endl;
             break;
         default:
-            cout << "Opción inválida." << endl;
+            cout << CLEAR_SCREEN << COLOR_RED << "Opción inválida." << COLOR_RESET << endl;
         }
     } while (opcion != '0');
 }
@@ -1491,13 +1775,13 @@ void menuProductos(Tienda* tienda) {
 void menuProveedores(Tienda* tienda) {
     char opcion;
     do {
-        cout << "\n=== Gestión de Proveedores ===" << endl;
-        cout << "1. Crear Proveedor" << endl;
-        cout << "2. Buscar Proveedor" << endl;
-        cout << "3. Actualizar Proveedor" << endl;
-        cout << "4. Listar Proveedores" << endl;
-        cout << "5. Eliminar Proveedor" << endl;
-        cout << "0. Volver al Menú Principal" << endl;
+        cout << COLOR_CYAN << "\n=== Gestión de Proveedores ===" << COLOR_RESET << endl;
+        cout << COLOR_YELLOW << "1." << COLOR_RESET << " Crear Proveedor" << endl;
+        cout << COLOR_YELLOW << "2." << COLOR_RESET << " Buscar Proveedor" << endl;
+        cout << COLOR_YELLOW << "3." << COLOR_RESET << " Actualizar Proveedor" << endl;
+        cout << COLOR_YELLOW << "4." << COLOR_RESET << " Listar Proveedores" << endl;
+        cout << COLOR_YELLOW << "5." << COLOR_RESET << " Eliminar Proveedor" << endl;
+        cout << COLOR_RED << "0." << COLOR_RESET << " Volver al Menú Principal" << endl;
         cout << "Seleccione una opción: ";
         cin >> opcion;
 
@@ -1518,10 +1802,10 @@ void menuProveedores(Tienda* tienda) {
             eliminarProveedor(tienda);
             break;
         case '0':
-            cout << "Volviendo..." << endl;
+            cout << COLOR_GREEN << "Volviendo..." << COLOR_RESET << endl;
             break;
         default:
-            cout << "Opción inválida." << endl;
+            cout << CLEAR_SCREEN << COLOR_RED << "Opción inválida." << COLOR_RESET << endl;
         }
     } while (opcion != '0');
 }
@@ -1529,13 +1813,13 @@ void menuProveedores(Tienda* tienda) {
 void menuClientes(Tienda* tienda) {
     char opcion;
     do {
-        cout << "\n=== Gestión de Clientes ===" << endl;
-        cout << "1. Crear Cliente" << endl;
-        cout << "2. Buscar Cliente" << endl;
-        cout << "3. Actualizar Cliente" << endl;
-        cout << "4. Listar Clientes" << endl;
-        cout << "5. Eliminar Cliente" << endl;
-        cout << "0. Volver al Menú Principal" << endl;
+        cout << COLOR_CYAN << "\n=== Gestión de Clientes ===" << COLOR_RESET << endl;
+        cout << COLOR_YELLOW << "1." << COLOR_RESET << " Crear Cliente" << endl;
+        cout << COLOR_YELLOW << "2." << COLOR_RESET << " Buscar Cliente" << endl;
+        cout << COLOR_YELLOW << "3." << COLOR_RESET << " Actualizar Cliente" << endl;
+        cout << COLOR_YELLOW << "4." << COLOR_RESET << " Listar Clientes" << endl;
+        cout << COLOR_YELLOW << "5." << COLOR_RESET << " Eliminar Cliente" << endl;
+        cout << COLOR_RED << "0." << COLOR_RESET << " Volver al Menú Principal" << endl;
         cout << "Seleccione una opción: ";
         cin >> opcion;
 
@@ -1556,10 +1840,10 @@ void menuClientes(Tienda* tienda) {
             eliminarCliente(tienda);
             break;
         case '0':
-            cout << "Volviendo..." << endl;
+            cout << COLOR_GREEN << "Volviendo..." << COLOR_RESET << endl;
             break;
         default:
-            cout << "Opción inválida." << endl;
+            cout << CLEAR_SCREEN << COLOR_RED << "Opción inválida." << COLOR_RESET << endl;
         }
     } while (opcion != '0');
 }
@@ -1567,13 +1851,13 @@ void menuClientes(Tienda* tienda) {
 void menuTransacciones(Tienda* tienda) {
     char opcion;
     do {
-        cout << "\n=== Gestión de Transacciones ===" << endl;
-        cout << "1. Registrar Compra" << endl;
-        cout << "2. Registrar Venta" << endl;
-        cout << "3. Buscar Transacciones" << endl;
-        cout << "4. Listar Transacciones" << endl;
-        cout << "5. Cancelar Transacción" << endl;
-        cout << "0. Volver al Menú Principal" << endl;
+        cout << COLOR_CYAN << "\n=== Gestión de Transacciones ===" << COLOR_RESET << endl;
+        cout << COLOR_YELLOW << "1." << COLOR_RESET << " Registrar Compra" << endl;
+        cout << COLOR_YELLOW << "2." << COLOR_RESET << " Registrar Venta" << endl;
+        cout << COLOR_YELLOW << "3." << COLOR_RESET << " Buscar Transacciones" << endl;
+        cout << COLOR_YELLOW << "4." << COLOR_RESET << " Listar Transacciones" << endl;
+        cout << COLOR_YELLOW << "5." << COLOR_RESET << " Cancelar Transacción" << endl;
+        cout << COLOR_RED << "0." << COLOR_RESET << " Volver al Menú Principal" << endl;
         cout << "Seleccione una opción: ";
         cin >> opcion;
 
@@ -1594,10 +1878,10 @@ void menuTransacciones(Tienda* tienda) {
             cancelarTransaccion(tienda);
             break;
         case '0':
-            cout << "Volviendo..." << endl;
+            cout << COLOR_GREEN << "Volviendo..." << COLOR_RESET << endl;
             break;
         default:
-            cout << "Opción inválida." << endl;
+            cout << CLEAR_SCREEN << COLOR_RED << "Opción inválida." << COLOR_RESET << endl;
         }
     } while (opcion != '0');
 }
@@ -1608,14 +1892,15 @@ int main() {
 
     char opcion;
     do {
-        cout << "\n=== PAPAYA STORE - Menú Principal ===" << endl;
-        cout << "1. Gestión de Productos" << endl;
-        cout << "2. Gestión de Proveedores" << endl;
-        cout << "3. Gestión de Clientes" << endl;
-        cout << "4. Gestión de Transacciones" << endl;
-        cout << "0. Salir" << endl;
+        cout << COLOR_CYAN << "\n=== PAPAYA STORE - Menú Principal ===" << COLOR_RESET << endl;
+        cout << COLOR_YELLOW << "1." << COLOR_RESET << " Gestión de Productos" << endl;
+        cout << COLOR_YELLOW << "2." << COLOR_RESET << " Gestión de Proveedores" << endl;
+        cout << COLOR_YELLOW << "3." << COLOR_RESET << " Gestión de Clientes" << endl;
+        cout << COLOR_YELLOW << "4." << COLOR_RESET << " Gestión de Transacciones" << endl;
+        cout << COLOR_RED << "0." << COLOR_RESET << " Salir" << endl;
         cout << "Seleccione una opción: ";
-        cin >> opcion;
+        if (!(cin >> opcion))
+            break;
 
         switch (opcion) {
         case '1':
@@ -1631,15 +1916,13 @@ int main() {
             menuTransacciones(&tienda);
             break;
         case '0':
-            cout << "Saliendo del sistema..." << endl;
+            cout << COLOR_GREEN << "Saliendo..." << COLOR_RESET << endl;
             break;
         default:
-            cout << "Opción inválida. Intente de nuevo." << endl;
+            cout << CLEAR_SCREEN << COLOR_RED << "Opcion no valida" << COLOR_RESET << endl;
         }
     } while (opcion != '0');
 
     liberarTienda(&tienda);
-    cout << "Saliendo del sistema..." << endl;
     return 0;
 }
-
