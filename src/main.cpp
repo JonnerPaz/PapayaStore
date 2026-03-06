@@ -1,4 +1,5 @@
 #include <chrono>
+#include <clocale>
 #include <cstring>
 #include <ctime>
 #include <filesystem>
@@ -28,22 +29,22 @@ const char* PROVEEDORES_PATH = "./data/proveedores.bin";
 const char* CLIENTES_PATH = "./data/clientes.bin";
 const char* TRANSACCIONES_PATH = "./data/transacciones.bin";
 const char* TIENDA_PATH = "./data/tienda.bin";
-const char* BACKUP_PATH = "./data/backup.bin";
+const char* BACKUP_PATH = "./data/backup/backup.bin";
 
 struct Tienda;
 template <typename T> int buscarEntidadPorId(const char* path, int id);
 int leerId(const char* msg);
 void obtenerFechaActual(char* fecha);
-int* buscarProductosPorNombre(Tienda* tienda, const char* nombre);
-void listarProductos(Tienda* tienda);
+int* buscarProductosPorNombre(const char* nombre);
+void listarProductos();
 void convertirAMinusculas(char* cadena);
 bool contieneSubstring(const char* cadena, const char* subcadena);
 template <typename T, size_t N>
 bool existeStringDuplicado(const char* path, const char* valorBusqueda, char (T::*miembro)[N]);
-bool existeProveedor(Tienda* tienda, int id);
-bool existeCliente(Tienda* tienda, int id);
-bool codigoDuplicado(Tienda* tienda, const char* codigo);
-bool rifDuplicado(Tienda* tienda, const char* rif);
+bool existeProveedor(int id);
+bool existeCliente(int id);
+bool codigoDuplicado(const char* codigo);
+bool rifDuplicado(const char* rif);
 bool validarEmail(const char* email);
 
 enum TipoDeTransaccion { COMPRA, VENTA };
@@ -270,7 +271,7 @@ void inicializarTienda(const char* nombre, const char* rif) {
     }
 }
 
-void crearProducto(Tienda* tienda) {
+void crearProducto() {
     ifstream archivo(PRODUCTOS_PATH, ios::binary);
     if (!archivo) {
         cout << format("{} {} Error: No se pudo abrir el archivo de productos. {}", CLEAR_SCREEN,
@@ -305,7 +306,7 @@ void crearProducto(Tienda* tienda) {
             cout << COLOR_RED << "Error: El código no puede estar vacío." << COLOR_RESET << endl;
             continue;
         }
-        if (codigoDuplicado(tienda, codigo)) {
+        if (codigoDuplicado(codigo)) {
             cout << COLOR_RED << "Error: Ya existe un producto con el código " << codigo
                  << COLOR_RESET << endl;
         } else {
@@ -337,7 +338,7 @@ void crearProducto(Tienda* tienda) {
             return;
         }
 
-        if (existeProveedor(tienda, idProveedor)) {
+        if (existeProveedor(idProveedor)) {
             break;
         }
 
@@ -390,7 +391,7 @@ void crearProducto(Tienda* tienda) {
     }
 }
 
-void buscarProducto(Tienda* tienda) {
+void buscarProducto() {
     char opcion;
     do {
         cout << COLOR_CYAN << "Seleccione el criterio de busqueda: " << COLOR_RESET << endl;
@@ -441,7 +442,7 @@ void buscarProducto(Tienda* tienda) {
             // array de indices del producto. Asumimos que index[0] es la cantidad de
             // encontrados y a partir de index[1] estan los indices reales en el array de la
             // tienda
-            int* index = buscarProductosPorNombre(tienda, nombre);
+            int* index = buscarProductosPorNombre(nombre);
             if (index == nullptr || index[0] == 0) {
                 cout << "Producto no encontrado." << endl;
                 if (index != nullptr)
@@ -469,7 +470,7 @@ void buscarProducto(Tienda* tienda) {
         }
 
         case BusquedaMostrar: {
-            listarProductos(tienda);
+            listarProductos();
             break;
         }
         case BusquedaCancelada: {
@@ -545,9 +546,7 @@ template <typename T> void manejarPropiedad(const string& nombrePropiedad, T& pr
     }
 }
 
-void actualizarProducto(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
+void actualizarProducto() {
 
     mostrarListaEntidades<Producto>("Productos", PRODUCTOS_PATH, PropiedadAmbos);
 
@@ -635,9 +634,7 @@ void actualizarProducto(Tienda* tienda) {
     } while (opcion != ActualizarCancelada);
 }
 
-void actualizarStockProducto(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
+void actualizarStockProducto() {
 
     mostrarListaEntidades<Producto>("Productos", PRODUCTOS_PATH, PropiedadAmbos);
 
@@ -739,9 +736,7 @@ void actualizarStockProducto(Tienda* tienda) {
     } while (opcion != '0');
 }
 
-void listarProductos(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
+void listarProductos() {
 
     ifstream archivo(PRODUCTOS_PATH, ios::binary);
     if (!archivo.is_open()) {
@@ -774,9 +769,7 @@ void listarProductos(Tienda* tienda) {
     archivo.close();
 }
 
-void eliminarProducto(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
+void eliminarProducto() {
 
     mostrarListaEntidades<Producto>("Productos", PRODUCTOS_PATH, PropiedadAmbos);
 
@@ -833,7 +826,7 @@ void eliminarProducto(Tienda* tienda) {
     }
 }
 
-void crearProveedor(Tienda* tienda) {
+void crearProveedor() {
     fstream archivo;
     try {
         ifstream archivo(PROVEEDORES_PATH, ios::binary);
@@ -857,7 +850,7 @@ void crearProveedor(Tienda* tienda) {
             cout << COLOR_RED << "Error: El RIF no puede estar vacío." << COLOR_RESET << endl;
             continue;
         }
-        if (rifDuplicado(tienda, rif)) {
+        if (rifDuplicado(rif)) {
             cout << COLOR_RED << "Error: Ya existe un proveedor con el RIF " << rif << COLOR_RESET
                  << endl;
         } else {
@@ -912,9 +905,7 @@ void crearProveedor(Tienda* tienda) {
     }
 }
 
-void buscarProveedor(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
+void buscarProveedor() {
 
     mostrarListaEntidades<Proveedor>("Proveedores", PROVEEDORES_PATH, PropiedadId);
 
@@ -940,9 +931,7 @@ void buscarProveedor(Tienda* tienda) {
          << "\nFecha de Registro: " << p.fechaRegistro << endl;
 }
 
-void actualizarProveedor(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
+void actualizarProveedor() {
 
     mostrarListaEntidades<Proveedor>("Proveedores", PROVEEDORES_PATH, PropiedadAmbos);
 
@@ -1005,9 +994,7 @@ void actualizarProveedor(Tienda* tienda) {
     } while (opcion != '0');
 }
 
-void listarProveedores(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
+void listarProveedores() {
 
     ifstream archivo(PROVEEDORES_PATH, ios::binary);
     if (!archivo.is_open()) {
@@ -1046,9 +1033,7 @@ void listarProveedores(Tienda* tienda) {
          << endl;
 }
 
-void eliminarProveedor(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
+void eliminarProveedor() {
 
     mostrarListaEntidades<Proveedor>("Proveedores", PROVEEDORES_PATH, PropiedadAmbos);
 
@@ -1098,7 +1083,7 @@ void eliminarProveedor(Tienda* tienda) {
     }
 }
 
-void crearCliente(Tienda* tienda) {
+void crearCliente() {
     fstream archivo;
     try {
         ifstream archivo(CLIENTES_PATH, ios::binary);
@@ -1165,9 +1150,7 @@ void crearCliente(Tienda* tienda) {
     }
 }
 
-void buscarCliente(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
+void buscarCliente() {
 
     mostrarListaEntidades<Cliente>("Clientes", CLIENTES_PATH, PropiedadId);
 
@@ -1194,9 +1177,7 @@ void buscarCliente(Tienda* tienda) {
          << "\nFecha de Registro: " << c.fechaRegistro << endl;
 }
 
-void actualizarCliente(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
+void actualizarCliente() {
 
     mostrarListaEntidades<Cliente>("Clientes", CLIENTES_PATH, PropiedadAmbos);
 
@@ -1260,9 +1241,7 @@ void actualizarCliente(Tienda* tienda) {
     } while (opcion != '0');
 }
 
-void listarClientes(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
+void listarClientes() {
 
     ifstream archivo(CLIENTES_PATH, ios::binary);
     if (!archivo.is_open()) {
@@ -1300,9 +1279,7 @@ void listarClientes(Tienda* tienda) {
          << endl;
 }
 
-void eliminarCliente(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
+void eliminarCliente() {
 
     mostrarListaEntidades<Cliente>("Clientes", CLIENTES_PATH, PropiedadAmbos);
 
@@ -1353,9 +1330,7 @@ void eliminarCliente(Tienda* tienda) {
     }
 }
 
-void registrarCompra(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
+void registrarCompra() {
 
     cout << "\n===REGISTRAR COMPRA (Entrada de Mercancia)===" << endl;
 
@@ -1387,7 +1362,7 @@ void registrarCompra(Tienda* tienda) {
         cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
         return;
     }
-    if (!existeProveedor(tienda, idProv)) {
+    if (!existeProveedor(idProv)) {
         cout << CLEAR_SCREEN << COLOR_RED << "Error: El proveedor no existe en el sistema."
              << COLOR_RESET << endl;
         return;
@@ -1440,9 +1415,7 @@ void registrarCompra(Tienda* tienda) {
     cout << "Stock actualizado de " << producto.nombre << ": " << producto.stock << endl;
 }
 
-void registrarVenta(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
+void registrarVenta() {
 
     cout << "\n===REGISTRAR VENTA (Salida de Mercancia)===" << endl;
 
@@ -1487,7 +1460,7 @@ void registrarVenta(Tienda* tienda) {
         cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
         return;
     }
-    if (!existeCliente(tienda, idCli)) {
+    if (!existeCliente(idCli)) {
         cout << CLEAR_SCREEN << COLOR_RED << "Error: El cliente no existe." << COLOR_RESET << endl;
         return;
     }
@@ -1536,9 +1509,7 @@ void registrarVenta(Tienda* tienda) {
          << " | Stock restante: " << producto.stock << endl;
 }
 
-void buscarTransacciones(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
+void buscarTransacciones() {
 
     ArchivoHeader header = leerHeader(TRANSACCIONES_PATH);
     if (header.registrosActivos == 0) {
@@ -1584,9 +1555,7 @@ void buscarTransacciones(Tienda* tienda) {
     cout << "========================================" << endl;
 }
 
-void listarTransacciones(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
+void listarTransacciones() {
 
     ArchivoHeader header = leerHeader(TRANSACCIONES_PATH);
     if (header.registrosActivos == 0) {
@@ -1637,9 +1606,7 @@ void listarTransacciones(Tienda* tienda) {
     cout << "Total de registros: " << count << endl;
 }
 
-void cancelarTransaccion(Tienda* tienda) {
-    if (tienda == nullptr)
-        return;
+void cancelarTransaccion() {
 
     ArchivoHeader header = leerHeader(TRANSACCIONES_PATH);
     if (header.registrosActivos == 0) {
@@ -1781,38 +1748,23 @@ bool validarFecha(const char* fecha) {
     return ymd.ok();
 }
 
-bool existeProducto(Tienda* tienda, int id) {
-    if (tienda == nullptr) {
-        return false;
-    }
+bool existeProducto(int id) {
     return buscarEntidadPorId<Producto>(PRODUCTOS_PATH, id) != -1;
 }
 
-bool existeProveedor(Tienda* tienda, int id) {
-    if (tienda == nullptr) {
-        return false;
-    }
+bool existeProveedor(int id) {
     return buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, id) != -1;
 }
 
-bool existeCliente(Tienda* tienda, int id) {
-    if (tienda == nullptr) {
-        return false;
-    }
+bool existeCliente(int id) {
     return buscarEntidadPorId<Cliente>(CLIENTES_PATH, id) != -1;
 }
 
-bool codigoDuplicado(Tienda* tienda, const char* codigo) {
-    if (tienda == nullptr) {
-        return false;
-    }
+bool codigoDuplicado(const char* codigo) {
     return existeStringDuplicado<Producto>(PRODUCTOS_PATH, codigo, &Producto::codigo);
 }
 
-bool rifDuplicado(Tienda* tienda, const char* rif) {
-    if (tienda == nullptr) {
-        return false;
-    }
+bool rifDuplicado(const char* rif) {
     return existeStringDuplicado<Proveedor>(PROVEEDORES_PATH, rif, &Proveedor::rif);
 }
 
@@ -1911,9 +1863,7 @@ bool existeStringDuplicado(const char* path, const char* valorBusqueda, char (T:
 }
 
 // retorna array de indices del producto
-int* buscarProductosPorNombre(Tienda* tienda, const char* nombre) {
-    if (tienda == nullptr || nombre == nullptr)
-        return nullptr;
+int* buscarProductosPorNombre(const char* nombre) {
 
     ifstream archivo(PRODUCTOS_PATH, ios::binary);
     if (!archivo.is_open())
