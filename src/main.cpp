@@ -22,11 +22,18 @@ const char* COLOR_YELLOW = "\033[33m";
 const char* COLOR_RED = "\033[31m";
 const char* COLOR_MAGENTA = "\033[35m";
 
+// File paths
+const char* PRODUCTOS_PATH = "./data/productos.bin";
+const char* PROVEEDORES_PATH = "./data/proveedores.bin";
+const char* CLIENTES_PATH = "./data/clientes.bin";
+const char* TRANSACCIONES_PATH = "./data/transacciones.bin";
+const char* TIENDA_PATH = "./data/tienda.bin";
+const char* BACKUP_PATH = "./data/backup.bin";
+
 struct Tienda;
 template <typename T> int buscarEntidadPorId(T* array, int count, int id);
 int leerId(const char* msg);
 void obtenerFechaActual(char* fecha);
-// retorna array de indices del producto
 int* buscarProductosPorNombre(Tienda* tienda, const char* nombre);
 void listarProductos(Tienda* tienda);
 void convertirAMinusculas(char* cadena);
@@ -202,28 +209,6 @@ template <size_t N> void copiarString(char (&destino)[N], const char* origen) {
     destino[N - 1] = '\0';
 }
 
-// Helper template para desplazar elementos a la izquierda al eliminar
-// Actualiza el count a la cantidad de elementos restantes.
-// CUIDADO DE PASAR LA CUENTA DE UN ARRAY DIFERENTE AL ARRAY
-template <typename T> void eliminarElementoDeArray(T* array, int index, int& count) {
-    for (int i = index; i < count - 1; ++i) {
-        array[i] = array[i + 1];
-    }
-    count--;
-}
-
-// Helper template para redimensionar arrays dinámicos
-template <typename T> void redimensionarEntidad(T*& array, int& capacidad, int numElementos) {
-    int nuevaCapacidad = capacidad * 2;
-    T* nuevoArray = new T[nuevaCapacidad];
-    for (int i = 0; i < numElementos; ++i) {
-        nuevoArray[i] = array[i];
-    }
-    delete[] array;
-    array = nuevoArray;
-    capacidad = nuevaCapacidad;
-}
-
 ///// FUNCIONES CRUD DEL PROGRAMA
 bool inicializarArchivo(const char* path) {
     if (fs::exists(path)) {
@@ -235,17 +220,20 @@ bool inicializarArchivo(const char* path) {
     ArchivoHeader header = {
         .cantidadRegistros = 0, .proximoID = 1, .registrosActivos = 0, .version = 1};
     archivo.write(reinterpret_cast<const char*>(&header), sizeof(ArchivoHeader));
-    return archivo.is_open() ? true : false;
+    archivo.close();
+
+    return fs::exists(path);
 }
 
 ArchivoHeader leerHeader(const char* path) {
     try {
         ArchivoHeader header;
         ifstream archivo(path, ios::binary);
+        archivo.seekg(0);
         archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
         return header;
     } catch (const std::exception& e) {
-        cerr << "Error al leer el archivo: " << e.what() << endl;
+        cerr << "Error al leer el archivo " << path << ": " << e.what() << endl;
         return ArchivoHeader();
     }
 }
@@ -262,47 +250,44 @@ bool actualizarHeader(const char* path, ArchivoHeader header) {
     }
 }
 
-void inicializarTienda(Tienda* tienda, const char* nombre, const char* rif) {
-    const int CAPACIDAD_INICIAL = 5;
+void inicializarTienda(const char* nombre, const char* rif) {
+    Tienda tienda = {};
+    strncpy(tienda.nombre, nombre, sizeof(tienda.nombre) - 1);
+    tienda.nombre[sizeof(tienda.nombre) - 1] = '\0';
 
-    strncpy(tienda->nombre, nombre, 100);
-    strncpy(tienda->rif, rif, 20);
-}
+    strncpy(tienda.rif, rif, sizeof(tienda.rif) - 1);
+    tienda.rif[sizeof(tienda.rif) - 1] = '\0';
 
-void liberarTienda(Tienda* tienda) {
+    string paths[5] = {PRODUCTOS_PATH, PROVEEDORES_PATH, CLIENTES_PATH, TRANSACCIONES_PATH,
+                       TIENDA_PATH};
+
+    // Inicializar todos los archivos tan pronto como inicie el programa
+    for (string path : paths) {
+        inicializarArchivo(path.c_str());
+    }
 }
-// Forward declarations para validaciones
-bool codigoDuplicado(Tienda* tienda, const char* codigo);
-bool rifDuplicado(Tienda* tienda, const char* rif);
-bool validarEmail(const char* email);
 
 void crearProducto(Tienda* tienda) {
-    if (tienda == nullptr) {
-        cout << CLEAR_SCREEN << COLOR_RED << "Error: La tienda no ha sido creada." << COLOR_RESET
+    ifstream archivo(PRODUCTOS_PATH, ios::binary);
+    if (!archivo) {
+        cout << format("{} {} Error: No se pudo abrir el archivo de productos. {}", CLEAR_SCREEN,
+                       COLOR_RED, COLOR_RESET);
+        return;
+    }
+
+    ArchivoHeader productosHeader = leerHeader(PRODUCTOS_PATH);
+    ArchivoHeader proveedoresHeader = leerHeader(PROVEEDORES_PATH);
+
+    if (proveedoresHeader.registrosActivos == 0) {
+        cout << format(
+                    "{} {} Error: No hay proveedores registrados. Debe crear al menos un proveedor "
+                    "antes de registrar un producto. {}",
+                    CLEAR_SCREEN, COLOR_RED, COLOR_RESET)
              << endl;
         return;
     }
 
-    if (tienda->numProveedores == 0) {
-        cout << CLEAR_SCREEN << COLOR_RED
-             << "Error: No hay proveedores registrados. Debe crear al menos un proveedor antes "
-                "de "
-                "registrar un producto."
-             << COLOR_RESET << endl;
-        return;
-    }
-
-    int& totalDeProductos = tienda->numProductos;
-    int& capacidadProductos = tienda->capacidadProductos;
-    Producto*& productos = tienda->productos;
-
-    if (totalDeProductos >= capacidadProductos) {
-        redimensionarEntidad(productos, capacidadProductos, totalDeProductos);
-    }
-
-    int index = tienda->numProductos;
     char confirmar;
-
     char nombre[100];
     asignarPropiedadString("Ingrese el nombre del producto (q para cancelar): ", nombre);
     if (nombre[0] == 'q' && nombre[1] == '\0')
@@ -360,29 +345,42 @@ void crearProducto(Tienda* tienda) {
     }
 
     cout << "Los datos del producto son: " << endl;
-    cout << "Nombre: " << nombre << endl;
-    cout << "Codigo: " << codigo << endl;
-    cout << "Descripcion: " << descripcion << endl;
-    cout << "Precio: " << precio << endl;
-    cout << "Stock: " << stock << endl;
-    cout << "Proveedor: " << idProveedor << endl;
+    cout << format("Nombre: {}", nombre) << endl;
+    cout << format("Codigo: {}", codigo) << endl;
+    cout << format("Descripcion: {}", descripcion) << endl;
+    cout << format("Precio: {}", precio) << endl;
+    cout << format("Stock: {}", stock) << endl;
+    cout << format("Proveedor: {}", idProveedor) << endl;
 
     cout << COLOR_YELLOW << "Está seguro de crear el producto? (s/n): " << COLOR_RESET;
     cin >> confirmar;
 
     if (confirmar == 's' || confirmar == 'S') {
-        Producto& producto = tienda->productos[index];
-        producto.id = tienda->siguienteIdProducto;
+        Producto producto = {};
+        producto.id = productosHeader.proximoID;
         producto.idProveedor = idProveedor;
         copiarString(producto.nombre, nombre);
         copiarString(producto.codigo, codigo);
         copiarString(producto.descripcion, descripcion);
         producto.precio = precio;
         producto.stock = stock;
+        producto.eliminado = false;
+        auto now = chrono::system_clock::now();
+        producto.fechaCreacion = chrono::system_clock::to_time_t(now);
+        producto.fechaUltimaModificacion = producto.fechaCreacion;
         obtenerFechaActual(producto.fechaRegistro);
 
-        tienda->siguienteIdProducto++;
-        tienda->numProductos++;
+        // actualizar el header
+        productosHeader.cantidadRegistros++;
+        productosHeader.registrosActivos++;
+        productosHeader.proximoID++;
+
+        ofstream archivoOut(PRODUCTOS_PATH, ios::binary | ios::app);
+        archivoOut.write(reinterpret_cast<const char*>(&producto), sizeof(Producto));
+        archivoOut.close();
+
+        actualizarHeader(PRODUCTOS_PATH, productosHeader);
+
         cout << "Producto creado con exito." << endl;
     } else {
         cout << "Producto no creado." << endl;
@@ -847,15 +845,28 @@ void crearProveedor(Tienda* tienda) {
     char confirmar;
     cin >> confirmar;
     if (confirmar == 's' || confirmar == 'S') {
-        Proveedor& prov = tienda->proveedores[index];
-        prov.id = tienda->siguienteIdProveedor++;
+        Proveedor prov = {};
+        prov.id = proveedoresHeader.proximoID;
         copiarString(prov.nombre, nombre);
         copiarString(prov.rif, rif);
         copiarString(prov.telefono, telefono);
         copiarString(prov.email, email);
         copiarString(prov.direccion, direccion);
+        prov.eliminado = false;
+        prov.fechaCreacion = time(nullptr);
+        prov.fechaUltimaModificacion = prov.fechaCreacion;
         obtenerFechaActual(prov.fechaRegistro);
-        tienda->numProveedores++;
+
+        proveedoresHeader.cantidadRegistros++;
+        proveedoresHeader.registrosActivos++;
+        proveedoresHeader.proximoID++;
+
+        ofstream archivoOut(PROVEEDORES_PATH, ios::binary | ios::app);
+        archivoOut.write(reinterpret_cast<const char*>(&prov), sizeof(Proveedor));
+        archivoOut.close();
+
+        actualizarHeader(PROVEEDORES_PATH, proveedoresHeader);
+
         cout << "Proveedor creado con exito." << endl;
     } else {
         cout << "Proveedor no creado." << endl;
@@ -1043,15 +1054,28 @@ void crearCliente(Tienda* tienda) {
     char confirmar;
     cin >> confirmar;
     if (confirmar == 's' || confirmar == 'S') {
-        Cliente& cliente = tienda->clientes[index];
-        cliente.id = tienda->siguienteIdCliente++;
+        Cliente cliente = {};
+        cliente.id = clientesHeader.proximoID;
         copiarString(cliente.nombre, nombre);
         copiarString(cliente.cedula, cedula);
         copiarString(cliente.telefono, telefono);
         copiarString(cliente.email, email);
         copiarString(cliente.direccion, direccion);
+        cliente.eliminado = false;
+        cliente.fechaCreacion = time(nullptr);
+        cliente.fechaUltimaModificacion = cliente.fechaCreacion;
         obtenerFechaActual(cliente.fechaRegistro);
-        tienda->numClientes++;
+
+        clientesHeader.cantidadRegistros++;
+        clientesHeader.registrosActivos++;
+        clientesHeader.proximoID++;
+
+        ofstream archivoOut(CLIENTES_PATH, ios::binary | ios::app);
+        archivoOut.write(reinterpret_cast<const char*>(&cliente), sizeof(Cliente));
+        archivoOut.close();
+
+        actualizarHeader(CLIENTES_PATH, clientesHeader);
+
         cout << "Cliente creado con exito." << endl;
     } else {
         cout << "Cliente no creado." << endl;
@@ -1678,6 +1702,25 @@ int* buscarProductosPorNombre(Tienda* tienda, const char* nombre) {
     return result;
 }
 
+int obtenerIndiceFisico(const char* path, int idSearch) {
+    ifstream archivo(path, ios::binary);
+    if (!archivo)
+        return -1;
+
+    ArchivoHeader header;
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+
+    Producto temp;
+    int indice = 0;
+    while (archivo.read(reinterpret_cast<char*>(&temp), sizeof(Producto))) {
+        if (!temp.eliminado && temp.id == idSearch) {
+            return indice; // Retornamos la posición física (0, 1, 2...)
+        }
+        indice++;
+    }
+    return -1;
+}
+
 //// UTILIDADES
 
 // formato YYYY-MM-DD
@@ -1923,7 +1966,7 @@ void menuTransacciones(Tienda* tienda) {
 
 int main() {
     Tienda tienda;
-    inicializarTienda(&tienda, "Papaya Store", "J-123456789");
+    inicializarTienda("Papaya Store", "J-123456789");
 
     char opcion;
     do {
@@ -1958,6 +2001,5 @@ int main() {
         }
     } while (opcion != '0');
 
-    liberarTienda(&tienda);
     return 0;
 }
