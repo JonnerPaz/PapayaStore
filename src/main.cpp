@@ -2007,198 +2007,87 @@ int leerId(const char* msg) {
     }
 }
 
-void menuProductos(Tienda* tienda) {
-    char opcion;
+struct OpcionMenu {
+    const char* descripcion;
+    void (*accion)();
+};
+void drawMenu(const char* title, OpcionMenu options[], int numOptions,
+              const char* texToExit = "Volver al Menú Principal") {
+    char option;
     do {
-        cout << COLOR_CYAN << "\n=== Gestión de Productos ===" << COLOR_RESET << endl;
-        cout << COLOR_YELLOW << "1." << COLOR_RESET << " Crear Producto" << endl;
-        cout << COLOR_YELLOW << "2." << COLOR_RESET << " Buscar Producto" << endl;
-        cout << COLOR_YELLOW << "3." << COLOR_RESET << " Actualizar Producto" << endl;
-        cout << COLOR_YELLOW << "4." << COLOR_RESET << " Actualizar Stock" << endl;
-        cout << COLOR_YELLOW << "5." << COLOR_RESET << " Listar Productos" << endl;
-        cout << COLOR_YELLOW << "6." << COLOR_RESET << " Eliminar Producto" << endl;
-        cout << COLOR_RED << "0." << COLOR_RESET << " Volver al Menú Principal" << endl;
+        cout << CLEAR_SCREEN;
+        cout << COLOR_CYAN << "\n=== " << title << " ===" << COLOR_RESET << endl;
+        for (int i = 0; i < numOptions; ++i) {
+            cout << COLOR_YELLOW << i + 1 << "." << COLOR_RESET << " " << options[i].descripcion
+                 << endl;
+        }
+        cout << COLOR_RED << "0." << COLOR_RESET << " " << texToExit << endl;
         cout << "Seleccione una opción: ";
-        cin >> opcion;
 
-        switch (opcion) {
-        case '1':
-            crearProducto(tienda);
+        if (!(cin >> option))
             break;
-        case '2':
-            buscarProducto(tienda);
-            break;
-        case '3':
-            actualizarProducto(tienda);
-            break;
-        case '4':
-            actualizarStockProducto(tienda);
-            break;
-        case '5':
-            listarProductos(tienda);
-            break;
-        case '6':
-            eliminarProducto(tienda);
-            break;
-        case '0':
-            cout << COLOR_GREEN << "Volviendo..." << COLOR_RESET << endl;
-            break;
-        default:
+
+        if (option == '0') {
+            cout << COLOR_GREEN << (texToExit[0] == 'S' ? "Saliendo..." : "Volviendo...")
+                 << COLOR_RESET << endl;
+        }
+
+        int index = option - '1';
+        if (index >= 0 && index < numOptions) {
+            if (options[index].accion != nullptr) {
+                options[index].accion();
+            }
+        } else {
             cout << CLEAR_SCREEN << COLOR_RED << "Opción inválida." << COLOR_RESET << endl;
         }
-    } while (opcion != '0');
+    } while (option != '0');
 }
 
-void menuProveedores(Tienda* tienda) {
-    char opcion;
-    do {
-        cout << COLOR_CYAN << "\n=== Gestión de Proveedores ===" << COLOR_RESET << endl;
-        cout << COLOR_YELLOW << "1." << COLOR_RESET << " Crear Proveedor" << endl;
-        cout << COLOR_YELLOW << "2." << COLOR_RESET << " Buscar Proveedor" << endl;
-        cout << COLOR_YELLOW << "3." << COLOR_RESET << " Actualizar Proveedor" << endl;
-        cout << COLOR_YELLOW << "4." << COLOR_RESET << " Listar Proveedores" << endl;
-        cout << COLOR_YELLOW << "5." << COLOR_RESET << " Eliminar Proveedor" << endl;
-        cout << COLOR_RED << "0." << COLOR_RESET << " Volver al Menú Principal" << endl;
-        cout << "Seleccione una opción: ";
-        cin >> opcion;
-
-        switch (opcion) {
-        case '1':
-            crearProveedor(tienda);
-            break;
-        case '2':
-            buscarProveedor(tienda);
-            break;
-        case '3':
-            actualizarProveedor(tienda);
-            break;
-        case '4':
-            listarProveedores(tienda);
-            break;
-        case '5':
-            eliminarProveedor(tienda);
-            break;
-        case '0':
-            cout << COLOR_GREEN << "Volviendo..." << COLOR_RESET << endl;
-            break;
-        default:
-            cout << CLEAR_SCREEN << COLOR_RED << "Opción inválida." << COLOR_RESET << endl;
-        }
-    } while (opcion != '0');
+void menuProductos() {
+    OpcionMenu opciones[] = {
+        {"Crear Producto", crearProducto},           {"Buscar Producto", buscarProducto},
+        {"Actualizar Producto", actualizarProducto}, {"Actualizar Stock", actualizarStockProducto},
+        {"Listar Productos", listarProductos},       {"Eliminar Producto", eliminarProducto}};
+    drawMenu("Gestión de Productos", opciones, 6);
 }
 
-void menuClientes(Tienda* tienda) {
-    char opcion;
-    do {
-        cout << COLOR_CYAN << "\n=== Gestión de Clientes ===" << COLOR_RESET << endl;
-        cout << COLOR_YELLOW << "1." << COLOR_RESET << " Crear Cliente" << endl;
-        cout << COLOR_YELLOW << "2." << COLOR_RESET << " Buscar Cliente" << endl;
-        cout << COLOR_YELLOW << "3." << COLOR_RESET << " Actualizar Cliente" << endl;
-        cout << COLOR_YELLOW << "4." << COLOR_RESET << " Listar Clientes" << endl;
-        cout << COLOR_YELLOW << "5." << COLOR_RESET << " Eliminar Cliente" << endl;
-        cout << COLOR_RED << "0." << COLOR_RESET << " Volver al Menú Principal" << endl;
-        cout << "Seleccione una opción: ";
-        cin >> opcion;
-
-        switch (opcion) {
-        case '1':
-            crearCliente(tienda);
-            break;
-        case '2':
-            buscarCliente(tienda);
-            break;
-        case '3':
-            actualizarCliente(tienda);
-            break;
-        case '4':
-            listarClientes(tienda);
-            break;
-        case '5':
-            eliminarCliente(tienda);
-            break;
-        case '0':
-            cout << COLOR_GREEN << "Volviendo..." << COLOR_RESET << endl;
-            break;
-        default:
-            cout << CLEAR_SCREEN << COLOR_RED << "Opción inválida." << COLOR_RESET << endl;
-        }
-    } while (opcion != '0');
+void menuProveedores() {
+    OpcionMenu options[] = {{"Crear Proveedor", crearProveedor},
+                            {"Buscar Proveedor", buscarProveedor},
+                            {"Actualizar Proveedor", actualizarProveedor},
+                            {"Listar Proveedores", listarProveedores},
+                            {"Eliminar Proveedor", eliminarProveedor}};
+    drawMenu("Gestión de Proveedores", options, 5);
 }
 
-void menuTransacciones(Tienda* tienda) {
-    char opcion;
-    do {
-        cout << COLOR_CYAN << "\n=== Gestión de Transacciones ===" << COLOR_RESET << endl;
-        cout << COLOR_YELLOW << "1." << COLOR_RESET << " Registrar Compra" << endl;
-        cout << COLOR_YELLOW << "2." << COLOR_RESET << " Registrar Venta" << endl;
-        cout << COLOR_YELLOW << "3." << COLOR_RESET << " Buscar Transacciones" << endl;
-        cout << COLOR_YELLOW << "4." << COLOR_RESET << " Listar Transacciones" << endl;
-        cout << COLOR_YELLOW << "5." << COLOR_RESET << " Cancelar Transacción" << endl;
-        cout << COLOR_RED << "0." << COLOR_RESET << " Volver al Menú Principal" << endl;
-        cout << "Seleccione una opción: ";
-        cin >> opcion;
+void menuClientes() {
+    OpcionMenu options[] = {{"Crear Cliente", crearCliente},
+                            {"Buscar Cliente", buscarCliente},
+                            {"Actualizar Cliente", actualizarCliente},
+                            {"Listar Clientes", listarClientes},
+                            {"Eliminar Cliente", eliminarCliente}};
+    drawMenu("Gestión de Clientes", options, 5);
+}
 
-        switch (opcion) {
-        case '1':
-            registrarCompra(tienda);
-            break;
-        case '2':
-            registrarVenta(tienda);
-            break;
-        case '3':
-            buscarTransacciones(tienda);
-            break;
-        case '4':
-            listarTransacciones(tienda);
-            break;
-        case '5':
-            cancelarTransaccion(tienda);
-            break;
-        case '0':
-            cout << COLOR_GREEN << "Volviendo..." << COLOR_RESET << endl;
-            break;
-        default:
-            cout << CLEAR_SCREEN << COLOR_RED << "Opción inválida." << COLOR_RESET << endl;
-        }
-    } while (opcion != '0');
+void menuTransacciones() {
+    OpcionMenu options[] = {{"Registrar Compra", registrarCompra},
+                            {"Registrar Venta", registrarVenta},
+                            {"Buscar Transacciones", buscarTransacciones},
+                            {"Listar Transacciones", listarTransacciones},
+                            {"Cancelar Transacción", cancelarTransaccion}};
+    drawMenu("Gestión de Transacciones", options, 5);
 }
 
 int main() {
-    Tienda tienda;
+    setlocale(LC_ALL, "Spanish");
     inicializarTienda("Papaya Store", "J-123456789");
 
-    char opcion;
-    do {
-        cout << COLOR_CYAN << "\n=== PAPAYA STORE - Menú Principal ===" << COLOR_RESET << endl;
-        cout << COLOR_YELLOW << "1." << COLOR_RESET << " Gestión de Productos" << endl;
-        cout << COLOR_YELLOW << "2." << COLOR_RESET << " Gestión de Proveedores" << endl;
-        cout << COLOR_YELLOW << "3." << COLOR_RESET << " Gestión de Clientes" << endl;
-        cout << COLOR_YELLOW << "4." << COLOR_RESET << " Gestión de Transacciones" << endl;
-        cout << COLOR_RED << "0." << COLOR_RESET << " Salir" << endl;
-        cout << "Seleccione una opción: ";
-        if (!(cin >> opcion))
-            break;
+    OpcionMenu options[] = {{"Gestión de Productos", menuProductos},
+                            {"Gestión de Proveedores", menuProveedores},
+                            {"Gestión de Clientes", menuClientes},
+                            {"Gestión de Transacciones", menuTransacciones}};
 
-        switch (opcion) {
-        case '1':
-            menuProductos(&tienda);
-            break;
-        case '2':
-            menuProveedores(&tienda);
-            break;
-        case '3':
-            menuClientes(&tienda);
-            break;
-        case '4':
-            menuTransacciones(&tienda);
-            break;
-        case '0':
-            cout << COLOR_GREEN << "Saliendo..." << COLOR_RESET << endl;
-            break;
-        default:
-            cout << CLEAR_SCREEN << COLOR_RED << "Opcion no valida" << COLOR_RESET << endl;
-        }
-    } while (opcion != '0');
+    drawMenu("PAPAYA STORE - Menú Principal", options, 4, "Salir");
 
     return 0;
 }
