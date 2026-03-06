@@ -1782,49 +1782,38 @@ bool validarFecha(const char* fecha) {
 }
 
 bool existeProducto(Tienda* tienda, int id) {
-    // verificacion de seguridad
-    if (tienda == nullptr || tienda->productos == nullptr) {
+    if (tienda == nullptr) {
         return false;
     }
-    // usamos el template anterior
-    return buscarEntidadPorId(tienda->productos, tienda->numProductos, id) != -1;
+    return buscarEntidadPorId<Producto>(PRODUCTOS_PATH, id) != -1;
 }
 
 bool existeProveedor(Tienda* tienda, int id) {
-    // Verificación de seguridad básica
-    if (tienda == nullptr || tienda->proveedores == nullptr) {
+    if (tienda == nullptr) {
         return false;
     }
-    // utilizamos el template anterior
-    return buscarEntidadPorId(tienda->proveedores, tienda->numProveedores, id) != -1;
+    return buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, id) != -1;
 }
 
 bool existeCliente(Tienda* tienda, int id) {
-    // Verificación de seguridad
-    if (tienda == nullptr || tienda->clientes == nullptr) {
+    if (tienda == nullptr) {
         return false;
     }
-    // utilizamos el template anterior
-    return buscarEntidadPorId(tienda->clientes, tienda->numClientes, id) != -1;
+    return buscarEntidadPorId<Cliente>(CLIENTES_PATH, id) != -1;
 }
 
 bool codigoDuplicado(Tienda* tienda, const char* codigo) {
-    // Verificamos que la tienda exista
     if (tienda == nullptr) {
         return false;
     }
-    // utilizamos el template anterior
-    return existeStringDuplicado(tienda->productos, tienda->numProductos, codigo,
-                                 &Producto::codigo);
+    return existeStringDuplicado<Producto>(PRODUCTOS_PATH, codigo, &Producto::codigo);
 }
 
 bool rifDuplicado(Tienda* tienda, const char* rif) {
-    // Verificación de seguridad
     if (tienda == nullptr) {
         return false;
     }
-    // usamos el template anterior
-    return existeStringDuplicado(tienda->proveedores, tienda->numProveedores, rif, &Proveedor::rif);
+    return existeStringDuplicado<Proveedor>(PROVEEDORES_PATH, rif, &Proveedor::rif);
 }
 
 // Búsquedas
