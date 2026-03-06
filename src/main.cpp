@@ -639,7 +639,7 @@ void actualizarStockProducto(Tienda* tienda) {
     if (tienda == nullptr)
         return;
 
-    mostrarListaEntidades("Productos", tienda->productos, tienda->numProductos);
+    mostrarListaEntidades<Producto>("Productos", PRODUCTOS_PATH, PropiedadAmbos);
 
     int id = leerId("Ingrese el id del producto para actualizar el stock");
     if (id <= 0) {
@@ -647,13 +647,17 @@ void actualizarStockProducto(Tienda* tienda) {
         return;
     }
 
-    int index = buscarEntidadPorId(tienda->productos, tienda->numProductos, id);
+    int index = buscarEntidadPorId<Producto>(PRODUCTOS_PATH, id);
     if (index == -1) {
         cout << CLEAR_SCREEN << COLOR_RED << "Producto no encontrado." << COLOR_RESET << endl;
         return;
     }
 
-    Producto& producto = tienda->productos[index];
+    Producto producto;
+    fstream archivo(PRODUCTOS_PATH, ios::binary | ios::in | ios::out);
+    archivo.seekg(sizeof(ArchivoHeader) + index * sizeof(Producto), ios::beg);
+    archivo.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
+
     cout << format("Producto: {} | Stock actual: {}", producto.nombre, producto.stock) << endl;
 
     char opcion;
@@ -714,6 +718,9 @@ void actualizarStockProducto(Tienda* tienda) {
 
             if (confirmar == 's' || confirmar == 'S') {
                 producto.stock = nuevoStock;
+                producto.fechaUltimaModificacion = time(nullptr);
+                archivo.seekp(sizeof(ArchivoHeader) + index * sizeof(Producto), ios::beg);
+                archivo.write(reinterpret_cast<const char*>(&producto), sizeof(Producto));
                 cout << "Stock actualizado exitosamente." << endl;
 
             } else {
