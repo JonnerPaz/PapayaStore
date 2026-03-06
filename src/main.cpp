@@ -834,16 +834,14 @@ void eliminarProducto(Tienda* tienda) {
 }
 
 void crearProveedor(Tienda* tienda) {
-    int& totalDeProveedores = tienda->numProveedores;
-    int& capacidadProveedores = tienda->capacidadProveedores;
-    // es un puntero DE LA REFERENCIA
-    Proveedor*& proveedores = tienda->proveedores;
-
-    // Aumentar espacio si es necesario
-    if (totalDeProveedores >= capacidadProveedores) {
-        redimensionarEntidad(proveedores, capacidadProveedores, totalDeProveedores);
+    fstream archivo;
+    try {
+        ifstream archivo(PROVEEDORES_PATH, ios::binary);
+    } catch (const std::exception& e) {
+        ofstream archivo(PROVEEDORES_PATH, ios::binary);
     }
-    int index = tienda->numProveedores;
+
+    ArchivoHeader proveedoresHeader = leerHeader(PROVEEDORES_PATH);
 
     char nombre[100];
     asignarPropiedadString("Ingrese el nombre del proveedor (q para cancelar): ", nombre);
@@ -918,19 +916,24 @@ void buscarProveedor(Tienda* tienda) {
     if (tienda == nullptr)
         return;
 
-    mostrarListaEntidades("Proveedores", tienda->proveedores, tienda->numProveedores, PropiedadId);
+    mostrarListaEntidades<Proveedor>("Proveedores", PROVEEDORES_PATH, PropiedadId);
 
     int id = leerId("Ingrese el id del proveedor a buscar");
     if (id <= 0) {
         cout << CLEAR_SCREEN << COLOR_RED << "Búsqueda cancelada." << COLOR_RESET << endl;
         return;
     }
-    int index = buscarEntidadPorId(tienda->proveedores, tienda->numProveedores, id);
+    int index = buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, id);
     if (index == -1) {
         cout << CLEAR_SCREEN << COLOR_RED << "Proveedor no encontrado." << COLOR_RESET << endl;
         return;
     }
-    Proveedor& p = tienda->proveedores[index];
+
+    Proveedor p;
+    ifstream archivo(PROVEEDORES_PATH, ios::binary);
+    archivo.seekg(sizeof(ArchivoHeader) + index * sizeof(Proveedor), ios::beg);
+    archivo.read(reinterpret_cast<char*>(&p), sizeof(Proveedor));
+
     cout << "Proveedor encontrado:" << endl;
     cout << "Id: " << p.id << "\nNombre: " << p.nombre << "\nRIF: " << p.rif
          << "\nTelefono: " << p.telefono << "\nEmail: " << p.email << "\nDireccion: " << p.direccion
@@ -941,19 +944,23 @@ void actualizarProveedor(Tienda* tienda) {
     if (tienda == nullptr)
         return;
 
-    mostrarListaEntidades("Proveedores", tienda->proveedores, tienda->numProveedores);
+    mostrarListaEntidades<Proveedor>("Proveedores", PROVEEDORES_PATH, PropiedadAmbos);
 
     int id = leerId("Ingrese el id del proveedor a actualizar");
     if (id <= 0) {
         cout << CLEAR_SCREEN << COLOR_RED << "Actualización cancelada." << COLOR_RESET << endl;
         return;
     }
-    int index = buscarEntidadPorId(tienda->proveedores, tienda->numProveedores, id);
+    int index = buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, id);
     if (index == -1) {
         cout << CLEAR_SCREEN << COLOR_RED << "Proveedor no encontrado." << COLOR_RESET << endl;
         return;
     }
-    Proveedor& p = tienda->proveedores[index];
+
+    Proveedor p;
+    fstream archivo(PROVEEDORES_PATH, ios::binary | ios::in | ios::out);
+    archivo.seekg(sizeof(ArchivoHeader) + index * sizeof(Proveedor), ios::beg);
+    archivo.read(reinterpret_cast<char*>(&p), sizeof(Proveedor));
 
     char opcion;
     do {
@@ -988,15 +995,34 @@ void actualizarProveedor(Tienda* tienda) {
         default:
             cout << CLEAR_SCREEN << COLOR_RED << "Opcion no valida" << COLOR_RESET << endl;
         }
+
+        if (opcion >= '1' && opcion <= '5') {
+            p.fechaUltimaModificacion = time(nullptr);
+            archivo.seekp(sizeof(ArchivoHeader) + index * sizeof(Proveedor), ios::beg);
+            archivo.write(reinterpret_cast<const char*>(&p), sizeof(Proveedor));
+        }
+
     } while (opcion != '0');
 }
 
 void listarProveedores(Tienda* tienda) {
-    if (tienda == nullptr || tienda->numProveedores == 0) {
+    if (tienda == nullptr)
+        return;
+
+    ifstream archivo(PROVEEDORES_PATH, ios::binary);
+    if (!archivo.is_open()) {
+        cout << "No se pudo abrir el archivo de proveedores." << endl;
+        return;
+    }
+    ArchivoHeader header = leerHeader(PROVEEDORES_PATH);
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+
+    if (header.registrosActivos == 0) {
         cout << "No hay proveedores registrados." << endl;
         return;
     }
-    cout << "--- Lista de Proveedores (" << tienda->numProveedores << ") ---" << endl;
+
+    cout << "--- Lista de Proveedores (" << header.registrosActivos << ") ---" << endl;
     cout << format("{:<5} | {:<20} | {:<15} | {:<15} | {:<25} | {:<15}", "ID", "Nombre", "RIF",
                    "Telefono", "Email", "Direccion")
          << endl;
@@ -1004,12 +1030,15 @@ void listarProveedores(Tienda* tienda) {
             "----"
             "-----------------"
          << endl;
-    for (int i = 0; i < tienda->numProveedores; ++i) {
-        Proveedor& proveedor = tienda->proveedores[i];
-        cout << format("{:<5} | {:<20} | {:<15} | {:<15} | {:<25} | {:<15}", proveedor.id,
-                       proveedor.nombre, proveedor.rif, proveedor.telefono, proveedor.email,
-                       proveedor.direccion)
-             << endl;
+
+    Proveedor proveedor;
+    while (archivo.read(reinterpret_cast<char*>(&proveedor), sizeof(Proveedor))) {
+        if (!proveedor.eliminado) {
+            cout << format("{:<5} | {:<20} | {:<15} | {:<15} | {:<25} | {:<15}", proveedor.id,
+                           proveedor.nombre, proveedor.rif, proveedor.telefono, proveedor.email,
+                           proveedor.direccion)
+                 << endl;
+        }
     }
     cout << "----------------------------------------------------------------------------------"
             "----"
@@ -1021,26 +1050,21 @@ void eliminarProveedor(Tienda* tienda) {
     if (tienda == nullptr)
         return;
 
-    mostrarListaEntidades("Proveedores", tienda->proveedores, tienda->numProveedores);
+    mostrarListaEntidades<Proveedor>("Proveedores", PROVEEDORES_PATH, PropiedadAmbos);
 
     int id = leerId("Ingrese el id del proveedor a eliminar");
     if (id <= 0) {
         cout << CLEAR_SCREEN << COLOR_RED << "Eliminación cancelada." << COLOR_RESET << endl;
         return;
     }
-    int index = buscarEntidadPorId(tienda->proveedores, tienda->numProveedores, id);
+    int index = buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, id);
     if (index == -1) {
         cout << CLEAR_SCREEN << COLOR_RED << "Proveedor no encontrado." << COLOR_RESET << endl;
         return;
     }
+
     bool tieneTransacciones = false;
-    for (int i = 0; i < tienda->numTransacciones; ++i) {
-        if (tienda->transacciones[i].idRelacionado == id &&
-            tienda->transacciones[i].tipo == COMPRA) {
-            tieneTransacciones = true;
-            break;
-        }
-    }
+    // TODO: Comprobar en archivo de transacciones
 
     if (tieneTransacciones) {
         cout << CLEAR_SCREEN << COLOR_RED
@@ -1053,7 +1077,21 @@ void eliminarProveedor(Tienda* tienda) {
     char confirmar;
     cin >> confirmar;
     if (confirmar == 's' || confirmar == 'S') {
-        eliminarElementoDeArray(tienda->proveedores, index, tienda->numProveedores);
+        Proveedor p;
+        fstream archivo(PROVEEDORES_PATH, ios::binary | ios::in | ios::out);
+        archivo.seekg(sizeof(ArchivoHeader) + index * sizeof(Proveedor), ios::beg);
+        archivo.read(reinterpret_cast<char*>(&p), sizeof(Proveedor));
+
+        p.eliminado = true;
+        p.fechaUltimaModificacion = time(nullptr);
+
+        archivo.seekp(sizeof(ArchivoHeader) + index * sizeof(Proveedor), ios::beg);
+        archivo.write(reinterpret_cast<const char*>(&p), sizeof(Proveedor));
+
+        ArchivoHeader header = leerHeader(PROVEEDORES_PATH);
+        header.registrosActivos--;
+        actualizarHeader(PROVEEDORES_PATH, header);
+
         cout << "Proveedor eliminado exitosamente." << endl;
     } else {
         cout << "Eliminación cancelada." << endl;
