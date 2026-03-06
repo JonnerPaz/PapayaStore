@@ -1354,18 +1354,12 @@ void eliminarCliente(Tienda* tienda) {
 }
 
 void registrarCompra(Tienda* tienda) {
-    // pregunta de seguridad
     if (tienda == nullptr)
         return;
 
-    // la operacion de mudanza de datos donde actualizamos el espacio y memoria de estos
-    if (tienda->numTransacciones >= tienda->capacidadTransacciones) {
-        redimensionarEntidad(tienda->transacciones, tienda->capacidadTransacciones,
-                             tienda->numTransacciones);
-    }
     cout << "\n===REGISTRAR COMPRA (Entrada de Mercancia)===" << endl;
 
-    mostrarListaEntidades("Productos", tienda->productos, tienda->numProductos);
+    mostrarListaEntidades<Producto>("Productos", PRODUCTOS_PATH, PropiedadAmbos);
 
     // buscar el producto
     int idProd = leerId("Ingrese ID del Producto: ");
@@ -1373,17 +1367,20 @@ void registrarCompra(Tienda* tienda) {
         cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
         return;
     }
-    int idxProd = buscarEntidadPorId(tienda->productos, tienda->numProductos, idProd);
+    int idxProd = buscarEntidadPorId<Producto>(PRODUCTOS_PATH, idProd);
 
     if (idxProd == -1) {
         cout << CLEAR_SCREEN << COLOR_RED << "Error: El producto con ID " << idProd << " no existe."
              << COLOR_RESET << endl;
         return;
     }
-    // referencia para hacer el texto mas legible
-    Producto& producto = tienda->productos[idxProd];
 
-    mostrarListaEntidades("Proveedores", tienda->proveedores, tienda->numProveedores);
+    Producto producto;
+    fstream archivoProd(PRODUCTOS_PATH, ios::binary | ios::in | ios::out);
+    archivoProd.seekg(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
+    archivoProd.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
+
+    mostrarListaEntidades<Proveedor>("Proveedores", PROVEEDORES_PATH, PropiedadAmbos);
 
     int idProv = leerId("Ingrese ID del Proveedor: ");
     if (idProv <= 0) {
@@ -1400,39 +1397,56 @@ void registrarCompra(Tienda* tienda) {
         cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
         return;
     }
-    // referencia
-    Transaccion& transaccion = tienda->transacciones[tienda->numTransacciones];
 
-    transaccion.id = tienda->siguienteIdTransaccion++;
+    fstream archivoTrans;
+    try {
+        ifstream check(TRANSACCIONES_PATH, ios::binary);
+    } catch (...) {
+        ofstream create(TRANSACCIONES_PATH, ios::binary);
+    }
+    ArchivoHeader transHeader = leerHeader(TRANSACCIONES_PATH);
+
+    Transaccion transaccion = {};
+    transaccion.id = transHeader.proximoID;
     transaccion.tipo = COMPRA;
-    transaccion.idProducto = idProd;
-    transaccion.idRelacionado = idProv; // En compras, guardamos el ID del proveedor
-    transaccion.cantidad = cantidad;
-    transaccion.precioUnitario = producto.precio;
-    transaccion.total = transaccion.cantidad * transaccion.precioUnitario;
+    transaccion.idRelacionado = idProv;
+    transaccion.cantidadTiposDeProductos = 1;
+    transaccion.productosIds[0] = idProd;
+    transaccion.cantidades[0] = cantidad;
+    transaccion.preciosUnitarios[0] = producto.precio;
+    transaccion.total = cantidad * producto.precio;
+    transaccion.eliminado = false;
+    transaccion.fechaCreacion = time(nullptr);
+    transaccion.fechaUltimaModificacion = transaccion.fechaCreacion;
     obtenerFechaActual(transaccion.fecha);
 
     producto.stock += cantidad;
+    producto.fechaUltimaModificacion = time(nullptr);
 
-    tienda->numTransacciones++;
+    archivoProd.seekp(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
+    archivoProd.write(reinterpret_cast<const char*>(&producto), sizeof(Producto));
+
+    transHeader.cantidadRegistros++;
+    transHeader.registrosActivos++;
+    transHeader.proximoID++;
+
+    ofstream archivoOut(TRANSACCIONES_PATH, ios::binary | ios::app);
+    archivoOut.write(reinterpret_cast<const char*>(&transaccion), sizeof(Transaccion));
+    archivoOut.close();
+
+    actualizarHeader(TRANSACCIONES_PATH, transHeader);
 
     cout << "Compra registrada ID: " << transaccion.id << endl;
     cout << "Stock actualizado de " << producto.nombre << ": " << producto.stock << endl;
 }
 
 void registrarVenta(Tienda* tienda) {
-    // pregunta de validacion
     if (tienda == nullptr)
         return;
 
-    // la operacion de mudanza de datos donde actualizamos el espacio y memoria de estos
-    if (tienda->numTransacciones >= tienda->capacidadTransacciones) {
-        redimensionarEntidad(tienda->transacciones, tienda->capacidadTransacciones,
-                             tienda->numTransacciones);
-    }
     cout << "\n===REGISTRAR VENTA (Salida de Mercancia)===" << endl;
 
-    mostrarListaEntidades("Productos", tienda->productos, tienda->numProductos);
+    mostrarListaEntidades<Producto>("Productos", PRODUCTOS_PATH, PropiedadAmbos);
 
     // buscar producto
     int idProd = leerId("Ingrese ID del Producto: ");
@@ -1440,13 +1454,17 @@ void registrarVenta(Tienda* tienda) {
         cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
         return;
     }
-    int idxProd = buscarEntidadPorId(tienda->productos, tienda->numProductos, idProd);
+    int idxProd = buscarEntidadPorId<Producto>(PRODUCTOS_PATH, idProd);
 
     if (idxProd == -1) {
         cout << CLEAR_SCREEN << COLOR_RED << "Error: El producto no existe." << COLOR_RESET << endl;
         return;
     }
-    Producto& producto = tienda->productos[idxProd];
+
+    Producto producto;
+    fstream archivoProd(PRODUCTOS_PATH, ios::binary | ios::in | ios::out);
+    archivoProd.seekg(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
+    archivoProd.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
 
     // validar stock
     int cantidad = leerId("Cantidad a vender: ");
@@ -1462,7 +1480,7 @@ void registrarVenta(Tienda* tienda) {
     }
 
     // validar cliente
-    mostrarListaEntidades("Clientes", tienda->clientes, tienda->numClientes);
+    mostrarListaEntidades<Cliente>("Clientes", CLIENTES_PATH, PropiedadAmbos);
 
     int idCli = leerId("Ingrese ID del Cliente: ");
     if (idCli <= 0) {
@@ -1473,22 +1491,45 @@ void registrarVenta(Tienda* tienda) {
         cout << CLEAR_SCREEN << COLOR_RED << "Error: El cliente no existe." << COLOR_RESET << endl;
         return;
     }
-    // referencia
-    Transaccion& transaccion = tienda->transacciones[tienda->numTransacciones];
 
-    transaccion.id = tienda->siguienteIdTransaccion++;
+    fstream archivoTrans;
+    try {
+        ifstream check(TRANSACCIONES_PATH, ios::binary);
+    } catch (...) {
+        ofstream create(TRANSACCIONES_PATH, ios::binary);
+    }
+    ArchivoHeader transHeader = leerHeader(TRANSACCIONES_PATH);
+
+    Transaccion transaccion = {};
+    transaccion.id = transHeader.proximoID;
     transaccion.tipo = VENTA;
-    transaccion.idProducto = idProd;
-    transaccion.idRelacionado = idCli; // Aquí guardamos al cliente
-    transaccion.cantidad = cantidad;
-    transaccion.precioUnitario = producto.precio;
-    transaccion.total = transaccion.cantidad * transaccion.precioUnitario;
+    transaccion.idRelacionado = idCli;
+    transaccion.cantidadTiposDeProductos = 1;
+    transaccion.productosIds[0] = idProd;
+    transaccion.cantidades[0] = cantidad;
+    transaccion.preciosUnitarios[0] = producto.precio;
+    transaccion.total = cantidad * producto.precio;
+    transaccion.eliminado = false;
+    transaccion.fechaCreacion = time(nullptr);
+    transaccion.fechaUltimaModificacion = transaccion.fechaCreacion;
     obtenerFechaActual(transaccion.fecha);
 
     // restamos el espacio en el stock
     producto.stock -= cantidad;
+    producto.fechaUltimaModificacion = time(nullptr);
 
-    tienda->numTransacciones++;
+    archivoProd.seekp(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
+    archivoProd.write(reinterpret_cast<const char*>(&producto), sizeof(Producto));
+
+    transHeader.cantidadRegistros++;
+    transHeader.registrosActivos++;
+    transHeader.proximoID++;
+
+    ofstream archivoOut(TRANSACCIONES_PATH, ios::binary | ios::app);
+    archivoOut.write(reinterpret_cast<const char*>(&transaccion), sizeof(Transaccion));
+    archivoOut.close();
+
+    actualizarHeader(TRANSACCIONES_PATH, transHeader);
 
     // confirmamos venta
     cout << "¡Venta exitosa! Total: " << transaccion.total
@@ -1496,46 +1537,59 @@ void registrarVenta(Tienda* tienda) {
 }
 
 void buscarTransacciones(Tienda* tienda) {
-    // pregunta de seguridad
-    if (tienda == nullptr || tienda->numTransacciones == 0) {
+    if (tienda == nullptr)
+        return;
+
+    ArchivoHeader header = leerHeader(TRANSACCIONES_PATH);
+    if (header.registrosActivos == 0) {
         cout << "\n[!] No hay transacciones registradas en el sistema." << endl;
         return;
     }
 
-    // funcion de leer el id
     int idBuscar = leerId("\nIngrese el ID de la transaccion a buscar: ");
     if (idBuscar <= 0) {
         cout << CLEAR_SCREEN << COLOR_RED << "Búsqueda cancelada." << COLOR_RESET << endl;
         return;
     }
-    // template de buscar entidad
-    int idx = buscarEntidadPorId(tienda->transacciones, tienda->numTransacciones, idBuscar);
+
+    int idx = buscarEntidadPorId<Transaccion>(TRANSACCIONES_PATH, idBuscar);
 
     if (idx == -1) {
         cout << CLEAR_SCREEN << COLOR_RED << "Error: La transaccion con ID " << idBuscar
              << " no existe." << COLOR_RESET << endl;
         return;
     }
-    Transaccion& transaccion = tienda->transacciones[idx];
-    // mostrar la informacion
+
+    Transaccion transaccion;
+    ifstream archivo(TRANSACCIONES_PATH, ios::binary);
+    archivo.seekg(sizeof(ArchivoHeader) + idx * sizeof(Transaccion), ios::beg);
+    archivo.read(reinterpret_cast<char*>(&transaccion), sizeof(Transaccion));
+
     const char* tipoStr = (transaccion.tipo == COMPRA) ? "COMPRA" : "VENTA";
     cout << "\n========================================" << endl;
     cout << "       DETALLE DE TRANSACCION #" << transaccion.id << endl;
     cout << "========================================" << endl;
     cout << "Tipo:       " << tipoStr << endl;
     cout << "Fecha:      " << transaccion.fecha << endl;
-    cout << "Producto ID: " << transaccion.idProducto << endl;
     cout << "ID Asociado: " << transaccion.idRelacionado << " (Cliente/Proveedor)" << endl;
     cout << "----------------------------------------" << endl;
-    cout << "Cantidad:    " << transaccion.cantidad << endl;
-    cout << "Precio Un.:  $" << transaccion.precioUnitario << endl;
+
+    for (int i = 0; i < transaccion.cantidadTiposDeProductos; i++) {
+        cout << "Producto ID: " << transaccion.productosIds[i] << endl;
+        cout << "Cantidad:    " << transaccion.cantidades[i] << endl;
+        cout << "Precio Un.:  $" << transaccion.preciosUnitarios[i] << endl;
+        cout << "----------------------------------------" << endl;
+    }
     cout << "TOTAL:       $" << transaccion.total << endl;
     cout << "========================================" << endl;
 }
 
 void listarTransacciones(Tienda* tienda) {
-    // pregunda de verificacion
-    if (tienda == nullptr || tienda->numTransacciones == 0) {
+    if (tienda == nullptr)
+        return;
+
+    ArchivoHeader header = leerHeader(TRANSACCIONES_PATH);
+    if (header.registrosActivos == 0) {
         cout << "\n[!] El historial de transacciones esta vacio." << endl;
         return;
     }
@@ -1555,41 +1609,51 @@ void listarTransacciones(Tienda* tienda) {
             "----"
             "---"
          << endl;
-    // El ciclo que recorre el arreglo
-    for (int i = 0; i < tienda->numTransacciones; i++) {
-        // referencia
-        const Transaccion& t = tienda->transacciones[i];
-        const char* tipoStr = (t.tipo == COMPRA) ? "COMPRA" : "VENTA";
 
-        cout << format("{:<5} | {:<8} | {:<12} | {:<10} | {:<10} | ${:<11.2f} | ${:<11.2f} | "
-                       "{:<15}",
-                       t.id, tipoStr, t.fecha, t.idProducto, t.cantidad, t.precioUnitario, t.total,
-                       t.idRelacionado)
-             << endl;
+    ifstream archivo(TRANSACCIONES_PATH, ios::binary);
+    archivo.seekg(sizeof(ArchivoHeader), ios::beg);
+    Transaccion t;
+    int count = 0;
+    while (archivo.read(reinterpret_cast<char*>(&t), sizeof(Transaccion))) {
+        if (!t.eliminado) {
+            const char* tipoStr = (t.tipo == COMPRA) ? "COMPRA" : "VENTA";
+
+            // For listing, we show the first product
+            int prodId = t.cantidadTiposDeProductos > 0 ? t.productosIds[0] : 0;
+            int cant = t.cantidadTiposDeProductos > 0 ? t.cantidades[0] : 0;
+            float precioUn = t.cantidadTiposDeProductos > 0 ? t.preciosUnitarios[0] : 0.0f;
+
+            cout << format("{:<5} | {:<8} | {:<12} | {:<10} | {:<10} | ${:<11.2f} | ${:<11.2f} | "
+                           "{:<15}",
+                           t.id, tipoStr, t.fecha, prodId, cant, precioUn, t.total, t.idRelacionado)
+                 << endl;
+            count++;
+        }
     }
     cout << "=================================================================================="
             "===="
             "==="
          << endl;
-    cout << "Total de registros: " << tienda->numTransacciones << endl;
+    cout << "Total de registros: " << count << endl;
 }
 
 void cancelarTransaccion(Tienda* tienda) {
-    // pregunta de verificacion
-    if (tienda == nullptr || tienda->numTransacciones == 0) {
+    if (tienda == nullptr)
+        return;
+
+    ArchivoHeader header = leerHeader(TRANSACCIONES_PATH);
+    if (header.registrosActivos == 0) {
         cout << "\n[!] No hay transacciones para cancelar." << endl;
         return;
     }
 
-    // buscar producto
-    // funcion leer id
     int idBuscar = leerId("\nIngrese el ID de la transaccion a CANCELAR: ");
     if (idBuscar <= 0) {
         cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
         return;
     }
-    // template buscar entidad
-    int idx = buscarEntidadPorId(tienda->transacciones, tienda->numTransacciones, idBuscar);
+
+    int idx = buscarEntidadPorId<Transaccion>(TRANSACCIONES_PATH, idBuscar);
 
     if (idx == -1) {
         cout << CLEAR_SCREEN << COLOR_RED << "Error: Transaccion no encontrada." << COLOR_RESET
@@ -1597,9 +1661,20 @@ void cancelarTransaccion(Tienda* tienda) {
         return;
     }
 
-    Transaccion& transaccion = tienda->transacciones[idx];
-    int idxProd =
-        buscarEntidadPorId(tienda->productos, tienda->numProductos, transaccion.idProducto);
+    Transaccion transaccion;
+    fstream archivoTrans(TRANSACCIONES_PATH, ios::binary | ios::in | ios::out);
+    archivoTrans.seekg(sizeof(ArchivoHeader) + idx * sizeof(Transaccion), ios::beg);
+    archivoTrans.read(reinterpret_cast<char*>(&transaccion), sizeof(Transaccion));
+
+    if (transaccion.cantidadTiposDeProductos == 0) {
+        cout << "Error: La transaccion no tiene productos asociados." << endl;
+        return;
+    }
+
+    int idProducto = transaccion.productosIds[0];
+    int cantidad = transaccion.cantidades[0];
+
+    int idxProd = buscarEntidadPorId<Producto>(PRODUCTOS_PATH, idProducto);
 
     if (idxProd == -1) {
         cout << CLEAR_SCREEN << COLOR_RED
@@ -1607,28 +1682,43 @@ void cancelarTransaccion(Tienda* tienda) {
              << endl;
         return;
     }
-    Producto& producto = tienda->productos[idxProd];
+
+    Producto producto;
+    fstream archivoProd(PRODUCTOS_PATH, ios::binary | ios::in | ios::out);
+    archivoProd.seekg(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
+    archivoProd.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
 
     // REVERTIR EL STOCK (La parte lógica)
     if (transaccion.tipo == VENTA) {
-        // Si fue una VENTA -> Devolvemos al stock
-        producto.stock += transaccion.cantidad;
-        cout << "[SISTEMA] Venta cancelada. Se devolvieron " << transaccion.cantidad
-             << " unidades al stock." << endl;
+        producto.stock += cantidad;
+        cout << "[SISTEMA] Venta cancelada. Se devolvieron " << cantidad << " unidades al stock."
+             << endl;
     } else if (transaccion.tipo == COMPRA) {
-        // Si fue una COMPRA -> Quitamos del stock
-        if (producto.stock < transaccion.cantidad) {
+        if (producto.stock < cantidad) {
             cout << "Error: No se puede cancelar la compra. El stock actual es menor a lo que "
                     "quieres quitar."
                  << endl;
             return;
         }
-        producto.stock -= transaccion.cantidad;
-        cout << "[SISTEMA] Compra cancelada. Se retiraron " << transaccion.cantidad
-             << " unidades del stock." << endl;
+        producto.stock -= cantidad;
+        cout << "[SISTEMA] Compra cancelada. Se retiraron " << cantidad << " unidades del stock."
+             << endl;
     }
-    // eliminar la transaccion
-    eliminarElementoDeArray(tienda->transacciones, idx, tienda->numTransacciones);
+
+    // guardar stock modificado
+    producto.fechaUltimaModificacion = time(nullptr);
+    archivoProd.seekp(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
+    archivoProd.write(reinterpret_cast<const char*>(&producto), sizeof(Producto));
+
+    // marcar transaccion eliminada
+    transaccion.eliminado = true;
+    transaccion.fechaUltimaModificacion = time(nullptr);
+    archivoTrans.seekp(sizeof(ArchivoHeader) + idx * sizeof(Transaccion), ios::beg);
+    archivoTrans.write(reinterpret_cast<const char*>(&transaccion), sizeof(Transaccion));
+
+    header.registrosActivos--;
+    actualizarHeader(TRANSACCIONES_PATH, header);
+
     cout << "\n[!] Transaccion #" << idBuscar << " eliminada del historial con exito." << endl;
 }
 
