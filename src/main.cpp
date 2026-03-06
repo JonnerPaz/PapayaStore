@@ -31,7 +31,7 @@ const char* TIENDA_PATH = "./data/tienda.bin";
 const char* BACKUP_PATH = "./data/backup.bin";
 
 struct Tienda;
-template <typename T> int buscarEntidadPorId(T* array, int count, int id);
+template <typename T> int buscarEntidadPorId(const char* path, int id);
 int leerId(const char* msg);
 void obtenerFechaActual(char* fecha);
 int* buscarProductosPorNombre(Tienda* tienda, const char* nombre);
@@ -39,9 +39,12 @@ void listarProductos(Tienda* tienda);
 void convertirAMinusculas(char* cadena);
 bool contieneSubstring(const char* cadena, const char* subcadena);
 template <typename T, size_t N>
-bool existeStringDuplicado(T* array, int count, const char* valorBusqueda, char (T::*miembro)[N]);
+bool existeStringDuplicado(const char* path, const char* valorBusqueda, char (T::*miembro)[N]);
 bool existeProveedor(Tienda* tienda, int id);
 bool existeCliente(Tienda* tienda, int id);
+bool codigoDuplicado(Tienda* tienda, const char* codigo);
+bool rifDuplicado(Tienda* tienda, const char* rif);
+bool validarEmail(const char* email);
 
 enum TipoDeTransaccion { COMPRA, VENTA };
 enum Busqueda {
@@ -155,7 +158,7 @@ struct Tienda {
 enum TipoPropiedadLista { PropiedadId, PropiedadNombre, PropiedadAmbos };
 
 template <typename T>
-void mostrarListaEntidades(const char* titulo, T* array, int count,
+void mostrarListaEntidades(const char* titulo, const char* path,
                            TipoPropiedadLista tipoProp = PropiedadAmbos);
 
 // templates utilizados en el programa
@@ -323,7 +326,7 @@ void crearProducto(Tienda* tienda) {
 
     // muestra los proveedores que hay
     // para que el usuario escoja el proveedor del producto más abajo
-    mostrarListaEntidades("Proveedores", tienda->proveedores, tienda->numProveedores);
+    mostrarListaEntidades<Proveedor>("Proveedores", PROVEEDORES_PATH);
 
     int idProveedor;
     while (true) {
@@ -341,7 +344,7 @@ void crearProducto(Tienda* tienda) {
         cout << CLEAR_SCREEN << COLOR_RED << "Error: El proveedor con ID " << idProveedor
              << " no existe. Intente nuevamente." << COLOR_RESET << endl;
 
-        mostrarListaEntidades("Proveedores", tienda->proveedores, tienda->numProveedores);
+        mostrarListaEntidades<Proveedor>("Proveedores", PROVEEDORES_PATH);
     }
 
     cout << "Los datos del producto son: " << endl;
@@ -1620,55 +1623,90 @@ bool rifDuplicado(Tienda* tienda, const char* rif) {
 //                 SECCIÓN DE TEMPLATES
 // =======================================================
 // Casi todas las entidades tienen un id (cliente, proveedor, producto)
-template <typename T> int buscarEntidadPorId(T* array, int count, int id) {
-    if (array == nullptr)
+template <typename T> int buscarEntidadPorId(const char* path, int id) {
+    ifstream archivo(path, ios::binary);
+    if (!archivo.is_open())
         return -1;
-    for (int i = 0; i < count; ++i) {
-        if (array[i].id == id)
-            return i;
+
+    ArchivoHeader header;
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+
+    T entidad;
+    int index = 0;
+    while (archivo.read(reinterpret_cast<char*>(&entidad), sizeof(T))) {
+        if (!entidad.eliminado && entidad.id == id) {
+            return index;
+        }
+        index++;
     }
     return -1;
 }
 
 template <typename T>
-void mostrarListaEntidades(const char* titulo, T* array, int count, TipoPropiedadLista tipoProp) {
-    if (count == 0)
+void mostrarListaEntidades(const char* titulo, const char* path, TipoPropiedadLista tipoProp) {
+    ifstream archivo(path, ios::binary);
+    if (!archivo.is_open())
         return;
 
+    ArchivoHeader header;
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+
+    if (header.registrosActivos == 0) {
+        cout << "\nNo hay " << titulo << " registrados." << endl;
+        return;
+    }
+
     cout << "\n--- " << titulo << " Disponibles ---" << endl;
+
+    // Imprimir cabecera
     switch (tipoProp) {
     case PropiedadId:
         cout << format("{:<5}", "ID") << endl;
-        cout << "-------------------------------" << endl;
-        for (int i = 0; i < count; ++i) {
-            cout << format("{:<5}", array[i].id) << endl;
-        }
         break;
     case PropiedadNombre:
         cout << format("{:<20}", "Nombre") << endl;
-        cout << "-------------------------------" << endl;
-        for (int i = 0; i < count; ++i) {
-            cout << format("{:<20}", array[i].nombre) << endl;
-        }
         break;
     case PropiedadAmbos:
         cout << format("{:<5} | {:<20}", "ID", "Nombre") << endl;
-        cout << "-------------------------------" << endl;
-        for (int i = 0; i < count; ++i) {
-            cout << format("{:<5} | {:<20}", array[i].id, array[i].nombre) << endl;
-        }
         break;
+    }
+    cout << "-------------------------------" << endl;
+
+    T entidad;
+    while (archivo.read(reinterpret_cast<char*>(&entidad), sizeof(T))) {
+        if (!entidad.eliminado) {
+            switch (tipoProp) {
+            case PropiedadId:
+                cout << format("{:<5}", entidad.id) << endl;
+                break;
+            case PropiedadNombre:
+                cout << format("{:<20}", entidad.nombre) << endl;
+                break;
+            case PropiedadAmbos:
+                cout << format("{:<5} | {:<20}", entidad.id, entidad.nombre) << endl;
+                break;
+            }
+        }
     }
     cout << "-------------------------------" << endl;
 }
 
 // para las entidades que revisan si si hay strngis duplicados(codigo,rif)
 template <typename T, size_t N>
-bool existeStringDuplicado(T* array, int count, const char* valorBusqueda, char (T::*miembro)[N]) {
-    for (int i = 0; i < count; ++i) {
-        // La sintaxis (array[i].*miembro) permite entrar al campo que le indiquemos
-        if (strcmp(array[i].*miembro, valorBusqueda) == 0) {
-            return true;
+bool existeStringDuplicado(const char* path, const char* valorBusqueda, char (T::*miembro)[N]) {
+    ifstream archivo(path, ios::binary);
+    if (!archivo.is_open())
+        return false;
+
+    ArchivoHeader header;
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+
+    T entidad;
+    while (archivo.read(reinterpret_cast<char*>(&entidad), sizeof(T))) {
+        if (!entidad.eliminado) {
+            if (strcmp(entidad.*miembro, valorBusqueda) == 0) {
+                return true;
+            }
         }
     }
     return false;
@@ -1679,9 +1717,17 @@ int* buscarProductosPorNombre(Tienda* tienda, const char* nombre) {
     if (tienda == nullptr || nombre == nullptr)
         return nullptr;
 
+    ifstream archivo(PRODUCTOS_PATH, ios::binary);
+    if (!archivo.is_open())
+        return nullptr;
+
+    ArchivoHeader header;
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+
     int count = 0;
-    for (int i = 0; i < tienda->numProductos; ++i) {
-        if (contieneSubstring(tienda->productos[i].nombre, nombre)) {
+    Producto temp;
+    while (archivo.read(reinterpret_cast<char*>(&temp), sizeof(Producto))) {
+        if (!temp.eliminado && contieneSubstring(temp.nombre, nombre)) {
             count++;
         }
     }
@@ -1692,11 +1738,16 @@ int* buscarProductosPorNombre(Tienda* tienda, const char* nombre) {
     int* result = new int[count + 1];
     result[0] = count; // el índice 0 guarda la cantidad de elementos
 
+    archivo.clear();
+    archivo.seekg(sizeof(ArchivoHeader), ios::beg);
+
     int pos = 1;
-    for (int i = 0; i < tienda->numProductos; ++i) {
-        if (contieneSubstring(tienda->productos[i].nombre, nombre)) {
-            result[pos++] = i;
+    int index = 0;
+    while (archivo.read(reinterpret_cast<char*>(&temp), sizeof(Producto))) {
+        if (!temp.eliminado && contieneSubstring(temp.nombre, nombre)) {
+            result[pos++] = index;
         }
+        index++;
     }
 
     return result;
