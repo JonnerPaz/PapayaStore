@@ -1,7 +1,9 @@
 #include <chrono>
 #include <cstring>
 #include <ctime>
+#include <filesystem>
 #include <format>
+#include <fstream>
 #include <iostream>
 #include <limits>
 #include <sstream>
@@ -9,6 +11,7 @@
 #include <type_traits>
 
 using namespace std;
+namespace fs = std::filesystem;
 
 // ANSI Escape Codes
 const char* CLEAR_SCREEN = "\033[2J\033[H";
@@ -51,10 +54,10 @@ enum Actualizar {
 };
 
 struct ArchivoHeader {
-    int cantidadRegistros;
-    int proximoId;
-    int registrosActivos;
-    int version;
+    int cantidadRegistros; // Total histórico de registros
+    int proximoID;         // Siguiente ID a asignar (Autoincremental)
+    int registrosActivos;  // Registros que no están marcados como eliminados
+    int version;           // Control de versión del archivo;
 };
 
 struct Producto {
@@ -222,29 +225,51 @@ template <typename T> void redimensionarEntidad(T*& array, int& capacidad, int n
 }
 
 ///// FUNCIONES CRUD DEL PROGRAMA
+bool inicializarArchivo(const char* path) {
+    if (fs::exists(path)) {
+        cout << format("El archivo {} ya existe.", path) << endl;
+        return true;
+    }
+
+    ofstream archivo(path, ios::binary | ios::app);
+    ArchivoHeader header = {
+        .cantidadRegistros = 0, .proximoID = 1, .registrosActivos = 0, .version = 1};
+    archivo.write(reinterpret_cast<const char*>(&header), sizeof(ArchivoHeader));
+    return archivo.is_open() ? true : false;
+}
+
+ArchivoHeader leerHeader(const char* path) {
+    try {
+        ArchivoHeader header;
+        ifstream archivo(path, ios::binary);
+        archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+        return header;
+    } catch (const std::exception& e) {
+        cerr << "Error al leer el archivo: " << e.what() << endl;
+        return ArchivoHeader();
+    }
+}
+
+bool actualizarHeader(const char* path, ArchivoHeader header) {
+    try {
+        ofstream archivo(path, ios::binary);
+        archivo.seekp(0);
+        archivo.write(reinterpret_cast<const char*>(&header), sizeof(ArchivoHeader));
+        return true;
+    } catch (const std::exception& e) {
+        cerr << "Error al actualizar el archivo: " << e.what() << endl;
+        return false;
+    }
+}
+
 void inicializarTienda(Tienda* tienda, const char* nombre, const char* rif) {
     const int CAPACIDAD_INICIAL = 5;
 
     strncpy(tienda->nombre, nombre, 100);
     strncpy(tienda->rif, rif, 20);
-
-    // Inicializar los arrays dinámicos
-    tienda->productos = new Producto[CAPACIDAD_INICIAL];
-    tienda->proveedores = new Proveedor[CAPACIDAD_INICIAL];
-    tienda->clientes = new Cliente[CAPACIDAD_INICIAL];
-    tienda->transacciones = new Transaccion[CAPACIDAD_INICIAL];
 }
 
 void liberarTienda(Tienda* tienda) {
-    delete[] tienda->productos;
-    delete[] tienda->proveedores;
-    delete[] tienda->clientes;
-    delete[] tienda->transacciones;
-
-    tienda->clientes = nullptr;
-    tienda->productos = nullptr;
-    tienda->proveedores = nullptr;
-    tienda->transacciones = nullptr;
 }
 // Forward declarations para validaciones
 bool codigoDuplicado(Tienda* tienda, const char* codigo);
@@ -260,7 +285,8 @@ void crearProducto(Tienda* tienda) {
 
     if (tienda->numProveedores == 0) {
         cout << CLEAR_SCREEN << COLOR_RED
-             << "Error: No hay proveedores registrados. Debe crear al menos un proveedor antes de "
+             << "Error: No hay proveedores registrados. Debe crear al menos un proveedor antes "
+                "de "
                 "registrar un producto."
              << COLOR_RESET << endl;
         return;
@@ -409,8 +435,9 @@ void buscarProducto(Tienda* tienda) {
                 cin.ignore();
             cin.getline(nombre, 100);
 
-            // array de indices del producto. Asumimos que index[0] es la cantidad de encontrados
-            // y a partir de index[1] estan los indices reales en el array de la tienda
+            // array de indices del producto. Asumimos que index[0] es la cantidad de
+            // encontrados y a partir de index[1] estan los indices reales en el array de la
+            // tienda
             int* index = buscarProductosPorNombre(tienda, nombre);
             if (index == nullptr || index[0] == 0) {
                 cout << "Producto no encontrado." << endl;
@@ -921,7 +948,8 @@ void listarProveedores(Tienda* tienda) {
     cout << format("{:<5} | {:<20} | {:<15} | {:<15} | {:<25} | {:<15}", "ID", "Nombre", "RIF",
                    "Telefono", "Email", "Direccion")
          << endl;
-    cout << "--------------------------------------------------------------------------------------"
+    cout << "----------------------------------------------------------------------------------"
+            "----"
             "-----------------"
          << endl;
     for (int i = 0; i < tienda->numProveedores; ++i) {
@@ -931,7 +959,8 @@ void listarProveedores(Tienda* tienda) {
                        proveedor.direccion)
              << endl;
     }
-    cout << "--------------------------------------------------------------------------------------"
+    cout << "----------------------------------------------------------------------------------"
+            "----"
             "-----------------"
          << endl;
 }
@@ -1117,7 +1146,8 @@ void listarClientes(Tienda* tienda) {
     cout << format("{:<5} | {:<20} | {:<15} | {:<15} | {:<25}", "ID", "Nombre", "Cedula",
                    "Telefono", "Email")
          << endl;
-    cout << "--------------------------------------------------------------------------------------"
+    cout << "----------------------------------------------------------------------------------"
+            "----"
             "--"
          << endl;
     for (int i = 0; i < tienda->numClientes; ++i) {
@@ -1126,7 +1156,8 @@ void listarClientes(Tienda* tienda) {
                        cliente.cedula, cliente.telefono, cliente.email)
              << endl;
     }
-    cout << "--------------------------------------------------------------------------------------"
+    cout << "----------------------------------------------------------------------------------"
+            "----"
             "--"
          << endl;
 }
@@ -1362,17 +1393,20 @@ void listarTransacciones(Tienda* tienda) {
         cout << "\n[!] El historial de transacciones esta vacio." << endl;
         return;
     }
-    cout << "\n===================================================================================="
+    cout << "\n================================================================================"
+            "===="
             "====="
          << endl;
     cout << "                         HISTORIAL COMPLETO DE MOVIMIENTOS" << endl;
-    cout << "======================================================================================"
+    cout << "=================================================================================="
+            "===="
             "==="
          << endl;
     cout << format("{:<5} | {:<8} | {:<12} | {:<10} | {:<10} | {:<12} | {:<12} | {:<15}", "ID",
                    "Tipo", "Fecha", "Prod ID", "Cantidad", "Precio Un.", "Total", "Asociado ID")
          << endl;
-    cout << "--------------------------------------------------------------------------------------"
+    cout << "----------------------------------------------------------------------------------"
+            "----"
             "---"
          << endl;
     // El ciclo que recorre el arreglo
@@ -1381,13 +1415,14 @@ void listarTransacciones(Tienda* tienda) {
         const Transaccion& t = tienda->transacciones[i];
         const char* tipoStr = (t.tipo == COMPRA) ? "COMPRA" : "VENTA";
 
-        cout << format(
-                    "{:<5} | {:<8} | {:<12} | {:<10} | {:<10} | ${:<11.2f} | ${:<11.2f} | {:<15}",
-                    t.id, tipoStr, t.fecha, t.idProducto, t.cantidad, t.precioUnitario, t.total,
-                    t.idRelacionado)
+        cout << format("{:<5} | {:<8} | {:<12} | {:<10} | {:<10} | ${:<11.2f} | ${:<11.2f} | "
+                       "{:<15}",
+                       t.id, tipoStr, t.fecha, t.idProducto, t.cantidad, t.precioUnitario, t.total,
+                       t.idRelacionado)
              << endl;
     }
-    cout << "======================================================================================"
+    cout << "=================================================================================="
+            "===="
             "==="
          << endl;
     cout << "Total de registros: " << tienda->numTransacciones << endl;
