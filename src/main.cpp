@@ -1,5 +1,6 @@
 #include <chrono>
 #include <cstring>
+#include <ctime>
 #include <format>
 #include <iostream>
 #include <limits>
@@ -49,15 +50,33 @@ enum Actualizar {
     ActualizarCancelada = '0'
 };
 
+struct ArchivoHeader {
+    int cantidadRegistros;
+    int proximoId;
+    int registrosActivos;
+    int version;
+};
+
 struct Producto {
     int id;                 // Identificador único (autoincremental)
     char nombre[100];       // Nombre del producto
     char codigo[20];        // Código del producto (ej: "PROD-001")
     char descripcion[200];  // Descripción del producto
     char fechaRegistro[11]; // Formato: YYYY-MM-DD
-    int idProveedor;        // ID del proveedor asociado
     float precio;           // Precio unitario
     int stock;              // Cantidad en inventario
+
+    // llaves foraneas
+    int idProveedor; // ID del proveedor asociado
+
+    // estadisticas
+    int stockMinimo;
+    int totalVendido;
+
+    // metadata
+    bool eliminado;
+    time_t fechaCreacion;
+    time_t fechaUltimaModificacion;
 };
 
 struct Proveedor {
@@ -68,6 +87,14 @@ struct Proveedor {
     char email[100];        // Correo electrónico
     char direccion[200];    // Dirección física
     char fechaRegistro[11]; // Formato: YYYY-MM-DD
+
+    int productosIds[100];
+    int cantidadProductos;
+
+    // metadata
+    bool eliminado;
+    time_t fechaCreacion;
+    time_t fechaUltimaModificacion;
 };
 
 struct Cliente {
@@ -78,41 +105,41 @@ struct Cliente {
     char email[100];        // Correo electrónico
     char direccion[200];    // Dirección física
     char fechaRegistro[11]; // Formato: YYYY-MM-DD
+
+    float totalCompras;
+
+    int transaccionesIds[100];
+    int cantidadTransacciones;
+    // metadata
+    bool eliminado;
+    time_t fechaCreacion;
+    time_t fechaUltimaModificacion;
 };
 
 struct Transaccion {
     int id;                 // Identificador único (autoincremental)
     TipoDeTransaccion tipo; // COMPRA o VENTA
-    int idProducto;         // ID del producto involucrado
     int idRelacionado;      // ID del proveedor (compra) o cliente (venta)
-    int cantidad;           // Cantidad de unidades
-    float precioUnitario;   // Precio por unidad en esta transacción
     float total;            // cantidad * precioUnitario
     char fecha[11];         // Formato: YYYY-MM-DD
     char descripcion[200];  // Notas adicionales (opcional)
+
+    // Hasta 100 productos por transacción
+    int productosIds[100];
+    int cantidades[100];          // Cantidades de cada producto
+    float preciosUnitarios[100];  // Precios unitarios de cada producto
+    int cantidadTiposDeProductos; // Cuantos elementos de los arreys anteriores se están usando
+
+    // metadata
+    bool eliminado;
+    time_t fechaCreacion;
+    time_t fechaUltimaModificacion;
 };
 
 struct Tienda {
     char nombre[100]; // Nombre de la tienda
     char rif[20];     // RIF de la tienda
-
-    // Arrays dinámicos de entidades
-    Producto* productos;
-    Proveedor* proveedores;
-    Cliente* clientes;
-    Transaccion* transacciones;
-
-    // Control de Memoria
-    int numProductos, capacidadProductos;
-    int numClientes, capacidadClientes;
-    int numTransacciones, capacidadTransacciones;
-    int numProveedores, capacidadProveedores;
-
-    // Contadores para IDs autoincrementales
-    int siguienteIdProducto;
-    int siguienteIdProveedor;
-    int siguienteIdCliente;
-    int siguienteIdTransaccion;
+    float totalTransacciones;
 };
 
 enum TipoPropiedadLista { PropiedadId, PropiedadNombre, PropiedadAmbos };
@@ -201,27 +228,11 @@ void inicializarTienda(Tienda* tienda, const char* nombre, const char* rif) {
     strncpy(tienda->nombre, nombre, 100);
     strncpy(tienda->rif, rif, 20);
 
-    tienda->capacidadClientes = CAPACIDAD_INICIAL;
-    tienda->capacidadProductos = CAPACIDAD_INICIAL;
-    tienda->capacidadProveedores = CAPACIDAD_INICIAL;
-    tienda->capacidadTransacciones = CAPACIDAD_INICIAL;
-
     // Inicializar los arrays dinámicos
     tienda->productos = new Producto[CAPACIDAD_INICIAL];
     tienda->proveedores = new Proveedor[CAPACIDAD_INICIAL];
     tienda->clientes = new Cliente[CAPACIDAD_INICIAL];
     tienda->transacciones = new Transaccion[CAPACIDAD_INICIAL];
-
-    tienda->numTransacciones = 0;
-    tienda->numProductos = 0;
-    tienda->numProveedores = 0;
-    tienda->numClientes = 0;
-
-    // empiezan en 1 porque el id debe ser mayor a 0
-    tienda->siguienteIdProducto = 1;
-    tienda->siguienteIdProveedor = 1;
-    tienda->siguienteIdCliente = 1;
-    tienda->siguienteIdTransaccion = 1;
 }
 
 void liberarTienda(Tienda* tienda) {
@@ -234,18 +245,7 @@ void liberarTienda(Tienda* tienda) {
     tienda->productos = nullptr;
     tienda->proveedores = nullptr;
     tienda->transacciones = nullptr;
-
-    tienda->numTransacciones = 0;
-    tienda->numClientes = 0;
-    tienda->numProductos = 0;
-    tienda->numProveedores = 0;
-
-    tienda->siguienteIdProducto = 1;
-    tienda->siguienteIdProveedor = 1;
-    tienda->siguienteIdCliente = 1;
-    tienda->siguienteIdTransaccion = 1;
 }
-
 // Forward declarations para validaciones
 bool codigoDuplicado(Tienda* tienda, const char* codigo);
 bool rifDuplicado(Tienda* tienda, const char* rif);
