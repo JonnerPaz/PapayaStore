@@ -403,21 +403,24 @@ void buscarProducto(Tienda* tienda) {
         cin >> opcion;
         switch (opcion) {
         case BusquedaId: {
-            mostrarListaEntidades("Productos", tienda->productos, tienda->numProductos,
-                                  PropiedadId);
+            mostrarListaEntidades<Producto>("Productos", PRODUCTOS_PATH, PropiedadId);
             int id = leerId("Ingrese el id del producto");
             if (id <= 0) {
                 cout << CLEAR_SCREEN << COLOR_RED << "Búsqueda cancelada." << COLOR_RESET << endl;
                 break;
             }
 
-            int index = buscarEntidadPorId(tienda->productos, tienda->numProductos, id);
+            int index = buscarEntidadPorId<Producto>(PRODUCTOS_PATH, id);
             if (index == -1) {
                 cout << "Producto no encontrado." << endl;
                 break;
             }
 
-            Producto& producto = tienda->productos[index];
+            Producto producto;
+            ifstream archivo(PRODUCTOS_PATH, ios::binary);
+            archivo.seekg(sizeof(ArchivoHeader) + index * sizeof(Producto), ios::beg);
+            archivo.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
+
             cout << "Producto encontrado:" << endl;
             cout << COLOR_YELLOW << "Id: " << COLOR_RESET << producto.id << endl;
             cout << COLOR_YELLOW << "Nombre: " << COLOR_RESET << producto.nombre << endl;
@@ -428,8 +431,7 @@ void buscarProducto(Tienda* tienda) {
             break;
         }
         case BusquedaNombre: {
-            mostrarListaEntidades("Productos", tienda->productos, tienda->numProductos,
-                                  PropiedadNombre);
+            mostrarListaEntidades<Producto>("Productos", PRODUCTOS_PATH, PropiedadNombre);
             cout << "Ingrese el nombre del producto: ";
             char nombre[100];
             if (cin.peek() == '\n')
@@ -448,8 +450,11 @@ void buscarProducto(Tienda* tienda) {
             }
 
             cout << "Productos encontrados:" << endl;
+            ifstream archivo(PRODUCTOS_PATH, ios::binary);
             for (int i = 1; i <= index[0]; i++) {
-                Producto& producto = tienda->productos[index[i]];
+                Producto producto;
+                archivo.seekg(sizeof(ArchivoHeader) + index[i] * sizeof(Producto), ios::beg);
+                archivo.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
 
                 cout << COLOR_YELLOW << "Id: " << COLOR_RESET << producto.id << endl;
                 cout << COLOR_YELLOW << "Nombre: " << COLOR_RESET << producto.nombre << endl;
