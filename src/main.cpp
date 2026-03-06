@@ -1099,10 +1099,14 @@ void eliminarProveedor(Tienda* tienda) {
 }
 
 void crearCliente(Tienda* tienda) {
-    if (tienda->numClientes >= tienda->capacidadClientes) {
-        redimensionarEntidad(tienda->clientes, tienda->capacidadClientes, tienda->numClientes);
+    fstream archivo;
+    try {
+        ifstream archivo(CLIENTES_PATH, ios::binary);
+    } catch (const std::exception& e) {
+        ofstream archivo(CLIENTES_PATH, ios::binary);
     }
-    int index = tienda->numClientes;
+
+    ArchivoHeader clientesHeader = leerHeader(CLIENTES_PATH);
 
     char nombre[100];
     asignarPropiedadString("Ingrese el nombre del cliente (q para cancelar): ", nombre);
@@ -1165,7 +1169,7 @@ void buscarCliente(Tienda* tienda) {
     if (tienda == nullptr)
         return;
 
-    mostrarListaEntidades("Clientes", tienda->clientes, tienda->numClientes, PropiedadId);
+    mostrarListaEntidades<Cliente>("Clientes", CLIENTES_PATH, PropiedadId);
 
     int id = leerId("Ingrese el id del cliente a buscar");
     if (id <= 0) {
@@ -1173,12 +1177,17 @@ void buscarCliente(Tienda* tienda) {
         return;
     }
 
-    int index = buscarEntidadPorId(tienda->clientes, tienda->numClientes, id);
+    int index = buscarEntidadPorId<Cliente>(CLIENTES_PATH, id);
     if (index == -1) {
         cout << CLEAR_SCREEN << COLOR_RED << "Cliente no encontrado." << COLOR_RESET << endl;
         return;
     }
-    Cliente& c = tienda->clientes[index];
+
+    Cliente c;
+    ifstream archivo(CLIENTES_PATH, ios::binary);
+    archivo.seekg(sizeof(ArchivoHeader) + index * sizeof(Cliente), ios::beg);
+    archivo.read(reinterpret_cast<char*>(&c), sizeof(Cliente));
+
     cout << "Cliente encontrado:" << endl;
     cout << "Id: " << c.id << "\nNombre: " << c.nombre << "\nCedula: " << c.cedula
          << "\nTelefono: " << c.telefono << "\nEmail: " << c.email << "\nDireccion: " << c.direccion
@@ -1189,7 +1198,7 @@ void actualizarCliente(Tienda* tienda) {
     if (tienda == nullptr)
         return;
 
-    mostrarListaEntidades("Clientes", tienda->clientes, tienda->numClientes);
+    mostrarListaEntidades<Cliente>("Clientes", CLIENTES_PATH, PropiedadAmbos);
 
     int id = leerId("Ingrese el id del cliente a actualizar");
     if (id <= 0) {
@@ -1197,12 +1206,16 @@ void actualizarCliente(Tienda* tienda) {
         return;
     }
 
-    int index = buscarEntidadPorId(tienda->clientes, tienda->numClientes, id);
+    int index = buscarEntidadPorId<Cliente>(CLIENTES_PATH, id);
     if (index == -1) {
         cout << CLEAR_SCREEN << COLOR_RED << "Cliente no encontrado." << COLOR_RESET << endl;
         return;
     }
-    Cliente& clientes = tienda->clientes[index];
+
+    Cliente clientes;
+    fstream archivo(CLIENTES_PATH, ios::binary | ios::in | ios::out);
+    archivo.seekg(sizeof(ArchivoHeader) + index * sizeof(Cliente), ios::beg);
+    archivo.read(reinterpret_cast<char*>(&clientes), sizeof(Cliente));
 
     char opcion;
     do {
@@ -1237,15 +1250,34 @@ void actualizarCliente(Tienda* tienda) {
         default:
             cout << CLEAR_SCREEN << COLOR_RED << "Opcion no valida" << COLOR_RESET << endl;
         }
+
+        if (opcion >= '1' && opcion <= '5') {
+            clientes.fechaUltimaModificacion = time(nullptr);
+            archivo.seekp(sizeof(ArchivoHeader) + index * sizeof(Cliente), ios::beg);
+            archivo.write(reinterpret_cast<const char*>(&clientes), sizeof(Cliente));
+        }
+
     } while (opcion != '0');
 }
 
 void listarClientes(Tienda* tienda) {
-    if (tienda == nullptr || tienda->numClientes == 0) {
+    if (tienda == nullptr)
+        return;
+
+    ifstream archivo(CLIENTES_PATH, ios::binary);
+    if (!archivo.is_open()) {
+        cout << "No se pudo abrir el archivo de clientes." << endl;
+        return;
+    }
+    ArchivoHeader header = leerHeader(CLIENTES_PATH);
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+
+    if (header.registrosActivos == 0) {
         cout << "No hay clientes registrados." << endl;
         return;
     }
-    cout << "--- Lista de Clientes (" << tienda->numClientes << ") ---" << endl;
+
+    cout << "--- Lista de Clientes (" << header.registrosActivos << ") ---" << endl;
     cout << format("{:<5} | {:<20} | {:<15} | {:<15} | {:<25}", "ID", "Nombre", "Cedula",
                    "Telefono", "Email")
          << endl;
@@ -1253,11 +1285,14 @@ void listarClientes(Tienda* tienda) {
             "----"
             "--"
          << endl;
-    for (int i = 0; i < tienda->numClientes; ++i) {
-        Cliente& cliente = tienda->clientes[i];
-        cout << format("{:<5} | {:<20} | {:<15} | {:<15} | {:<25}", cliente.id, cliente.nombre,
-                       cliente.cedula, cliente.telefono, cliente.email)
-             << endl;
+
+    Cliente cliente;
+    while (archivo.read(reinterpret_cast<char*>(&cliente), sizeof(Cliente))) {
+        if (!cliente.eliminado) {
+            cout << format("{:<5} | {:<20} | {:<15} | {:<15} | {:<25}", cliente.id, cliente.nombre,
+                           cliente.cedula, cliente.telefono, cliente.email)
+                 << endl;
+        }
     }
     cout << "----------------------------------------------------------------------------------"
             "----"
@@ -1269,7 +1304,7 @@ void eliminarCliente(Tienda* tienda) {
     if (tienda == nullptr)
         return;
 
-    mostrarListaEntidades("Clientes", tienda->clientes, tienda->numClientes);
+    mostrarListaEntidades<Cliente>("Clientes", CLIENTES_PATH, PropiedadAmbos);
 
     int id = leerId("Ingrese el id del cliente a eliminar");
     if (id <= 0) {
@@ -1277,20 +1312,14 @@ void eliminarCliente(Tienda* tienda) {
         return;
     }
 
-    int index = buscarEntidadPorId(tienda->clientes, tienda->numClientes, id);
+    int index = buscarEntidadPorId<Cliente>(CLIENTES_PATH, id);
     if (index == -1) {
         cout << CLEAR_SCREEN << COLOR_RED << "Cliente no encontrado." << COLOR_RESET << endl;
         return;
     }
 
     bool tieneTransacciones = false;
-    for (int i = 0; i < tienda->numTransacciones; ++i) {
-        if (tienda->transacciones[i].idRelacionado == id &&
-            tienda->transacciones[i].tipo == VENTA) {
-            tieneTransacciones = true;
-            break;
-        }
-    }
+    // TODO: Comprobar transacciones
 
     if (tieneTransacciones) {
         cout << CLEAR_SCREEN << COLOR_RED
@@ -1303,7 +1332,21 @@ void eliminarCliente(Tienda* tienda) {
     char confirmar;
     cin >> confirmar;
     if (confirmar == 's' || confirmar == 'S') {
-        eliminarElementoDeArray(tienda->clientes, index, tienda->numClientes);
+        Cliente clientes;
+        fstream archivo(CLIENTES_PATH, ios::binary | ios::in | ios::out);
+        archivo.seekg(sizeof(ArchivoHeader) + index * sizeof(Cliente), ios::beg);
+        archivo.read(reinterpret_cast<char*>(&clientes), sizeof(Cliente));
+
+        clientes.eliminado = true;
+        clientes.fechaUltimaModificacion = time(nullptr);
+
+        archivo.seekp(sizeof(ArchivoHeader) + index * sizeof(Cliente), ios::beg);
+        archivo.write(reinterpret_cast<const char*>(&clientes), sizeof(Cliente));
+
+        ArchivoHeader header = leerHeader(CLIENTES_PATH);
+        header.registrosActivos--;
+        actualizarHeader(CLIENTES_PATH, header);
+
         cout << "Cliente eliminado exitosamente." << endl;
     } else {
         cout << "Eliminación cancelada." << endl;
