@@ -549,7 +549,7 @@ void actualizarProducto(Tienda* tienda) {
     if (tienda == nullptr)
         return;
 
-    mostrarListaEntidades("Productos", tienda->productos, tienda->numProductos);
+    mostrarListaEntidades<Producto>("Productos", PRODUCTOS_PATH, PropiedadAmbos);
 
     int id = leerId("Ingresa el id del producto a actualizar");
     if (id <= 0) {
@@ -557,14 +557,18 @@ void actualizarProducto(Tienda* tienda) {
         return;
     }
 
-    int index = buscarEntidadPorId(tienda->productos, tienda->numProductos, id);
+    int index = buscarEntidadPorId<Producto>(PRODUCTOS_PATH, id);
     if (index == -1) {
         cout << CLEAR_SCREEN << COLOR_RED << "Producto a actualizar no encontrado." << COLOR_RESET
              << endl;
         return;
     }
 
-    Producto& producto = tienda->productos[index];
+    Producto producto;
+    fstream archivo(PRODUCTOS_PATH, ios::binary | ios::in | ios::out);
+    archivo.seekg(sizeof(ArchivoHeader) + index * sizeof(Producto), ios::beg);
+    archivo.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
+
     cout << format("Producto con el id {} encontrado: {}", id, producto.nombre) << endl;
 
     char opcion;
@@ -598,14 +602,13 @@ void actualizarProducto(Tienda* tienda) {
             manejarPropiedad("stock", producto.stock);
             break;
         case ActualizarProveedor: {
-            mostrarListaEntidades("Proveedores Disponibles", tienda->proveedores,
-                                  tienda->numProveedores, PropiedadAmbos);
+            mostrarListaEntidades<Proveedor>("Proveedores Disponibles", PROVEEDORES_PATH,
+                                             PropiedadAmbos);
             int idNuevoProveedor = leerId("Ingrese el ID del nuevo proveedor (q para cancelar)");
             if (idNuevoProveedor <= 0) {
                 cout << "Actualización cancelada." << endl;
             } else {
-                int provIndex = buscarEntidadPorId(tienda->proveedores, tienda->numProveedores,
-                                                   idNuevoProveedor);
+                int provIndex = buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, idNuevoProveedor);
                 if (provIndex == -1) {
                     cout << COLOR_RED << "Error: Proveedor no encontrado." << COLOR_RESET << endl;
                 } else {
@@ -622,6 +625,13 @@ void actualizarProducto(Tienda* tienda) {
             cout << CLEAR_SCREEN << COLOR_RED << "Opcion no valida" << COLOR_RESET << endl;
             break;
         }
+
+        if (opcion >= '1' && opcion <= '6') {
+            producto.fechaUltimaModificacion = time(nullptr);
+            archivo.seekp(sizeof(ArchivoHeader) + index * sizeof(Producto), ios::beg);
+            archivo.write(reinterpret_cast<const char*>(&producto), sizeof(Producto));
+        }
+
     } while (opcion != ActualizarCancelada);
 }
 
