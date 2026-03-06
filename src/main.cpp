@@ -740,36 +740,45 @@ void actualizarStockProducto(Tienda* tienda) {
 }
 
 void listarProductos(Tienda* tienda) {
-    if (tienda == nullptr) {
-        cout << CLEAR_SCREEN << COLOR_RED << "Error: La tienda no ha sido creada." << COLOR_RESET
-             << endl;
+    if (tienda == nullptr)
+        return;
+
+    ifstream archivo(PRODUCTOS_PATH, ios::binary);
+    if (!archivo.is_open()) {
+        cout << "No se pudo abrir el archivo de productos." << endl;
         return;
     }
+    ArchivoHeader header = leerHeader(PRODUCTOS_PATH);
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader)); // Saltar header
 
-    if (tienda->numProductos == 0) {
+    if (header.registrosActivos == 0) {
         cout << "No hay productos registrados." << endl;
         return;
     }
 
-    cout << "--- Lista de Productos (" << tienda->numProductos << ") ---" << endl;
+    cout << "--- Lista de Productos (" << header.registrosActivos << ") ---" << endl;
     cout << format("{:<5} | {:<20} | {:<15} | {:<10} | {:<5}", "ID", "Nombre", "Codigo", "Precio",
                    "Stock")
          << endl;
     cout << "----------------------------------------------------------------------" << endl;
-    for (int i = 0; i < tienda->numProductos; ++i) {
-        Producto& producto = tienda->productos[i];
-        cout << format("{:<5} | {:<20} | {:<15} | ${:<9.2f} | {:<5}", producto.id, producto.nombre,
-                       producto.codigo, producto.precio, producto.stock)
-             << endl;
+
+    Producto producto;
+    while (archivo.read(reinterpret_cast<char*>(&producto), sizeof(Producto))) {
+        if (!producto.eliminado) {
+            cout << format("{:<5} | {:<20} | {:<15} | ${:<9.2f} | {:<5}", producto.id,
+                           producto.nombre, producto.codigo, producto.precio, producto.stock)
+                 << endl;
+        }
     }
     cout << "----------------------------------------------------------------------" << endl;
+    archivo.close();
 }
 
 void eliminarProducto(Tienda* tienda) {
     if (tienda == nullptr)
         return;
 
-    mostrarListaEntidades("Productos", tienda->productos, tienda->numProductos);
+    mostrarListaEntidades<Producto>("Productos", PRODUCTOS_PATH, PropiedadAmbos);
 
     int id = leerId("Ingresa el id del producto a eliminar");
     if (id <= 0) {
@@ -777,13 +786,17 @@ void eliminarProducto(Tienda* tienda) {
         return;
     }
 
-    int index = buscarEntidadPorId(tienda->productos, tienda->numProductos, id);
+    int index = buscarEntidadPorId<Producto>(PRODUCTOS_PATH, id);
     if (index == -1) {
         cout << CLEAR_SCREEN << COLOR_RED << "Producto no encontrado." << COLOR_RESET << endl;
         return;
     }
 
-    Producto& producto = tienda->productos[index];
+    Producto producto;
+    fstream archivo(PRODUCTOS_PATH, ios::binary | ios::in | ios::out);
+    archivo.seekg(sizeof(ArchivoHeader) + index * sizeof(Producto), ios::beg);
+    archivo.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
+
     cout << "Datos del producto a eliminar:" << endl;
     cout << "Id: " << producto.id << endl;
     cout << "Nombre: " << producto.nombre << endl;
@@ -791,12 +804,7 @@ void eliminarProducto(Tienda* tienda) {
     cout << "Stock actual: " << producto.stock << endl;
 
     bool tieneTransacciones = false;
-    for (int i = 0; i < tienda->numTransacciones; ++i) {
-        if (tienda->transacciones[i].idProducto == id) {
-            tieneTransacciones = true;
-            break;
-        }
-    }
+    // TODO: Comprobar transacciones usando archivos
 
     if (tieneTransacciones) {
         cout << CLEAR_SCREEN << COLOR_RED
@@ -810,7 +818,15 @@ void eliminarProducto(Tienda* tienda) {
     cin >> confirmar;
 
     if (confirmar == 's' || confirmar == 'S') {
-        eliminarElementoDeArray(tienda->productos, index, tienda->numProductos);
+        producto.eliminado = true;
+        producto.fechaUltimaModificacion = time(nullptr);
+        archivo.seekp(sizeof(ArchivoHeader) + index * sizeof(Producto), ios::beg);
+        archivo.write(reinterpret_cast<char*>(&producto), sizeof(Producto));
+
+        ArchivoHeader header = leerHeader(PRODUCTOS_PATH);
+        header.registrosActivos--;
+        actualizarHeader(PRODUCTOS_PATH, header);
+
         cout << "Producto eliminado exitosamente." << endl;
     } else {
         cout << "Eliminación cancelada." << endl;
