@@ -24,15 +24,16 @@ const char* COLOR_RED = "\033[31m";
 const char* COLOR_MAGENTA = "\033[35m";
 
 // File paths
-const char* PRODUCTOS_PATH = "./data/productos.bin";
-const char* PROVEEDORES_PATH = "./data/proveedores.bin";
-const char* CLIENTES_PATH = "./data/clientes.bin";
-const char* TRANSACCIONES_PATH = "./data/transacciones.bin";
-const char* TIENDA_PATH = "./data/tienda.bin";
-const char* BACKUP_PATH = "./data/backup/backup.bin";
+const fs::path PARENT_PATH = "./data/";
+const fs::path PRODUCTOS_PATH = PARENT_PATH / "productos.bin";
+const fs::path PROVEEDORES_PATH = PARENT_PATH / "proveedores.bin";
+const fs::path CLIENTES_PATH = PARENT_PATH / "clientes.bin";
+const fs::path TRANSACCIONES_PATH = PARENT_PATH / "transacciones.bin";
+const fs::path TIENDA_PATH = PARENT_PATH / "tienda.bin";
+const fs::path BACKUP_PATH = PARENT_PATH / "backup.bin";
 
 struct Tienda;
-template <typename T> int buscarEntidadPorId(const char* path, int id);
+template <typename T> int buscarEntidadPorId(fs::path path, int id);
 int leerId(const char* msg);
 void obtenerFechaActual(char* fecha);
 int* buscarProductosPorNombre(const char* nombre);
@@ -40,7 +41,7 @@ void listarProductos();
 void convertirAMinusculas(char* cadena);
 bool contieneSubstring(const char* cadena, const char* subcadena);
 template <typename T, size_t N>
-bool existeStringDuplicado(const char* path, const char* valorBusqueda, char (T::*miembro)[N]);
+bool existeStringDuplicado(fs::path path, const char* valorBusqueda, char (T::*miembro)[N]);
 bool existeProveedor(int id);
 bool existeCliente(int id);
 bool codigoDuplicado(const char* codigo);
@@ -159,7 +160,7 @@ struct Tienda {
 enum TipoPropiedadLista { PropiedadId, PropiedadNombre, PropiedadAmbos };
 
 template <typename T>
-void mostrarListaEntidades(const char* titulo, const char* path,
+void mostrarListaEntidades(const char* titulo, fs::path path,
                            TipoPropiedadLista tipoProp = PropiedadAmbos);
 
 // templates utilizados en el programa
@@ -214,35 +215,45 @@ template <size_t N> void copiarString(char (&destino)[N], const char* origen) {
 }
 
 ///// FUNCIONES CRUD DEL PROGRAMA
-bool inicializarArchivo(const char* path) {
+bool inicializarArchivo(fs::path path) {
+    if (path.has_parent_path() && !fs::exists(path.parent_path())) {
+        fs::create_directories(path.parent_path());
+    }
+
     if (fs::exists(path)) {
-        cout << format("El archivo {} ya existe.", path) << endl;
+        cout << format("El archivo {} ya existe.", path.c_str()) << endl;
         return true;
     }
 
-    ofstream archivo(path, ios::binary | ios::app);
+    ofstream file(path, ios::binary | ios::app);
+    if (!file) {
+        cout << "Error al crear el archivo " << path << endl;
+        return false;
+    }
+
     ArchivoHeader header = {
         .cantidadRegistros = 0, .proximoID = 1, .registrosActivos = 0, .version = 1};
-    archivo.write(reinterpret_cast<const char*>(&header), sizeof(ArchivoHeader));
-    archivo.close();
+    file.write(reinterpret_cast<const char*>(&header), sizeof(ArchivoHeader));
+    file.close();
 
     return fs::exists(path);
 }
 
-ArchivoHeader leerHeader(const char* path) {
+ArchivoHeader leerHeader(fs::path path) {
     try {
         ArchivoHeader header;
         ifstream archivo(path, ios::binary);
+        // lee el header
         archivo.seekg(0);
         archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
         return header;
-    } catch (const std::exception& e) {
-        cerr << "Error al leer el archivo " << path << ": " << e.what() << endl;
+    } catch (const std::exception& error) {
+        cerr << "Error al leer el archivo " << path << ": " << error.what() << endl;
         return ArchivoHeader();
     }
 }
 
-bool actualizarHeader(const char* path, ArchivoHeader header) {
+bool actualizarHeader(fs::path path, ArchivoHeader header) {
     try {
         ofstream archivo(path, ios::binary);
         archivo.seekp(0);
@@ -262,8 +273,8 @@ void inicializarTienda(const char* nombre, const char* rif) {
     strncpy(tienda.rif, rif, sizeof(tienda.rif) - 1);
     tienda.rif[sizeof(tienda.rif) - 1] = '\0';
 
-    string paths[5] = {PRODUCTOS_PATH, PROVEEDORES_PATH, CLIENTES_PATH, TRANSACCIONES_PATH,
-                       TIENDA_PATH};
+    string paths[6] = {PRODUCTOS_PATH,     PROVEEDORES_PATH, CLIENTES_PATH,
+                       TRANSACCIONES_PATH, TIENDA_PATH,      BACKUP_PATH};
 
     // Inicializar todos los archivos tan pronto como inicie el programa
     for (string path : paths) {
@@ -1773,7 +1784,7 @@ bool rifDuplicado(const char* rif) {
 //                 SECCIÓN DE TEMPLATES
 // =======================================================
 // Casi todas las entidades tienen un id (cliente, proveedor, producto)
-template <typename T> int buscarEntidadPorId(const char* path, int id) {
+template <typename T> int buscarEntidadPorId(fs::path path, int id) {
     ifstream archivo(path, ios::binary);
     if (!archivo.is_open())
         return -1;
@@ -1793,7 +1804,7 @@ template <typename T> int buscarEntidadPorId(const char* path, int id) {
 }
 
 template <typename T>
-void mostrarListaEntidades(const char* titulo, const char* path, TipoPropiedadLista tipoProp) {
+void mostrarListaEntidades(const char* titulo, fs::path path, TipoPropiedadLista tipoProp) {
     ifstream archivo(path, ios::binary);
     if (!archivo.is_open())
         return;
@@ -1843,7 +1854,7 @@ void mostrarListaEntidades(const char* titulo, const char* path, TipoPropiedadLi
 
 // para las entidades que revisan si si hay strngis duplicados(codigo,rif)
 template <typename T, size_t N>
-bool existeStringDuplicado(const char* path, const char* valorBusqueda, char (T::*miembro)[N]) {
+bool existeStringDuplicado(fs::path path, const char* valorBusqueda, char (T::*miembro)[N]) {
     ifstream archivo(path, ios::binary);
     if (!archivo.is_open())
         return false;
