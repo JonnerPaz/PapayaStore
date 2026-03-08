@@ -2109,6 +2109,103 @@ int leerId(const char* msg) {
     }
 }
 
+void verificarIntegridadReferencial() {
+    cout << CLEAR_SCREEN;
+    cout << COLOR_CYAN << "========================================" << COLOR_RESET << endl;
+    cout << COLOR_CYAN << "   DIAGNÓSTICO DE SALUD DE BASE DE DATOS  " << COLOR_RESET << endl;
+    cout << COLOR_CYAN << "========================================" << COLOR_RESET << endl;
+
+    // 1. Recorrer productos
+    ifstream productosFile(PRODUCTOS_PATH, ios::binary);
+    if (!productosFile.is_open()) {
+        cout << COLOR_RED << "Error: No se pudo abrir el archivo de productos." << COLOR_RESET
+             << endl;
+        return;
+    }
+
+    ArchivoHeader productosHeader = leerHeader(PRODUCTOS_PATH);
+    productosFile.seekg(0, ios::end);
+
+    int erroresEncontrados = 0;
+
+    Producto temp;
+    while (productosFile.read(reinterpret_cast<char*>(&temp), sizeof(Producto))) {
+        if (!temp.eliminado) {
+            // verificar que cada proveedor del producto exista
+            for (int i = 0; i < productosHeader.cantidadRegistros; ++i) {
+                int idProveedor = temp.proveedoresIds[i];
+                // Al buscar el proveedor, si no se encuentra, se incrementa el contador de errores
+                if (buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, idProveedor) == -1) {
+                    cout << COLOR_RED << "Error: El proveedor con id " << idProveedor
+                         << " no existe." << COLOR_RESET << endl;
+                    erroresEncontrados++;
+                    return;
+                }
+            }
+        }
+    }
+    productosFile.close();
+
+    // 2. Recorrer el archivo de transacciones
+    ifstream transaccionesFile(TRANSACCIONES_PATH, ios::binary);
+    if (!transaccionesFile.is_open()) {
+        cout << COLOR_RED << "Error: No se pudo abrir el archivo de transacciones." << COLOR_RESET
+             << endl;
+        return;
+    }
+
+    ArchivoHeader headerTrans;
+    transaccionesFile.read(reinterpret_cast<char*>(&headerTrans), sizeof(ArchivoHeader));
+
+    Transaccion trans;
+    while (transaccionesFile.read(reinterpret_cast<char*>(&trans), sizeof(Transaccion))) {
+        if (!trans.eliminado) {
+            // 2.1 Verificar Cliente o Proveedor asociado
+            if (trans.tipo == COMPRA) {
+                if (buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, trans.idRelacionado) == -1) {
+                    cout << COLOR_RED << "[ERROR - Transaccion ID " << trans.id << "] "
+                         << COLOR_RESET << "Es una COMPRA pero el Proveedor ID "
+                         << trans.idRelacionado << " NO EXISTE." << endl;
+                    erroresEncontrados++;
+                }
+            } else if (trans.tipo == VENTA) {
+                if (buscarEntidadPorId<Cliente>(CLIENTES_PATH, trans.idRelacionado) == -1) {
+                    cout << COLOR_RED << "[ERROR - Transaccion ID " << trans.id << "] "
+                         << COLOR_RESET << "Es una VENTA pero el Cliente ID " << trans.idRelacionado
+                         << " NO EXISTE." << endl;
+                    erroresEncontrados++;
+                }
+            }
+            // 2.2 Verificar Productos asociados a la transacción
+            for (int i = 0; i < trans.cantidadTiposDeProductos; i++) {
+                int idProducto = trans.productosIds[i];
+                if (buscarEntidadPorId<Producto>(PRODUCTOS_PATH, idProducto) == -1) {
+                    cout << COLOR_RED << "[ERROR - Transaccion ID " << trans.id << "] "
+                         << COLOR_RESET << "Contiene el Producto ID " << idProducto
+                         << " que NO EXISTE." << endl;
+                    erroresEncontrados++;
+                }
+            }
+        }
+    }
+    transaccionesFile.close();
+
+    // 3. Reporte final
+    cout << "\n----------------------------------------" << endl;
+    if (erroresEncontrados == 0) {
+        cout << format("{} [+] SALUDABLE: {} No se encontraron referencias rotas. La integridad "
+                       "referencial está intacta.",
+                       CLEAR_SCREEN, COLOR_GREEN, COLOR_RESET);
+    } else {
+        cout << format(
+            "{} [-] ADVERTENCIA: {} Se detectaron {} referencias rotas en la base de datos. Te "
+            "sugerimos usar el sistema de respaldo y restaurar una base de datos estable",
+            COLOR_RED, COLOR_RESET, erroresEncontrados);
+    }
+    cout << "----------------------------------------" << endl;
+}
+
+/// MENUS ////////////////////////////////////////////////////////////////////
 struct OpcionMenu {
     const char* descripcion;
     void (*accion)();
@@ -2180,6 +2277,11 @@ void menuTransacciones() {
     drawMenu("Gestión de Transacciones", options, 5);
 }
 
+void menuReportes() {
+    OpcionMenu options[] = {{"Integridad Referencial", verificarIntegridadReferencial}};
+    drawMenu("Reportes", options, 1);
+}
+
 int main() {
     setlocale(LC_ALL, "Spanish");
     inicializarTienda("Papaya Store", "J-123456789");
@@ -2187,9 +2289,10 @@ int main() {
     OpcionMenu options[] = {{"Gestión de Productos", menuProductos},
                             {"Gestión de Proveedores", menuProveedores},
                             {"Gestión de Clientes", menuClientes},
-                            {"Gestión de Transacciones", menuTransacciones}};
+                            {"Gestión de Transacciones", menuTransacciones},
+                            {"Gestión de Reportes y seguridad", menuReportes}};
 
-    drawMenu("PAPAYA STORE - Menú Principal", options, 4, "Salir");
+    drawMenu("PAPAYA STORE - Menú Principal", options, 5, "Salir");
 
     return 0;
 }
