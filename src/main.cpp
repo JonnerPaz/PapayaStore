@@ -170,7 +170,7 @@ template <typename T>
 // Ej. si T es int& -> devuelve int
 concept AsignarNum = std::is_arithmetic_v<std::remove_reference_t<T>>;
 void asignarPropiedadNum(const char* msg, AsignarNum auto& prop) {
-    cout << msg;
+    cout << COLOR_YELLOW << msg << COLOR_RESET;
     while (true) {
         cin >> prop;
         if (cin.fail()) {
@@ -193,7 +193,7 @@ void asignarPropiedadNum(const char* msg, AsignarNum auto& prop) {
 }
 
 template <size_t N> void asignarPropiedadString(const char* msg, char (&prop)[N]) {
-    cout << msg;
+    cout << COLOR_YELLOW << msg << COLOR_RESET;
     if (cin.peek() == '\n') {
         cin.ignore();
     }
@@ -955,12 +955,12 @@ void crearProveedor() {
 
     ArchivoHeader proveedoresHeader = leerHeader(PROVEEDORES_PATH);
 
-    char nombre[100];
+    char nombre[100], email[100], telefono[20], rif[20], direccion[200];
+
     asignarPropiedadString("Ingrese el nombre del proveedor (q para cancelar): ", nombre);
     if (nombre[0] == 'q' && nombre[1] == '\0')
         return;
 
-    char rif[20];
     while (true) {
         asignarPropiedadString("Ingrese el RIF del proveedor (q para cancelar): ", rif);
         if (rif[0] == 'q' && rif[1] == '\0')
@@ -977,56 +977,64 @@ void crearProveedor() {
         }
     }
 
-    char telefono[20];
     asignarPropiedadString("Ingrese el telefono del proveedor: ", telefono);
-    char email[100];
     while (true) {
-        asignarPropiedadString("Ingrese el email del proveedor (vacio para omitir): ", email);
-        if (email[0] == '\0') {
-            break; // Email opcional
+        asignarPropiedadString("Ingrese el email del proveedor (q para cancelar): ", email);
+        if (email[0] == 'q') {
+            return;
         }
-        if (validarEmail(email)) {
-            break;
+
+        if (!validarEmail(email)) {
+            continue;
         }
+        break;
     }
-    char direccion[200];
     asignarPropiedadString("Ingrese la direccion del proveedor: ", direccion);
 
-    cout << "Está seguro de crear el proveedor? (s/n): ";
+    cout << COLOR_YELLOW << "Los datos del proveedor son: " << COLOR_RESET << endl;
+    cout << format("Nombre: {}", nombre) << endl;
+    cout << format("Rif: {}", rif) << endl;
+    cout << format("Teléfono: {}", telefono) << endl;
+    cout << format("Correo: {}", email) << endl;
+    cout << format("direccion: {}", direccion) << endl;
+
+    cout << COLOR_YELLOW << "Está seguro de crear el proveedor? (s/n): " << COLOR_RESET;
     char confirmar;
     cin >> confirmar;
-    if (confirmar == 's' || confirmar == 'S') {
-        Proveedor proveedor = {};
-        proveedor.id = proveedoresHeader.proximoID;
-        copiarString(proveedor.nombre, nombre);
-        copiarString(proveedor.rif, rif);
-        copiarString(proveedor.telefono, telefono);
-        copiarString(proveedor.email, email);
-        copiarString(proveedor.direccion, direccion);
-        proveedor.eliminado = false;
-        proveedor.fechaCreacion = time(nullptr);
-        proveedor.fechaUltimaModificacion = proveedor.fechaCreacion;
-        obtenerFechaActual(proveedor.fechaRegistro);
 
-        proveedoresHeader.cantidadRegistros++;
-        proveedoresHeader.registrosActivos++;
-        proveedoresHeader.proximoID++;
-
-        ofstream archivoOut(PROVEEDORES_PATH, ios::binary | ios::app);
-        archivoOut.write(reinterpret_cast<const char*>(&proveedor), sizeof(Proveedor));
-        archivoOut.close();
-
-        actualizarHeader(PROVEEDORES_PATH, proveedoresHeader);
-
-        cout << "Proveedor creado con exito." << endl;
-    } else {
+    if (tolower(confirmar) != 's') {
         cout << "Proveedor no creado." << endl;
+        return;
     }
+
+    Proveedor proveedor = {};
+    proveedor.id = proveedoresHeader.proximoID;
+    copiarString(proveedor.nombre, nombre);
+    copiarString(proveedor.rif, rif);
+    copiarString(proveedor.telefono, telefono);
+    copiarString(proveedor.email, email);
+    copiarString(proveedor.direccion, direccion);
+    proveedor.eliminado = false;
+    proveedor.fechaCreacion = time(nullptr);
+    proveedor.fechaUltimaModificacion = proveedor.fechaCreacion;
+    obtenerFechaActual(proveedor.fechaRegistro);
+
+    proveedoresHeader.cantidadRegistros++;
+    proveedoresHeader.registrosActivos++;
+    proveedoresHeader.proximoID++;
+
+    ofstream archivoOut(PROVEEDORES_PATH, ios::binary | ios::app);
+    archivoOut.write(reinterpret_cast<const char*>(&proveedor), sizeof(Proveedor));
+    archivoOut.close();
+
+    actualizarHeader(PROVEEDORES_PATH, proveedoresHeader);
+
+    cout << COLOR_GREEN << "Proveedor creado con exito." << COLOR_RESET << endl;
 }
 
 void buscarProveedor() {
 
-    mostrarListaEntidades<Proveedor>("Proveedores", PROVEEDORES_PATH, PorId);
+    mostrarListaEntidades<Proveedor>("Proveedores", PROVEEDORES_PATH, PorAmbos);
 
     int id = leerId("Ingrese el id del proveedor a buscar");
     if (id <= 0) {
@@ -1043,11 +1051,16 @@ void buscarProveedor() {
     ifstream archivo(PROVEEDORES_PATH, ios::binary);
     archivo.seekg(sizeof(ArchivoHeader) + index * sizeof(Proveedor), ios::beg);
     archivo.read(reinterpret_cast<char*>(&p), sizeof(Proveedor));
+    archivo.close();
 
-    cout << "Proveedor encontrado:" << endl;
-    cout << "Id: " << p.id << "\nNombre: " << p.nombre << "\nRIF: " << p.rif
-         << "\nTelefono: " << p.telefono << "\nEmail: " << p.email << "\nDireccion: " << p.direccion
-         << "\nFecha de Registro: " << p.fechaRegistro << endl;
+    cout << format("{}Datos del proveedor: {}", COLOR_GREEN, COLOR_RESET) << endl;
+    cout << COLOR_YELLOW << "Id: " << COLOR_RESET << p.id << endl;
+    cout << COLOR_YELLOW << "Nombre: " << COLOR_RESET << p.nombre << endl;
+    cout << COLOR_YELLOW << "RIF: " << COLOR_RESET << p.rif << endl;
+    cout << COLOR_YELLOW << "Telefono: " << COLOR_RESET << p.telefono << endl;
+    cout << COLOR_YELLOW << "Email: " << COLOR_RESET << p.email << endl;
+    cout << COLOR_YELLOW << "Direccion: " << COLOR_RESET << p.direccion << endl;
+    cout << COLOR_YELLOW << "Fecha de Registro: " << COLOR_RESET << p.fechaRegistro << endl;
 }
 
 void actualizarProveedor() {
@@ -1878,8 +1891,8 @@ bool validarEmail(const char* email) {
     if (PosicionAt > 0 && PosicionAt < longitud - 1 && TienePuntoDespues) {
         return true;
     }
-    // si el email es invalido
-    cout << "ERROR: Formato de email invalido." << endl;
+
+    cout << COLOR_RED << "Error: El email no es valido." << COLOR_RESET << endl;
     return false;
 }
 bool validarFecha(const char* fecha) {
@@ -1988,6 +2001,7 @@ void mostrarListaEntidades(const char* titulo, fs::path path, ListarPorPropiedad
     }
     cout << "-------------------------------" << endl;
 
+    // datos
     T entidad;
     while (archivo.read(reinterpret_cast<char*>(&entidad), sizeof(T))) {
         if (!entidad.eliminado) {
