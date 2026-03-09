@@ -2292,12 +2292,8 @@ void drawMenu(const char* title, OpcionMenu options[], int numOptions,
         }
 
         int index = option - '1';
-        if (index >= 0 && index < numOptions) {
-            if (options[index].accion != nullptr) {
-                options[index].accion();
-            }
-        } else {
-            cout << CLEAR_SCREEN << COLOR_RED << "Opción inválida." << COLOR_RESET << endl;
+        if (index >= 0 && index < numOptions && options[index].accion != nullptr) {
+            options[index].accion();
         }
     } while (option != '0');
 }
