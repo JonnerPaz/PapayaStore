@@ -646,7 +646,7 @@ void actualizarProducto() {
             break;
         case ActualizarProveedor: {
             mostrarListaEntidades<Proveedor>("Proveedores Disponibles", PROVEEDORES_PATH, PorAmbos);
-            int idNuevoProveedor = leerId("Ingrese el ID del nuevo proveedor (q para cancelar)");
+            int idNuevoProveedor = leerId("Ingrese el ID del nuevo proveedor");
             if (idNuevoProveedor <= 0) {
                 cout << "Actualización cancelada." << endl;
             } else {
@@ -829,25 +829,58 @@ void listarProductos() {
         cout << "No se pudo abrir el archivo de productos." << endl;
         return;
     }
-    ArchivoHeader header = leerHeader(PRODUCTOS_PATH);
-    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader)); // Saltar header
+    ArchivoHeader prodHeader = leerHeader(PRODUCTOS_PATH);
+    archivo.read(reinterpret_cast<char*>(&prodHeader), sizeof(ArchivoHeader)); // Saltar header
 
-    if (header.registrosActivos == 0) {
+    if (prodHeader.registrosActivos == 0) {
         cout << "No hay productos registrados." << endl;
         return;
     }
 
-    cout << "--- Lista de Productos (" << header.registrosActivos << ") ---" << endl;
-    cout << format("{:<5} | {:<20} | {:<15} | {:<10} | {:<5}", "ID", "Nombre", "Codigo", "Precio",
-                   "Stock")
+    cout << "--- Lista de Productos (" << prodHeader.registrosActivos << ") ---" << endl;
+    cout << format("{:<5} | {:<20} | {:<15} | {:<10} | {:<5} | {:<15}", "ID", "Nombre", "Codigo",
+                   "Precio", "Stock", "Proveedores")
          << endl;
     cout << "----------------------------------------------------------------------" << endl;
 
     Producto producto;
     while (archivo.read(reinterpret_cast<char*>(&producto), sizeof(Producto))) {
+        string nombresProveedores = "";
+        ifstream proveedoresFile(PROVEEDORES_PATH, ios::binary);
+        if (!proveedoresFile.is_open()) {
+            cout << COLOR_RED
+                 << "Error al listar los productos: No se pudo abrir el archivo de "
+                    "proveedores.\nCerrando..."
+                 << COLOR_RESET << endl;
+            return;
+        }
+
+        for (int i = 0; i < producto.cantidadProveedores; i++) {
+            int idProv = producto.proveedoresIds[i];
+            int proveedorIdx = buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, idProv);
+
+            if (proveedorIdx != -1) {
+                Proveedor proveedor;
+                proveedoresFile.seekg(sizeof(ArchivoHeader) + (proveedorIdx * sizeof(Proveedor)),
+                                      ios::beg);
+                proveedoresFile.read(reinterpret_cast<char*>(&proveedor), sizeof(Proveedor));
+                nombresProveedores += proveedor.nombre;
+
+                i < producto.cantidadProveedores - 1 ? nombresProveedores += ", " : "";
+            }
+
+            if (proveedorIdx == -1) {
+                // En caso de que el proveedor haya sido eliminado
+                nombresProveedores += "[Proveedor Borrado]";
+                i < producto.cantidadProveedores - 1 ? nombresProveedores += ", " : "";
+            }
+        }
+        proveedoresFile.close();
+
         if (!producto.eliminado) {
-            cout << format("{:<5} | {:<20} | {:<15} | ${:<9.2f} | {:<5}", producto.id,
-                           producto.nombre, producto.codigo, producto.precio, producto.stock)
+            cout << format("{:<5} | {:<20} | {:<15} | ${:<9.2f} | {:<5} | {:<15}", producto.id,
+                           producto.nombre, producto.codigo, producto.precio, producto.stock,
+                           nombresProveedores)
                  << endl;
         }
     }
