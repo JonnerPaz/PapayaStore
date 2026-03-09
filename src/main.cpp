@@ -925,24 +925,37 @@ void eliminarProducto() {
         return;
     }
 
-    cout << "\n¿Está seguro que desea eliminar este producto? (s/n): ";
+    cout << "\n¿Deseas eliminar este producto? (s/n): ";
     char confirmar;
     cin >> confirmar;
+    cin.ignore();
+    cin.clear();
 
-    if (confirmar == 's' || confirmar == 'S') {
-        producto.eliminado = true;
-        producto.fechaUltimaModificacion = time(nullptr);
-        archivo.seekp(sizeof(ArchivoHeader) + index * sizeof(Producto), ios::beg);
-        archivo.write(reinterpret_cast<char*>(&producto), sizeof(Producto));
-
-        ArchivoHeader header = leerHeader(PRODUCTOS_PATH);
-        header.registrosActivos--;
-        actualizarHeader(PRODUCTOS_PATH, header);
-
-        cout << "Producto eliminado exitosamente." << endl;
-    } else {
+    if (tolower(confirmar) != 's') {
         cout << "Eliminación cancelada." << endl;
+        return;
     }
+
+    if (tolower(confirmar) == 's') {
+        cout << "¿Estás seguro? (s/n): ";
+        cin >> confirmar;
+    }
+
+    if (tolower(confirmar) != 's') {
+        cout << "Eliminación cancelada." << endl;
+        return;
+    }
+
+    producto.eliminado = true;
+    producto.fechaUltimaModificacion = time(nullptr);
+    archivo.seekp(sizeof(ArchivoHeader) + index * sizeof(Producto), ios::beg);
+    archivo.write(reinterpret_cast<char*>(&producto), sizeof(Producto));
+
+    ArchivoHeader header = leerHeader(PRODUCTOS_PATH);
+    header.registrosActivos--;
+    actualizarHeader(PRODUCTOS_PATH, header);
+
+    cout << "Producto eliminado exitosamente." << endl;
 }
 
 void crearProveedor() {
