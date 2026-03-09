@@ -34,6 +34,7 @@ const fs::path BACKUP_PATH = PARENT_PATH / "backup.bin";
 
 struct Tienda;
 template <typename T> int buscarEntidadPorId(fs::path path, int id);
+template <typename T> void menuActualizar(T& entidad, fstream& archivo, int index);
 int leerId(const char* msg);
 void obtenerFechaActual(char* fecha);
 int* buscarProductosPorNombre(const char* nombre);
@@ -632,112 +633,8 @@ void actualizarProducto() {
     archivo.seekg(sizeof(ArchivoHeader) + index * sizeof(Producto), ios::beg);
     archivo.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
 
-    cout << format("Producto con el id {} encontrado: {}", id, producto.nombre) << endl;
+    menuActualizar(producto, archivo, index);
 
-    char opcion;
-    do {
-        cout << COLOR_CYAN << "¿Qué desea actualizar?: " << COLOR_RESET << endl;
-        cout << COLOR_YELLOW << "1." << COLOR_RESET << " Nombre" << endl;
-        cout << COLOR_YELLOW << "2." << COLOR_RESET << " Codigo" << endl;
-        cout << COLOR_YELLOW << "3." << COLOR_RESET << " Descripcion" << endl;
-        cout << COLOR_YELLOW << "4." << COLOR_RESET << " Precio" << endl;
-        cout << COLOR_YELLOW << "5." << COLOR_RESET << " Stock" << endl;
-        cout << COLOR_YELLOW << "6." << COLOR_RESET << " Proveedor" << endl;
-        cout << COLOR_RED << "0." << COLOR_RESET << " Cancelar" << endl;
-        cout << "Seleccione una opción: ";
-
-        cin >> opcion;
-
-        switch (opcion) {
-        case ActualizarNombre:
-            manejarPropiedad("nombre", producto.nombre);
-            break;
-        case ActualizarCodigo:
-            manejarPropiedad("codigo", producto.codigo);
-            break;
-        case ActualizarDescripcion:
-            manejarPropiedad("descripcion", producto.descripcion);
-            break;
-        case ActualizarPrecio:
-            manejarPropiedad("precio", producto.precio);
-            break;
-        case ActualizarStock:
-            manejarPropiedad("stock", producto.stock);
-            break;
-        case ActualizarProveedor: {
-            mostrarListaEntidades<Proveedor>("Proveedores Disponibles", PROVEEDORES_PATH, PorAmbos);
-            int idNuevoProveedor = leerId("Ingrese el ID del nuevo proveedor");
-            if (idNuevoProveedor <= 0) {
-                cout << "Actualización cancelada." << endl;
-            } else {
-                int provIndex = buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, idNuevoProveedor);
-                if (provIndex == -1) {
-                    cout << COLOR_RED << "Error: Proveedor no encontrado." << COLOR_RESET << endl;
-                } else {
-                    bool existe = false;
-                    for (int i = 0; i < producto.cantidadProveedores; ++i) {
-                        if (producto.proveedoresIds[i] == idNuevoProveedor) {
-                            existe = true;
-                            break;
-                        }
-                    }
-                    if (existe) {
-                        cout << COLOR_YELLOW << "El producto ya tiene asociado este proveedor."
-                             << COLOR_RESET << endl;
-                    } else if (producto.cantidadProveedores >= 10) {
-                        cout << COLOR_RED
-                             << "Error: Se alcanzó el límite máximo de proveedores (10) para este "
-                                "producto."
-                             << COLOR_RESET << endl;
-                    } else {
-                        producto.proveedoresIds[producto.cantidadProveedores++] = idNuevoProveedor;
-                        cout << "Proveedor añadido con éxito." << endl;
-
-                        // Actualizar el proveedor
-                        Proveedor prov;
-                        fstream provArchivo(PROVEEDORES_PATH, ios::binary | ios::in | ios::out);
-                        provArchivo.seekg(sizeof(ArchivoHeader) + provIndex * sizeof(Proveedor),
-                                          ios::beg);
-                        provArchivo.read(reinterpret_cast<char*>(&prov), sizeof(Proveedor));
-
-                        if (prov.cantidadProductos < 100) {
-                            bool prodExiste = false;
-                            for (int i = 0; i < prov.cantidadProductos; ++i) {
-                                if (prov.productosIds[i] == producto.id) {
-                                    prodExiste = true;
-                                    break;
-                                }
-                            }
-                            if (!prodExiste) {
-                                prov.productosIds[prov.cantidadProductos++] = producto.id;
-                                prov.fechaUltimaModificacion = time(nullptr);
-                                provArchivo.seekp(sizeof(ArchivoHeader) +
-                                                      provIndex * sizeof(Proveedor),
-                                                  ios::beg);
-                                provArchivo.write(reinterpret_cast<const char*>(&prov),
-                                                  sizeof(Proveedor));
-                            }
-                        }
-                    }
-                }
-            }
-            break;
-        }
-        case ActualizarCancelada:
-            cout << COLOR_GREEN << "Se canceló la actualizacion." << COLOR_RESET << endl;
-            break;
-        default:
-            cout << CLEAR_SCREEN << COLOR_RED << "Opcion no valida" << COLOR_RESET << endl;
-            break;
-        }
-
-        if (opcion >= '1' && opcion <= '6') {
-            producto.fechaUltimaModificacion = time(nullptr);
-            archivo.seekp(sizeof(ArchivoHeader) + index * sizeof(Producto), ios::beg);
-            archivo.write(reinterpret_cast<const char*>(&producto), sizeof(Producto));
-        }
-
-    } while (opcion != ActualizarCancelada);
     archivo.close();
 }
 
@@ -1109,50 +1006,9 @@ void actualizarProveedor() {
     archivo.seekg(sizeof(ArchivoHeader) + index * sizeof(Proveedor), ios::beg);
     archivo.read(reinterpret_cast<char*>(&p), sizeof(Proveedor));
 
-    char opcion;
-    do {
-        cout << format("{}Datos del proveedor: {}", COLOR_CYAN, COLOR_RESET) << endl;
-        mostrarDetallesEntidad(p);
-        cout << endl;
-        cout << COLOR_CYAN << "¿Qué desea actualizar?: " << COLOR_RESET << endl;
-        cout << COLOR_YELLOW << "1." << COLOR_RESET << " Nombre\n"
-             << COLOR_YELLOW << "2." << COLOR_RESET << " RIF\n"
-             << COLOR_YELLOW << "3." << COLOR_RESET << " Telefono\n"
-             << COLOR_YELLOW << "4." << COLOR_RESET << " Email\n"
-             << COLOR_YELLOW << "5." << COLOR_RESET << " Direccion\n"
-             << COLOR_RED << "0." << COLOR_RESET << " Cancelar\n";
-        cout << "Seleccione una opción: ";
-        cin >> opcion;
-        switch (opcion) {
-        case '1':
-            manejarPropiedad("nombre", p.nombre);
-            break;
-        case '2':
-            manejarPropiedad("rif", p.rif);
-            break;
-        case '3':
-            manejarPropiedad("telefono", p.telefono);
-            break;
-        case '4':
-            manejarPropiedad("email", p.email);
-            break;
-        case '5':
-            manejarPropiedad("direccion", p.direccion);
-            break;
-        case '0':
-            cout << COLOR_GREEN << "Saliendo..." << COLOR_RESET << endl;
-            break;
-        default:
-            cout << CLEAR_SCREEN << COLOR_RED << "Opcion no valida" << COLOR_RESET << endl;
-        }
+    menuActualizar(p, archivo, index);
 
-        if (opcion >= '1' && opcion <= '5') {
-            p.fechaUltimaModificacion = time(nullptr);
-            archivo.seekp(sizeof(ArchivoHeader) + index * sizeof(Proveedor), ios::beg);
-            archivo.write(reinterpret_cast<const char*>(&p), sizeof(Proveedor));
-        }
-
-    } while (opcion != '0');
+    archivo.close();
 }
 
 void listarProveedores() {
@@ -1356,52 +1212,14 @@ void actualizarCliente() {
         return;
     }
 
-    Cliente clientes;
+    Cliente cliente;
     fstream archivo(CLIENTES_PATH, ios::binary | ios::in | ios::out);
     archivo.seekg(sizeof(ArchivoHeader) + index * sizeof(Cliente), ios::beg);
-    archivo.read(reinterpret_cast<char*>(&clientes), sizeof(Cliente));
+    archivo.read(reinterpret_cast<char*>(&cliente), sizeof(Cliente));
 
-    char opcion;
-    do {
-        cout << COLOR_CYAN << "¿Qué desea actualizar?: " << COLOR_RESET << endl;
-        cout << COLOR_YELLOW << "1." << COLOR_RESET << " Nombre\n"
-             << COLOR_YELLOW << "2." << COLOR_RESET << " Cedula\n"
-             << COLOR_YELLOW << "3." << COLOR_RESET << " Telefono\n"
-             << COLOR_YELLOW << "4." << COLOR_RESET << " Email\n"
-             << COLOR_YELLOW << "5." << COLOR_RESET << " Direccion\n"
-             << COLOR_RED << "0." << COLOR_RESET << " Cancelar\n";
-        cout << "Seleccione una opción: ";
-        cin >> opcion;
-        switch (opcion) {
-        case '1':
-            manejarPropiedad("nombre", clientes.nombre);
-            break;
-        case '2':
-            manejarPropiedad("cedula", clientes.cedula);
-            break;
-        case '3':
-            manejarPropiedad("telefono", clientes.telefono);
-            break;
-        case '4':
-            manejarPropiedad("email", clientes.email);
-            break;
-        case '5':
-            manejarPropiedad("direccion", clientes.direccion);
-            break;
-        case '0':
-            cout << COLOR_GREEN << "Saliendo..." << COLOR_RESET << endl;
-            break;
-        default:
-            cout << CLEAR_SCREEN << COLOR_RED << "Opcion no valida" << COLOR_RESET << endl;
-        }
+    menuActualizar(cliente, archivo, index);
 
-        if (opcion >= '1' && opcion <= '5') {
-            clientes.fechaUltimaModificacion = time(nullptr);
-            archivo.seekp(sizeof(ArchivoHeader) + index * sizeof(Cliente), ios::beg);
-            archivo.write(reinterpret_cast<const char*>(&clientes), sizeof(Cliente));
-        }
-
-    } while (opcion != '0');
+    archivo.close();
 }
 
 void listarClientes() {
@@ -2312,6 +2130,197 @@ void verificarIntegridadReferencial() {
 }
 
 /// MENUS ////////////////////////////////////////////////////////////////////
+template <typename T> void menuActualizar(T& entidad, fstream& archivo, int index) {
+    char opcion;
+    do {
+        cout << format("{}Datos actuales: {}", COLOR_CYAN, COLOR_RESET) << endl;
+        mostrarDetallesEntidad(entidad);
+        cout << endl;
+
+        cout << COLOR_CYAN << "¿Qué desea actualizar?: " << COLOR_RESET << endl;
+
+        if constexpr (std::is_same_v<T, Producto>) {
+            cout << COLOR_YELLOW << "1." << COLOR_RESET << " Nombre" << endl;
+            cout << COLOR_YELLOW << "2." << COLOR_RESET << " Codigo" << endl;
+            cout << COLOR_YELLOW << "3." << COLOR_RESET << " Descripcion" << endl;
+            cout << COLOR_YELLOW << "4." << COLOR_RESET << " Precio" << endl;
+            cout << COLOR_YELLOW << "5." << COLOR_RESET << " Stock" << endl;
+            cout << COLOR_YELLOW << "6." << COLOR_RESET << " Proveedor" << endl;
+            cout << COLOR_RED << "0." << COLOR_RESET << " Cancelar" << endl;
+            cout << "Seleccione una opción: ";
+            cin >> opcion;
+
+            switch (opcion) {
+            case ActualizarNombre:
+                manejarPropiedad("nombre", entidad.nombre);
+                break;
+            case ActualizarCodigo:
+                manejarPropiedad("codigo", entidad.codigo);
+                break;
+            case ActualizarDescripcion:
+                manejarPropiedad("descripcion", entidad.descripcion);
+                break;
+            case ActualizarPrecio:
+                manejarPropiedad("precio", entidad.precio);
+                break;
+            case ActualizarStock:
+                manejarPropiedad("stock", entidad.stock);
+                break;
+            case ActualizarProveedor: {
+                mostrarListaEntidades<Proveedor>("Proveedores Disponibles", PROVEEDORES_PATH,
+                                                 PorAmbos);
+                int idNuevoProveedor = leerId("Ingrese el ID del nuevo proveedor");
+                if (idNuevoProveedor <= 0) {
+                    cout << "Actualización cancelada." << endl;
+                } else {
+                    int provIndex =
+                        buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, idNuevoProveedor);
+                    if (provIndex == -1) {
+                        cout << COLOR_RED << "Error: Proveedor no encontrado." << COLOR_RESET
+                             << endl;
+                    } else {
+                        bool existe = false;
+                        for (int i = 0; i < entidad.cantidadProveedores; ++i) {
+                            if (entidad.proveedoresIds[i] == idNuevoProveedor) {
+                                existe = true;
+                                break;
+                            }
+                        }
+                        if (existe) {
+                            cout << COLOR_YELLOW << "El producto ya tiene asociado este proveedor."
+                                 << COLOR_RESET << endl;
+                        } else if (entidad.cantidadProveedores >= 10) {
+                            cout << COLOR_RED
+                                 << "Error: Se alcanzó el límite máximo de proveedores (10) para "
+                                    "este "
+                                    "producto."
+                                 << COLOR_RESET << endl;
+                        } else {
+                            entidad.proveedoresIds[entidad.cantidadProveedores++] =
+                                idNuevoProveedor;
+                            cout << "Proveedor añadido con éxito." << endl;
+
+                            // Actualizar el proveedor
+                            Proveedor prov;
+                            fstream provArchivo(PROVEEDORES_PATH, ios::binary | ios::in | ios::out);
+                            provArchivo.seekg(sizeof(ArchivoHeader) + provIndex * sizeof(Proveedor),
+                                              ios::beg);
+                            provArchivo.read(reinterpret_cast<char*>(&prov), sizeof(Proveedor));
+
+                            if (prov.cantidadProductos < 100) {
+                                bool prodExiste = false;
+                                for (int i = 0; i < prov.cantidadProductos; ++i) {
+                                    if (prov.productosIds[i] == entidad.id) {
+                                        prodExiste = true;
+                                        break;
+                                    }
+                                }
+                                if (!prodExiste) {
+                                    prov.productosIds[prov.cantidadProductos++] = entidad.id;
+                                    prov.fechaUltimaModificacion = time(nullptr);
+                                    provArchivo.seekp(sizeof(ArchivoHeader) +
+                                                          provIndex * sizeof(Proveedor),
+                                                      ios::beg);
+                                    provArchivo.write(reinterpret_cast<const char*>(&prov),
+                                                      sizeof(Proveedor));
+                                }
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+            case ActualizarCancelada:
+                cout << COLOR_GREEN << "Se canceló la actualizacion." << COLOR_RESET << endl;
+                break;
+            default:
+                cout << CLEAR_SCREEN << COLOR_RED << "Opcion no valida" << COLOR_RESET << endl;
+                break;
+            }
+
+            if (opcion >= '1' && opcion <= '6') {
+                entidad.fechaUltimaModificacion = time(nullptr);
+                archivo.seekp(sizeof(ArchivoHeader) + index * sizeof(Producto), ios::beg);
+                archivo.write(reinterpret_cast<const char*>(&entidad), sizeof(Producto));
+            }
+        } else if constexpr (std::is_same_v<T, Proveedor>) {
+            cout << COLOR_YELLOW << "1." << COLOR_RESET << " Nombre\n"
+                 << COLOR_YELLOW << "2." << COLOR_RESET << " RIF\n"
+                 << COLOR_YELLOW << "3." << COLOR_RESET << " Telefono\n"
+                 << COLOR_YELLOW << "4." << COLOR_RESET << " Email\n"
+                 << COLOR_YELLOW << "5." << COLOR_RESET << " Direccion\n"
+                 << COLOR_RED << "0." << COLOR_RESET << " Cancelar\n";
+            cout << "Seleccione una opción: ";
+            cin >> opcion;
+            switch (opcion) {
+            case '1':
+                manejarPropiedad("nombre", entidad.nombre);
+                break;
+            case '2':
+                manejarPropiedad("rif", entidad.rif);
+                break;
+            case '3':
+                manejarPropiedad("telefono", entidad.telefono);
+                break;
+            case '4':
+                manejarPropiedad("email", entidad.email);
+                break;
+            case '5':
+                manejarPropiedad("direccion", entidad.direccion);
+                break;
+            case '0':
+                cout << COLOR_GREEN << "Saliendo..." << COLOR_RESET << endl;
+                break;
+            default:
+                cout << CLEAR_SCREEN << COLOR_RED << "Opcion no valida" << COLOR_RESET << endl;
+            }
+
+            if (opcion >= '1' && opcion <= '5') {
+                entidad.fechaUltimaModificacion = time(nullptr);
+                archivo.seekp(sizeof(ArchivoHeader) + index * sizeof(Proveedor), ios::beg);
+                archivo.write(reinterpret_cast<const char*>(&entidad), sizeof(Proveedor));
+            }
+        } else if constexpr (std::is_same_v<T, Cliente>) {
+            cout << COLOR_YELLOW << "1." << COLOR_RESET << " Nombre\n"
+                 << COLOR_YELLOW << "2." << COLOR_RESET << " Cedula\n"
+                 << COLOR_YELLOW << "3." << COLOR_RESET << " Telefono\n"
+                 << COLOR_YELLOW << "4." << COLOR_RESET << " Email\n"
+                 << COLOR_YELLOW << "5." << COLOR_RESET << " Direccion\n"
+                 << COLOR_RED << "0." << COLOR_RESET << " Cancelar\n";
+            cout << "Seleccione una opción: ";
+            cin >> opcion;
+            switch (opcion) {
+            case '1':
+                manejarPropiedad("nombre", entidad.nombre);
+                break;
+            case '2':
+                manejarPropiedad("cedula", entidad.cedula);
+                break;
+            case '3':
+                manejarPropiedad("telefono", entidad.telefono);
+                break;
+            case '4':
+                manejarPropiedad("email", entidad.email);
+                break;
+            case '5':
+                manejarPropiedad("direccion", entidad.direccion);
+                break;
+            case '0':
+                cout << COLOR_GREEN << "Saliendo..." << COLOR_RESET << endl;
+                break;
+            default:
+                cout << CLEAR_SCREEN << COLOR_RED << "Opcion no valida" << COLOR_RESET << endl;
+            }
+
+            if (opcion >= '1' && opcion <= '5') {
+                entidad.fechaUltimaModificacion = time(nullptr);
+                archivo.seekp(sizeof(ArchivoHeader) + index * sizeof(Cliente), ios::beg);
+                archivo.write(reinterpret_cast<const char*>(&entidad), sizeof(Cliente));
+            }
+        }
+    } while (opcion != '0');
+}
+
 struct OpcionMenu {
     const char* descripcion;
     void (*accion)();
