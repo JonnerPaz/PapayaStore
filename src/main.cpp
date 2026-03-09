@@ -215,6 +215,32 @@ template <size_t N> void copiarString(char (&destino)[N], const char* origen) {
     destino[N - 1] = '\0';
 }
 
+template <typename T> void mostrarDetallesEntidad(const T& entidad) {
+    if constexpr (std::is_same_v<T, Producto>) {
+        cout << format("{}Nombre: {}{}", COLOR_YELLOW, COLOR_RESET, entidad.nombre) << endl;
+        cout << format("{}Codigo: {}{}", COLOR_YELLOW, COLOR_RESET, entidad.codigo) << endl;
+        cout << format("{}Descripcion: {}{}", COLOR_YELLOW, COLOR_RESET, entidad.descripcion)
+             << endl;
+        cout << format("{}Precio: {}{:.2f}", COLOR_YELLOW, COLOR_RESET, entidad.precio) << endl;
+        cout << format("{}Stock: {}{}", COLOR_YELLOW, COLOR_RESET, entidad.stock) << endl;
+        if (entidad.cantidadProveedores > 0) {
+            cout << format("ID de Proveedor asociado: {}", entidad.proveedoresIds[0]) << endl;
+        }
+    } else if constexpr (std::is_same_v<T, Proveedor>) {
+        cout << format("{}Nombre: {}{}", COLOR_YELLOW, COLOR_RESET, entidad.nombre) << endl;
+        cout << format("{}RIF: {}{}", COLOR_YELLOW, COLOR_RESET, entidad.rif) << endl;
+        cout << format("{}Teléfono: {}{}", COLOR_YELLOW, COLOR_RESET, entidad.telefono) << endl;
+        cout << format("{}Email: {}{}", COLOR_YELLOW, COLOR_RESET, entidad.email) << endl;
+        cout << format("{}Dirección: {}{}", COLOR_YELLOW, COLOR_RESET, entidad.direccion) << endl;
+    } else if constexpr (std::is_same_v<T, Cliente>) {
+        cout << format("{}Nombre: {}{}", COLOR_YELLOW, COLOR_RESET, entidad.nombre) << endl;
+        cout << format("{}Cédula/RIF: {}{}", COLOR_YELLOW, COLOR_RESET, entidad.cedula) << endl;
+        cout << format("{}Teléfono: {}{}", COLOR_YELLOW, COLOR_RESET, entidad.telefono) << endl;
+        cout << format("{}Email: {}{}", COLOR_YELLOW, COLOR_RESET, entidad.email) << endl;
+        cout << format("{}Dirección: {}{}", COLOR_YELLOW, COLOR_RESET, entidad.direccion) << endl;
+    }
+}
+
 ///// FUNCIONES CRUD DEL PROGRAMA
 bool inicializarArchivo(fs::path path) {
     if (path.has_parent_path() && !fs::exists(path.parent_path())) {
@@ -376,22 +402,6 @@ void crearProducto() {
         mostrarListaEntidades<Proveedor>("Proveedores", PROVEEDORES_PATH);
     }
 
-    cout << "Los datos del producto son: " << endl;
-    cout << format("Nombre: {}", nombre) << endl;
-    cout << format("Codigo: {}", codigo) << endl;
-    cout << format("Descripcion: {}", descripcion) << endl;
-    cout << format("Precio: {}", precio) << endl;
-    cout << format("Stock: {}", stock) << endl;
-    cout << format("Proveedor: {}", idProveedor) << endl;
-
-    cout << COLOR_YELLOW << "Está seguro de crear el producto? (s/n): " << COLOR_RESET;
-    cin >> confirmar;
-
-    if (tolower(confirmar) != 's') {
-        cout << COLOR_RED << "Creación de producto cancelada." << COLOR_RESET << endl;
-        return;
-    }
-
     Producto producto = {};
     producto.id = productosHeader.proximoID;
     producto.proveedoresIds[0] = idProveedor;
@@ -406,6 +416,16 @@ void crearProducto() {
     producto.fechaCreacion = chrono::system_clock::to_time_t(now);
     producto.fechaUltimaModificacion = producto.fechaCreacion;
     obtenerFechaActual(producto.fechaRegistro);
+
+    mostrarDetallesEntidad(producto);
+
+    cout << COLOR_YELLOW << "Está seguro de crear el producto? (s/n): " << COLOR_RESET;
+    cin >> confirmar;
+
+    if (tolower(confirmar) != 's') {
+        cout << COLOR_RED << "Creación de producto cancelada." << COLOR_RESET << endl;
+        return;
+    }
 
     // actualizar el header
     productosHeader.cantidadRegistros++;
@@ -718,6 +738,7 @@ void actualizarProducto() {
         }
 
     } while (opcion != ActualizarCancelada);
+    archivo.close();
 }
 
 void actualizarStockProducto() {
@@ -909,11 +930,8 @@ void eliminarProducto() {
     archivo.seekg(sizeof(ArchivoHeader) + index * sizeof(Producto), ios::beg);
     archivo.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
 
-    cout << "Datos del producto a eliminar:" << endl;
-    cout << "Id: " << producto.id << endl;
-    cout << "Nombre: " << producto.nombre << endl;
-    cout << "Codigo: " << producto.codigo << endl;
-    cout << "Stock actual: " << producto.stock << endl;
+    cout << COLOR_YELLOW << "Datos del producto a eliminar:" << COLOR_RESET << endl;
+    mostrarDetallesEntidad(producto);
 
     bool tieneTransacciones = false;
     // TODO: Comprobar transacciones usando archivos
@@ -925,7 +943,7 @@ void eliminarProducto() {
         return;
     }
 
-    cout << "\n¿Deseas eliminar este producto? (s/n): ";
+    cout << COLOR_RED << "\n¿Deseas eliminar este producto? (s/n): " << COLOR_RESET;
     char confirmar;
     cin >> confirmar;
     cin.ignore();
@@ -937,12 +955,12 @@ void eliminarProducto() {
     }
 
     if (tolower(confirmar) == 's') {
-        cout << "¿Estás seguro? (s/n): ";
+        cout << COLOR_RED << "¿Estás seguro? (s/n): " << COLOR_RESET;
         cin >> confirmar;
     }
 
     if (tolower(confirmar) != 's') {
-        cout << "Eliminación cancelada." << endl;
+        cout << COLOR_RED << "Eliminación cancelada." << COLOR_RESET << endl;
         return;
     }
 
@@ -955,7 +973,7 @@ void eliminarProducto() {
     header.registrosActivos--;
     actualizarHeader(PRODUCTOS_PATH, header);
 
-    cout << "Producto eliminado exitosamente." << endl;
+    cout << COLOR_GREEN << "Producto eliminado exitosamente." << COLOR_RESET << endl;
 }
 
 void crearProveedor() {
@@ -1004,22 +1022,6 @@ void crearProveedor() {
     }
     asignarPropiedadString("Ingrese la direccion del proveedor: ", direccion);
 
-    cout << COLOR_YELLOW << "Los datos del proveedor son: " << COLOR_RESET << endl;
-    cout << format("Nombre: {}", nombre) << endl;
-    cout << format("Rif: {}", rif) << endl;
-    cout << format("Teléfono: {}", telefono) << endl;
-    cout << format("Correo: {}", email) << endl;
-    cout << format("direccion: {}", direccion) << endl;
-
-    cout << COLOR_YELLOW << "Está seguro de crear el proveedor? (s/n): " << COLOR_RESET;
-    char confirmar;
-    cin >> confirmar;
-
-    if (tolower(confirmar) != 's') {
-        cout << "Proveedor no creado." << endl;
-        return;
-    }
-
     Proveedor proveedor = {};
     proveedor.id = proveedoresHeader.proximoID;
     copiarString(proveedor.nombre, nombre);
@@ -1031,6 +1033,17 @@ void crearProveedor() {
     proveedor.fechaCreacion = time(nullptr);
     proveedor.fechaUltimaModificacion = proveedor.fechaCreacion;
     obtenerFechaActual(proveedor.fechaRegistro);
+
+    mostrarDetallesEntidad(proveedor);
+
+    cout << COLOR_YELLOW << "Está seguro de crear el proveedor? (s/n): " << COLOR_RESET;
+    char confirmar;
+    cin >> confirmar;
+
+    if (tolower(confirmar) != 's') {
+        cout << "Proveedor no creado." << endl;
+        return;
+    }
 
     proveedoresHeader.cantidadRegistros++;
     proveedoresHeader.registrosActivos++;
@@ -1098,6 +1111,9 @@ void actualizarProveedor() {
 
     char opcion;
     do {
+        cout << format("{}Datos del proveedor: {}", COLOR_CYAN, COLOR_RESET) << endl;
+        mostrarDetallesEntidad(p);
+        cout << endl;
         cout << COLOR_CYAN << "¿Qué desea actualizar?: " << COLOR_RESET << endl;
         cout << COLOR_YELLOW << "1." << COLOR_RESET << " Nombre\n"
              << COLOR_YELLOW << "2." << COLOR_RESET << " RIF\n"
@@ -1263,22 +1279,24 @@ void crearCliente() {
     char direccion[200];
     asignarPropiedadString("Ingrese la direccion del cliente: ", direccion);
 
+    Cliente cliente = {};
+    cliente.id = clientesHeader.proximoID;
+    copiarString(cliente.nombre, nombre);
+    copiarString(cliente.cedula, cedula);
+    copiarString(cliente.telefono, telefono);
+    copiarString(cliente.email, email);
+    copiarString(cliente.direccion, direccion);
+    cliente.eliminado = false;
+    cliente.fechaCreacion = time(nullptr);
+    cliente.fechaUltimaModificacion = cliente.fechaCreacion;
+    obtenerFechaActual(cliente.fechaRegistro);
+
+    mostrarDetallesEntidad(cliente);
+
     cout << "Está seguro de crear el cliente? (s/n): ";
     char confirmar;
     cin >> confirmar;
     if (confirmar == 's' || confirmar == 'S') {
-        Cliente cliente = {};
-        cliente.id = clientesHeader.proximoID;
-        copiarString(cliente.nombre, nombre);
-        copiarString(cliente.cedula, cedula);
-        copiarString(cliente.telefono, telefono);
-        copiarString(cliente.email, email);
-        copiarString(cliente.direccion, direccion);
-        cliente.eliminado = false;
-        cliente.fechaCreacion = time(nullptr);
-        cliente.fechaUltimaModificacion = cliente.fechaCreacion;
-        obtenerFechaActual(cliente.fechaRegistro);
-
         clientesHeader.cantidadRegistros++;
         clientesHeader.registrosActivos++;
         clientesHeader.proximoID++;
@@ -2164,7 +2182,7 @@ bool contieneSubstring(const char* cadena, const char* subcadena) {
 // si el usuario ingresa 'q', retorna -1
 int leerId(const char* msg) {
     while (true) {
-        cout << msg << " (q para salir): ";
+        cout << COLOR_YELLOW << msg << " (q para salir): " << COLOR_RESET;
         string input;
         cin >> input;
 
@@ -2319,7 +2337,6 @@ void drawMenu(const char* title, OpcionMenu options[], int numOptions,
         }
 
         int index = option - 1;
-        cout << "Opcion seleccionada: " << index << endl;
         if (index >= 0 && index < numOptions && options[index].accion != nullptr) {
             options[index].accion();
         }
