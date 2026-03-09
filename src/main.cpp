@@ -2300,7 +2300,7 @@ struct OpcionMenu {
 };
 void drawMenu(const char* title, OpcionMenu options[], int numOptions,
               const char* texToExit = "Volver al Menú Principal") {
-    char option;
+    int option;
     do {
         cout << COLOR_CYAN << "\n=== " << title << " ===" << COLOR_RESET << endl;
         for (int i = 0; i < numOptions; ++i) {
@@ -2313,16 +2313,24 @@ void drawMenu(const char* title, OpcionMenu options[], int numOptions,
         if (!(cin >> option))
             break;
 
-        if (option == '0') {
-            cout << COLOR_GREEN << (texToExit[0] == 'S' ? "Saliendo..." : "Volviendo...")
-                 << COLOR_RESET << endl;
+        if (option < 0 || option > numOptions) {
+            cout << COLOR_RED << "Opción inválida" << COLOR_RESET << endl;
+            continue;
         }
 
-        int index = option - '1';
+        int index = option - 1;
+        cout << "Opcion seleccionada: " << index << endl;
         if (index >= 0 && index < numOptions && options[index].accion != nullptr) {
             options[index].accion();
         }
-    } while (option != '0');
+
+        // Si el indice es -1 ((index = 0) -1) se sale del menu
+        if (index == -1) {
+            cout << COLOR_GREEN << (tolower(texToExit[0]) == 's' ? "Saliendo..." : "Volviendo...")
+                 << COLOR_RESET << endl;
+            break;
+        }
+    } while (option != 0);
 }
 
 void menuProductos() {
