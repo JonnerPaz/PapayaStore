@@ -996,24 +996,24 @@ void crearProveedor() {
     char confirmar;
     cin >> confirmar;
     if (confirmar == 's' || confirmar == 'S') {
-        Proveedor prov = {};
-        prov.id = proveedoresHeader.proximoID;
-        copiarString(prov.nombre, nombre);
-        copiarString(prov.rif, rif);
-        copiarString(prov.telefono, telefono);
-        copiarString(prov.email, email);
-        copiarString(prov.direccion, direccion);
-        prov.eliminado = false;
-        prov.fechaCreacion = time(nullptr);
-        prov.fechaUltimaModificacion = prov.fechaCreacion;
-        obtenerFechaActual(prov.fechaRegistro);
+        Proveedor proveedor = {};
+        proveedor.id = proveedoresHeader.proximoID;
+        copiarString(proveedor.nombre, nombre);
+        copiarString(proveedor.rif, rif);
+        copiarString(proveedor.telefono, telefono);
+        copiarString(proveedor.email, email);
+        copiarString(proveedor.direccion, direccion);
+        proveedor.eliminado = false;
+        proveedor.fechaCreacion = time(nullptr);
+        proveedor.fechaUltimaModificacion = proveedor.fechaCreacion;
+        obtenerFechaActual(proveedor.fechaRegistro);
 
         proveedoresHeader.cantidadRegistros++;
         proveedoresHeader.registrosActivos++;
         proveedoresHeader.proximoID++;
 
         ofstream archivoOut(PROVEEDORES_PATH, ios::binary | ios::app);
-        archivoOut.write(reinterpret_cast<const char*>(&prov), sizeof(Proveedor));
+        archivoOut.write(reinterpret_cast<const char*>(&proveedor), sizeof(Proveedor));
         archivoOut.close();
 
         actualizarHeader(PROVEEDORES_PATH, proveedoresHeader);
@@ -2307,6 +2307,22 @@ void menuProductos() {
         {"Crear Producto", crearProducto},           {"Buscar Producto", buscarProducto},
         {"Actualizar Producto", actualizarProducto}, {"Actualizar Stock", actualizarStockProducto},
         {"Listar Productos", listarProductos},       {"Eliminar Producto", eliminarProducto}};
+
+    ifstream proveedoresFile(PROVEEDORES_PATH, ios::binary);
+    if (!proveedoresFile.is_open()) {
+        cout << COLOR_RED << "Error: No se pudo abrir el archivo de proveedores." << COLOR_RESET;
+        return;
+    }
+
+    ArchivoHeader proveedoresHeader = leerHeader(PROVEEDORES_PATH);
+    if (!proveedoresHeader.registrosActivos) {
+
+        cout << format("{} {} Error: No hay proveedores registrados. Debe crear al menos un "
+                       "proveedor antes de registrar un producto. {}",
+                       CLEAR_SCREEN, COLOR_RED, COLOR_RESET);
+        return;
+    }
+
     drawMenu("Gestión de Productos", opciones, 6);
 }
 
