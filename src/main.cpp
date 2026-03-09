@@ -47,6 +47,7 @@ bool existeCliente(int id);
 bool codigoDuplicado(const char* codigo);
 bool rifDuplicado(const char* rif);
 bool validarEmail(const char* email);
+bool nombreProductoDuplicado(const char* nombre);
 
 enum TipoDeTransaccion { COMPRA, VENTA };
 enum Busqueda {
@@ -175,8 +176,8 @@ void asignarPropiedadNum(const char* msg, AsignarNum auto& prop) {
         if (cin.fail()) {
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << CLEAR_SCREEN << COLOR_RED
-                 << "El valor debe ser numérico. Intente nuevamente: " << COLOR_RESET << endl;
+            cout << COLOR_RED << "El valor debe ser numérico. Intente nuevamente: " << COLOR_RESET
+                 << endl;
             continue;
         }
         // Clean buffer no matter if cin fail or not
@@ -242,7 +243,11 @@ bool inicializarArchivo(fs::path path) {
 ArchivoHeader leerHeader(fs::path path) {
     try {
         ArchivoHeader header;
-        ifstream archivo(path, ios::binary);
+        ifstream archivo(path, ios::binary | ios::in);
+        if (!archivo.is_open()) {
+            cerr << "Error al abrir el archivo " << path << endl;
+            return ArchivoHeader();
+        }
         // lee el header
         archivo.seekg(0);
         archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
@@ -255,10 +260,15 @@ ArchivoHeader leerHeader(fs::path path) {
 
 bool actualizarHeader(fs::path path, ArchivoHeader header) {
     try {
-        ofstream archivo(path, ios::binary);
+        fstream archivo(path, ios::binary | ios::in | ios::out);
+        if (!archivo.is_open()) {
+            cerr << "Error al abrir el archivo " << path << endl;
+            return false;
+        }
         archivo.seekp(0);
         // Reescribe todo el header
         archivo.write(reinterpret_cast<const char*>(&header), sizeof(ArchivoHeader));
+        archivo.close();
         return true;
     } catch (const std::exception& e) {
         cerr << "Error al actualizar el archivo: " << e.what() << endl;
@@ -1869,6 +1879,14 @@ bool codigoDuplicado(const char* codigo) {
     return existeStringDuplicado<Producto>(PRODUCTOS_PATH, codigo, &Producto::codigo);
 }
 
+bool nombreProveedorDuplicado(const char* nombre) {
+    return existeStringDuplicado<Proveedor>(PROVEEDORES_PATH, nombre, &Proveedor::nombre);
+}
+
+bool nombreProductoDuplicado(const char* nombre) {
+    return existeStringDuplicado<Producto>(PRODUCTOS_PATH, nombre, &Producto::nombre);
+}
+
 bool rifDuplicado(const char* rif) {
     return existeStringDuplicado<Proveedor>(PROVEEDORES_PATH, rif, &Proveedor::rif);
 }
@@ -2214,7 +2232,6 @@ void drawMenu(const char* title, OpcionMenu options[], int numOptions,
               const char* texToExit = "Volver al Menú Principal") {
     char option;
     do {
-        cout << CLEAR_SCREEN;
         cout << COLOR_CYAN << "\n=== " << title << " ===" << COLOR_RESET << endl;
         for (int i = 0; i < numOptions; ++i) {
             cout << COLOR_YELLOW << i + 1 << "." << COLOR_RESET << " " << options[i].descripcion
