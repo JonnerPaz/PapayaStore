@@ -312,9 +312,18 @@ void crearProducto() {
 
     char confirmar;
     char nombre[100];
-    asignarPropiedadString("Ingrese el nombre del producto (q para cancelar): ", nombre);
-    if (nombre[0] == 'q' && nombre[1] == '\0')
-        return;
+    while (true) {
+        asignarPropiedadString("Ingrese el nombre del producto (q para cancelar): ", nombre);
+        if (nombre[0] == 'q' && nombre[1] == '\0')
+            return;
+
+        if (nombreProductoDuplicado(nombre)) {
+            cout << COLOR_RED << "Error: Ya existe un producto con ese nombre" << COLOR_RESET
+                 << endl;
+            continue;
+        }
+        break;
+    }
 
     char codigo[20];
     while (true) {
@@ -330,6 +339,7 @@ void crearProducto() {
         if (codigoDuplicado(codigo)) {
             cout << COLOR_RED << "Error: Ya existe un producto con el código " << codigo
                  << COLOR_RESET << endl;
+            continue;
         }
         break;
     }
