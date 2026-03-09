@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <iosfwd>
 #include <iostream>
 #include <limits>
 #include <sstream>
@@ -225,7 +226,9 @@ template <typename T> void mostrarDetallesEntidad(const T& entidad) {
         cout << format("{}Precio: {}{:.2f}", COLOR_YELLOW, COLOR_RESET, entidad.precio) << endl;
         cout << format("{}Stock: {}{}", COLOR_YELLOW, COLOR_RESET, entidad.stock) << endl;
         if (entidad.cantidadProveedores > 0) {
-            cout << format("ID de Proveedor asociado: {}", entidad.proveedoresIds[0]) << endl;
+            cout << format("{}ID de Proveedor asociado: {}{}", COLOR_YELLOW, COLOR_RESET,
+                           entidad.proveedoresIds[0])
+                 << endl;
         }
     } else if constexpr (std::is_same_v<T, Proveedor>) {
         cout << format("{}Nombre: {}{}", COLOR_YELLOW, COLOR_RESET, entidad.nombre) << endl;
@@ -1802,20 +1805,29 @@ bool rifDuplicado(const char* rif) {
 // =======================================================
 // Casi todas las entidades tienen un id (cliente, proveedor, producto)
 template <typename T> int buscarEntidadPorId(fs::path path, int id) {
+    if (id <= 0)
+        return -1;
+
     ifstream archivo(path, ios::binary);
     if (!archivo.is_open())
         return -1;
 
-    ArchivoHeader header;
-    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+    int physicalIdx = id - 1;
+    // Se salta el archivo header y se posiciona en la entidad
+    streampos entityPos = sizeof(ArchivoHeader) + ((physicalIdx) * sizeof(T));
+    archivo.seekg(entityPos, ios::beg);
+
+    // No hay entidades en esta posición
+    if (!archivo)
+        return -1;
 
     T entidad;
-    int index = 0;
-    while (archivo.read(reinterpret_cast<char*>(&entidad), sizeof(T))) {
+    archivo.read(reinterpret_cast<char*>(&entidad), sizeof(T));
+
+    if (archivo.gcount() == sizeof(T)) {
         if (!entidad.eliminado && entidad.id == id) {
-            return index;
+            return physicalIdx;
         }
-        index++;
     }
     return -1;
 }
@@ -2011,7 +2023,6 @@ int leerId(const char* msg) {
 
         try {
             int id = stoi(input);
-            cout << std::format("id: {}", id) << endl;
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
             if (id <= 0) {
