@@ -1,3 +1,4 @@
+#include <cctype>
 #include <chrono>
 #include <clocale>
 #include <cstring>
@@ -31,7 +32,7 @@ const fs::path PROVEEDORES_PATH = PARENT_PATH / "proveedores.bin";
 const fs::path CLIENTES_PATH = PARENT_PATH / "clientes.bin";
 const fs::path TRANSACCIONES_PATH = PARENT_PATH / "transacciones.bin";
 const fs::path TIENDA_PATH = PARENT_PATH / "tienda.bin";
-const fs::path BACKUP_PATH = PARENT_PATH / "backup.bin";
+const fs::path BACKUP_PATH = "./backup/";
 
 struct Tienda;
 template <typename T> int buscarEntidadPorId(fs::path path, int id);
@@ -308,8 +309,8 @@ void inicializarTienda(const char* nombre, const char* rif) {
     copiarString(tienda.nombre, nombre);
     copiarString(tienda.rif, rif);
 
-    string paths[6] = {PRODUCTOS_PATH,     PROVEEDORES_PATH, CLIENTES_PATH,
-                       TRANSACCIONES_PATH, TIENDA_PATH,      BACKUP_PATH};
+    string paths[5] = {PRODUCTOS_PATH, PROVEEDORES_PATH, CLIENTES_PATH, TRANSACCIONES_PATH,
+                       TIENDA_PATH};
 
     // Inicializar todos los archivos tan pronto como inicie el programa
     for (string path : paths) {
@@ -1972,6 +1973,56 @@ int leerId(const char* msg) {
     }
 }
 
+void crearBackup() {
+    char option;
+    cout << COLOR_CYAN << "========================================" << COLOR_RESET << endl;
+    cout << COLOR_CYAN << "   CREACIÓN DE BACKUP DE BASE DE DATOS  " << COLOR_RESET << endl;
+    cout << COLOR_CYAN << "========================================" << COLOR_RESET << endl;
+    do {
+        cout << COLOR_YELLOW
+             << "¿Desea crear un backup de la base de datos? (s/n): " << COLOR_RESET;
+
+        cin >> option;
+        if (tolower(option) == 'n') {
+            cout << COLOR_RED << "Operación cancelada" << COLOR_RESET << endl;
+            cout << COLOR_GREEN << "Saliendo..." << COLOR_RESET << endl;
+            return;
+        }
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cin.clear();
+
+    } while (tolower(option) != 's');
+    cout << format("{}Comenzando backup...{}", COLOR_YELLOW, COLOR_RESET) << endl;
+
+    fs::create_directories(BACKUP_PATH);
+
+    const string paths[5] = {PRODUCTOS_PATH, PROVEEDORES_PATH, CLIENTES_PATH, TRANSACCIONES_PATH,
+                             TIENDA_PATH};
+    auto now = chrono::system_clock::now();
+    auto current_date = chrono::time_point_cast<std::chrono::days>(now);
+    chrono::year_month_day ymd{current_date};
+    auto nowSec = chrono::time_point_cast<std::chrono::seconds>(now);
+    chrono::zoned_time localTime{chrono::current_zone(), nowSec};
+
+    for (fs::path path : paths) {
+        string baseName = path.stem().string();
+        fs::path ymd_suffix =
+            BACKUP_PATH / fs::path(format("{}.{:%Y-%m-%d}.{:%T}.bin", baseName, ymd, localTime));
+        fs::copy(path, ymd_suffix);
+        cout << format("{}{:>20} {}Respaldado en {}\"{}\"{}", COLOR_CYAN, path.stem().string(),
+                       COLOR_GREEN, COLOR_CYAN, ymd_suffix.string(), COLOR_RESET)
+             << endl;
+    }
+
+    cout << format("{}Backup realizado con exito en {}\"{}\"{}", COLOR_GREEN, COLOR_CYAN,
+                   BACKUP_PATH.string(), COLOR_RESET)
+         << endl;
+    cout << format(
+                "{}Fecha y hora del backup (Año-Mes-Día) (Hora:Minutos:Segundos):{} \"{} {:%T}\"{}",
+                COLOR_YELLOW, COLOR_CYAN, ymd, localTime, COLOR_RESET)
+         << endl;
+}
+
 void verificarIntegridadReferencial() {
     cout << CLEAR_SCREEN;
     cout << COLOR_CYAN << "========================================" << COLOR_RESET << endl;
@@ -2366,8 +2417,9 @@ void menuTransacciones() {
 }
 
 void menuReportes() {
-    OpcionMenu options[] = {{"Integridad Referencial", verificarIntegridadReferencial}};
-    drawMenu("Reportes", options, 1);
+    OpcionMenu options[] = {{"Integridad Referencial", verificarIntegridadReferencial},
+                            {"Crear Backup", crearBackup}};
+    drawMenu("Reportes", options, 2);
 }
 
 int main() {
