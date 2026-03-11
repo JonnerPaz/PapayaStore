@@ -85,8 +85,7 @@ struct Producto {
     int stock;              // Cantidad en inventario
 
     // llaves foraneas
-    int proveedoresIds[10]; // IDs de los proveedores asociados (max 10)
-    int cantidadProveedores;
+    int idProveedor;
 
     // estadisticas
     int stockMinimo;
@@ -147,7 +146,7 @@ struct Transaccion {
     int productosIds[100];
     int cantidades[100];          // Cantidades de cada producto
     float preciosUnitarios[100];  // Precios unitarios de cada producto
-    int cantidadTiposDeProductos; // Cuantos elementos de los arreys anteriores se están usando
+    int cantidadTiposDeProductos; // Cuantos elementos de los arrays anteriores se están usando
 
     // metadata
     bool eliminado;
@@ -225,11 +224,9 @@ template <typename T> void mostrarDetallesEntidad(const T& entidad) {
              << endl;
         cout << format("{}Precio: {}{:.2f}", COLOR_YELLOW, COLOR_RESET, entidad.precio) << endl;
         cout << format("{}Stock: {}{}", COLOR_YELLOW, COLOR_RESET, entidad.stock) << endl;
-        if (entidad.cantidadProveedores > 0) {
-            cout << format("{}ID de Proveedor asociado: {}{}", COLOR_YELLOW, COLOR_RESET,
-                           entidad.proveedoresIds[0])
-                 << endl;
-        }
+        cout << format("{}ID de Proveedor asociado: {}{}", COLOR_YELLOW, COLOR_RESET,
+                       entidad.idProveedor)
+             << endl;
     } else if constexpr (std::is_same_v<T, Proveedor>) {
         cout << format("{}Nombre: {}{}", COLOR_YELLOW, COLOR_RESET, entidad.nombre) << endl;
         cout << format("{}RIF: {}{}", COLOR_YELLOW, COLOR_RESET, entidad.rif) << endl;
@@ -408,8 +405,7 @@ void crearProducto() {
 
     Producto producto = {};
     producto.id = productosHeader.proximoID;
-    producto.proveedoresIds[0] = idProveedor;
-    producto.cantidadProveedores = 1;
+    producto.idProveedor = idProveedor;
     copiarString(producto.nombre, nombre);
     copiarString(producto.codigo, codigo);
     copiarString(producto.descripcion, descripcion);
@@ -507,9 +503,9 @@ void buscarProducto() {
                 cin.ignore();
             cin.getline(nombre, 100);
 
-            // array de indices del producto. Asumimos que index[0] es la cantidad de
-            // encontrados y a partir de index[1] estan los indices reales en el array de la
-            // tienda
+            // array de indices del producto. Asumimos que index[0] es la
+            // cantidad de encontrados y a partir de index[1] estan los
+            // indices reales en el array de la tienda
             int* index = buscarProductosPorNombre(nombre);
             if (index == nullptr || index[0] == 0) {
                 cout << "Producto no encontrado." << endl;
@@ -615,7 +611,6 @@ template <typename T> void manejarPropiedad(const string& nombrePropiedad, T& pr
 }
 
 void actualizarProducto() {
-
     mostrarListaEntidades<Producto>("Productos", PRODUCTOS_PATH, PorAmbos);
 
     int id = leerId("Ingresa el id del producto a actualizar");
@@ -642,7 +637,6 @@ void actualizarProducto() {
 }
 
 void actualizarStockProducto() {
-
     mostrarListaEntidades<Producto>("Productos", PRODUCTOS_PATH, PorAmbos);
 
     int id = leerId("Ingrese el id del producto para actualizar el stock");
@@ -744,7 +738,6 @@ void actualizarStockProducto() {
 }
 
 void listarProductos() {
-
     ifstream archivo(PRODUCTOS_PATH, ios::binary);
     if (!archivo.is_open()) {
         cout << "No se pudo abrir el archivo de productos." << endl;
@@ -765,6 +758,7 @@ void listarProductos() {
     cout << "----------------------------------------------------------------------" << endl;
 
     Producto producto;
+    // TODO: Usar O(1) para buscar los proveedores (si es que se puede)
     while (archivo.read(reinterpret_cast<char*>(&producto), sizeof(Producto))) {
         string nombresProveedores = "";
         ifstream proveedoresFile(PROVEEDORES_PATH, ios::binary);
@@ -776,25 +770,14 @@ void listarProductos() {
             return;
         }
 
-        for (int i = 0; i < producto.cantidadProveedores; i++) {
-            int idProv = producto.proveedoresIds[i];
-            int proveedorIdx = buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, idProv);
+        int proveedorIdx = buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, producto.idProveedor);
 
-            if (proveedorIdx != -1) {
-                Proveedor proveedor;
-                proveedoresFile.seekg(sizeof(ArchivoHeader) + (proveedorIdx * sizeof(Proveedor)),
-                                      ios::beg);
-                proveedoresFile.read(reinterpret_cast<char*>(&proveedor), sizeof(Proveedor));
-                nombresProveedores += proveedor.nombre;
-
-                i < producto.cantidadProveedores - 1 ? nombresProveedores += ", " : "";
-            }
-
-            if (proveedorIdx == -1) {
-                // En caso de que el proveedor haya sido eliminado
-                nombresProveedores += "[Proveedor Borrado]";
-                i < producto.cantidadProveedores - 1 ? nombresProveedores += ", " : "";
-            }
+        if (proveedorIdx != -1) {
+            Proveedor proveedor;
+            proveedoresFile.seekg(sizeof(ArchivoHeader) + (proveedorIdx * sizeof(Proveedor)),
+                                  ios::beg);
+            proveedoresFile.read(reinterpret_cast<char*>(&proveedor), sizeof(Proveedor));
+            nombresProveedores = proveedor.nombre;
         }
         proveedoresFile.close();
 
@@ -810,7 +793,6 @@ void listarProductos() {
 }
 
 void eliminarProducto() {
-
     mostrarListaEntidades<Producto>("Productos", PRODUCTOS_PATH, PorAmbos);
 
     int id = leerId("Ingresa el id del producto a eliminar");
@@ -959,7 +941,6 @@ void crearProveedor() {
 }
 
 void buscarProveedor() {
-
     mostrarListaEntidades<Proveedor>("Proveedores", PROVEEDORES_PATH, PorAmbos);
 
     int id = leerId("Ingrese el id del proveedor a buscar");
@@ -990,7 +971,6 @@ void buscarProveedor() {
 }
 
 void actualizarProveedor() {
-
     mostrarListaEntidades<Proveedor>("Proveedores", PROVEEDORES_PATH, PorAmbos);
 
     int id = leerId("Ingrese el id del proveedor a actualizar");
@@ -1015,7 +995,6 @@ void actualizarProveedor() {
 }
 
 void listarProveedores() {
-
     ifstream archivo(PROVEEDORES_PATH, ios::binary);
     if (!archivo.is_open()) {
         cout << "No se pudo abrir el archivo de proveedores." << endl;
@@ -1054,7 +1033,6 @@ void listarProveedores() {
 }
 
 void eliminarProveedor() {
-
     mostrarListaEntidades<Proveedor>("Proveedores", PROVEEDORES_PATH, PorAmbos);
 
     int id = leerId("Ingrese el id del proveedor a eliminar");
@@ -1173,7 +1151,6 @@ void crearCliente() {
 }
 
 void buscarCliente() {
-
     mostrarListaEntidades<Cliente>("Clientes", CLIENTES_PATH, PorId);
 
     int id = leerId("Ingrese el id del cliente a buscar");
@@ -1200,7 +1177,6 @@ void buscarCliente() {
 }
 
 void actualizarCliente() {
-
     mostrarListaEntidades<Cliente>("Clientes", CLIENTES_PATH, PorAmbos);
 
     int id = leerId("Ingrese el id del cliente a actualizar");
@@ -1226,7 +1202,6 @@ void actualizarCliente() {
 }
 
 void listarClientes() {
-
     ifstream archivo(CLIENTES_PATH, ios::binary);
     if (!archivo.is_open()) {
         cout << "No se pudo abrir el archivo de clientes." << endl;
@@ -1264,7 +1239,6 @@ void listarClientes() {
 }
 
 void eliminarCliente() {
-
     mostrarListaEntidades<Cliente>("Clientes", CLIENTES_PATH, PorAmbos);
 
     int id = leerId("Ingrese el id del cliente a eliminar");
@@ -1315,7 +1289,6 @@ void eliminarCliente() {
 }
 
 void registrarCompra() {
-
     cout << "\n===REGISTRAR COMPRA (Entrada de Mercancia)===" << endl;
 
     mostrarListaEntidades<Producto>("Productos", PRODUCTOS_PATH, PorAmbos);
@@ -1339,55 +1312,14 @@ void registrarCompra() {
     archivoProd.seekg(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
     archivoProd.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
 
-    int idProv = -1;
-    if (producto.cantidadProveedores == 0) {
-        cout << CLEAR_SCREEN << COLOR_RED << "Error: El producto no tiene proveedores asociados."
+    int idProv = producto.idProveedor;
+
+    // Validar que el proveedor exista
+    if (buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, idProv) == -1) {
+        cout << CLEAR_SCREEN << COLOR_RED
+             << "Error: El proveedor asociado al producto (ID: " << idProv << ") no existe."
              << COLOR_RESET << endl;
         return;
-    } else if (producto.cantidadProveedores == 1) {
-        idProv = producto.proveedoresIds[0];
-        cout << COLOR_GREEN << "Proveedor automático seleccionado (único disponible)."
-             << COLOR_RESET << endl;
-    } else {
-        cout << "\n=== Proveedores Disponibles para este Producto ===" << endl;
-        cout << format("{:<5} | {:<20} | {:<15}", "ID", "Nombre", "RIF") << endl;
-        cout << "---------------------------------------------------" << endl;
-
-        ifstream archivoProv(PROVEEDORES_PATH, ios::binary);
-        for (int i = 0; i < producto.cantidadProveedores; ++i) {
-            int provIdx =
-                buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, producto.proveedoresIds[i]);
-            if (provIdx != -1) {
-                Proveedor prov;
-                archivoProv.seekg(sizeof(ArchivoHeader) + provIdx * sizeof(Proveedor), ios::beg);
-                archivoProv.read(reinterpret_cast<char*>(&prov), sizeof(Proveedor));
-                cout << format("{:<5} | {:<20} | {:<15}", prov.id, prov.nombre, prov.rif) << endl;
-            }
-        }
-
-        while (true) {
-            idProv = leerId("Ingrese ID del Proveedor a comprar: ");
-            if (idProv <= 0) {
-                cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
-                return;
-            }
-
-            bool validProv = false;
-            for (int i = 0; i < producto.cantidadProveedores; ++i) {
-                if (producto.proveedoresIds[i] == idProv) {
-                    validProv = true;
-                    break;
-                }
-            }
-
-            if (validProv) {
-                break;
-            } else {
-                cout << COLOR_RED
-                     << "Error: Seleccione un ID de la lista de proveedores disponibles."
-                     << COLOR_RESET << endl;
-            }
-        }
     }
 
     int cantidad = leerId("Cantidad comprada: ");
@@ -1439,7 +1371,6 @@ void registrarCompra() {
 }
 
 void registrarVenta() {
-
     cout << "\n===REGISTRAR VENTA (Salida de Mercancia)===" << endl;
 
     mostrarListaEntidades<Producto>("Productos", PRODUCTOS_PATH, PorAmbos);
@@ -1533,7 +1464,6 @@ void registrarVenta() {
 }
 
 void buscarTransacciones() {
-
     ArchivoHeader header = leerHeader(TRANSACCIONES_PATH);
     if (header.registrosActivos == 0) {
         cout << "\n[!] No hay transacciones registradas en el sistema." << endl;
@@ -1579,7 +1509,6 @@ void buscarTransacciones() {
 }
 
 void listarTransacciones() {
-
     ArchivoHeader header = leerHeader(TRANSACCIONES_PATH);
     if (header.registrosActivos == 0) {
         cout << "\n[!] El historial de transacciones esta vacio." << endl;
@@ -1630,7 +1559,6 @@ void listarTransacciones() {
 }
 
 void cancelarTransaccion() {
-
     ArchivoHeader header = leerHeader(TRANSACCIONES_PATH);
     if (header.registrosActivos == 0) {
         cout << "\n[!] No hay transacciones para cancelar." << endl;
@@ -1747,6 +1675,7 @@ bool validarEmail(const char* email) {
     cout << COLOR_RED << "Error: El email no es valido." << COLOR_RESET << endl;
     return false;
 }
+
 bool validarFecha(const char* fecha) {
     // estos solo estan vivios mientras se este utilizando esta funcion
     using namespace std;
@@ -1902,7 +1831,6 @@ bool existeStringDuplicado(fs::path path, const char* valorBusqueda, char (T::*p
 
 // retorna array de indices del producto
 int* buscarProductosPorNombre(const char* nombre) {
-
     ifstream archivo(PRODUCTOS_PATH, ios::binary);
     if (!archivo.is_open())
         return nullptr;
@@ -2057,26 +1985,18 @@ void verificarIntegridadReferencial() {
              << endl;
         return;
     }
-
-    ArchivoHeader productosHeader = leerHeader(PRODUCTOS_PATH);
     productosFile.seekg(0, ios::end);
 
     int erroresEncontrados = 0;
-
     Producto temp;
     while (productosFile.read(reinterpret_cast<char*>(&temp), sizeof(Producto))) {
-        if (!temp.eliminado) {
-            // verificar que cada proveedor del producto exista
-            for (int i = 0; i < productosHeader.cantidadRegistros; ++i) {
-                int idProveedor = temp.proveedoresIds[i];
-                // Al buscar el proveedor, si no se encuentra, se incrementa el contador de errores
-                if (buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, idProveedor) == -1) {
-                    cout << COLOR_RED << "Error: El proveedor con id " << idProveedor
-                         << " no existe." << COLOR_RESET << endl;
-                    erroresEncontrados++;
-                    return;
-                }
-            }
+        // Verificando que los proveedores existan
+        int hasProveedor = buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, temp.idProveedor) != -1;
+        if (!temp.eliminado && temp.idProveedor > 0 && !hasProveedor) {
+            cout << COLOR_RED << "Error: El proveedor con id " << temp.idProveedor << " no existe."
+                 << COLOR_RESET << endl;
+            erroresEncontrados++;
+            return;
         }
     }
     productosFile.close();
@@ -2096,25 +2016,27 @@ void verificarIntegridadReferencial() {
     while (transaccionesFile.read(reinterpret_cast<char*>(&trans), sizeof(Transaccion))) {
         if (!trans.eliminado) {
             // 2.1 Verificar Cliente o Proveedor asociado
-            if (trans.tipo == COMPRA) {
-                if (buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, trans.idRelacionado) == -1) {
-                    cout << COLOR_RED << "[ERROR - Transaccion ID " << trans.id << "] "
-                         << COLOR_RESET << "Es una COMPRA pero el Proveedor ID "
-                         << trans.idRelacionado << " NO EXISTE." << endl;
-                    erroresEncontrados++;
-                }
-            } else if (trans.tipo == VENTA) {
-                if (buscarEntidadPorId<Cliente>(CLIENTES_PATH, trans.idRelacionado) == -1) {
-                    cout << COLOR_RED << "[ERROR - Transaccion ID " << trans.id << "] "
-                         << COLOR_RESET << "Es una VENTA pero el Cliente ID " << trans.idRelacionado
-                         << " NO EXISTE." << endl;
-                    erroresEncontrados++;
-                }
+            int hasRelatedId =
+                buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, trans.idRelacionado) != -1;
+            if (trans.tipo == COMPRA && !hasRelatedId) {
+                cout << COLOR_RED << "[ERROR - Transaccion ID " << trans.id << "] " << COLOR_RESET
+                     << "Es una COMPRA pero el Proveedor ID " << trans.idRelacionado
+                     << " NO EXISTE." << endl;
+                erroresEncontrados++;
             }
+
+            if (trans.tipo == VENTA && !hasRelatedId) {
+                cout << COLOR_RED << "[ERROR - Transaccion ID " << trans.id << "] " << COLOR_RESET
+                     << "Es una VENTA pero el Cliente ID " << trans.idRelacionado << " NO EXISTE."
+                     << endl;
+                erroresEncontrados++;
+            }
+
             // 2.2 Verificar Productos asociados a la transacción
             for (int i = 0; i < trans.cantidadTiposDeProductos; i++) {
                 int idProducto = trans.productosIds[i];
-                if (buscarEntidadPorId<Producto>(PRODUCTOS_PATH, idProducto) == -1) {
+                int hasProductId = buscarEntidadPorId<Producto>(PRODUCTOS_PATH, idProducto) != -1;
+                if (!hasProductId) {
                     cout << COLOR_RED << "[ERROR - Transaccion ID " << trans.id << "] "
                          << COLOR_RESET << "Contiene el Producto ID " << idProducto
                          << " que NO EXISTE." << endl;
@@ -2180,65 +2102,87 @@ template <typename T> void menuActualizar(T& entidad, fstream& archivo, int inde
             case ActualizarProveedor: {
                 mostrarListaEntidades<Proveedor>("Proveedores Disponibles", PROVEEDORES_PATH,
                                                  PorAmbos);
-                int idNuevoProveedor = leerId("Ingrese el ID del nuevo proveedor");
-                if (idNuevoProveedor <= 0) {
+                int newProvIdx = leerId("Ingrese el ID del nuevo proveedor");
+                if (newProvIdx <= 0) {
                     cout << "Actualización cancelada." << endl;
-                } else {
-                    int provIndex =
-                        buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, idNuevoProveedor);
-                    if (provIndex == -1) {
-                        cout << COLOR_RED << "Error: Proveedor no encontrado." << COLOR_RESET
-                             << endl;
-                    } else {
-                        bool existe = false;
-                        for (int i = 0; i < entidad.cantidadProveedores; ++i) {
-                            if (entidad.proveedoresIds[i] == idNuevoProveedor) {
-                                existe = true;
+                    break;
+                }
+
+                int provIdx = buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, newProvIdx);
+                if (provIdx == -1) {
+                    cout << COLOR_RED << "Error: Proveedor no encontrado." << COLOR_RESET << endl;
+                    break;
+                }
+
+                // 1. Obtener ID del proveedor anterior
+                int oldProvId = entidad.idProveedor;
+
+                // 2. Actualizar el producto con el nuevo proveedor
+                entidad.idProveedor = newProvIdx;
+                cout << "Proveedor actualizado con éxito." << endl;
+
+                // 3. Actualizar el NUEVO proveedor (agregar producto a su lista)
+                Proveedor newProv;
+                fstream provArchivo(PROVEEDORES_PATH, ios::binary | ios::in | ios::out);
+
+                // Leer nuevo proveedor
+                provArchivo.seekg(sizeof(ArchivoHeader) + provIdx * sizeof(Proveedor), ios::beg);
+                provArchivo.read(reinterpret_cast<char*>(&newProv), sizeof(Proveedor));
+
+                bool exists = false;
+                if (newProv.cantidadProductos < 100) {
+                    for (int i = 0; i < newProv.cantidadProductos; i++) {
+                        if (newProv.productosIds[i] == entidad.id) {
+                            exists = true;
+                            break;
+                        }
+                    }
+
+                    if (!exists) {
+                        newProv.productosIds[newProv.cantidadProductos++] = entidad.id;
+                        newProv.fechaUltimaModificacion = time(nullptr);
+                        provArchivo.seekp(sizeof(ArchivoHeader) + provIdx * sizeof(Proveedor),
+                                          ios::beg);
+                        provArchivo.write(reinterpret_cast<const char*>(&newProv),
+                                          sizeof(Proveedor));
+                    }
+                }
+
+                // 4. Actualizar el VIEJO proveedor (remover producto de su lista)
+                if (oldProvId > 0 && oldProvId != newProvIdx) {
+                    int oldProvIdx = buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, oldProvId);
+                    if (oldProvIdx != -1) {
+                        Proveedor oldProv;
+                        provArchivo.seekg(sizeof(ArchivoHeader) + oldProvIdx * sizeof(Proveedor),
+                                          ios::beg);
+                        provArchivo.read(reinterpret_cast<char*>(&oldProv), sizeof(Proveedor));
+
+                        bool found = false;
+                        int foundIdx = -1;
+                        for (int i = 0; i < oldProv.cantidadProductos; i++) {
+                            if (oldProv.productosIds[i] == entidad.id) {
+                                found = true;
+                                foundIdx = i;
                                 break;
                             }
                         }
-                        if (existe) {
-                            cout << COLOR_YELLOW << "El producto ya tiene asociado este proveedor."
-                                 << COLOR_RESET << endl;
-                        } else if (entidad.cantidadProveedores >= 10) {
-                            cout << COLOR_RED
-                                 << "Error: Se alcanzó el límite máximo de proveedores (10) para "
-                                    "este "
-                                    "producto."
-                                 << COLOR_RESET << endl;
-                        } else {
-                            entidad.proveedoresIds[entidad.cantidadProveedores++] =
-                                idNuevoProveedor;
-                            cout << "Proveedor añadido con éxito." << endl;
 
-                            // Actualizar el proveedor
-                            Proveedor prov;
-                            fstream provArchivo(PROVEEDORES_PATH, ios::binary | ios::in | ios::out);
-                            provArchivo.seekg(sizeof(ArchivoHeader) + provIndex * sizeof(Proveedor),
-                                              ios::beg);
-                            provArchivo.read(reinterpret_cast<char*>(&prov), sizeof(Proveedor));
-
-                            if (prov.cantidadProductos < 100) {
-                                bool prodExiste = false;
-                                for (int i = 0; i < prov.cantidadProductos; ++i) {
-                                    if (prov.productosIds[i] == entidad.id) {
-                                        prodExiste = true;
-                                        break;
-                                    }
-                                }
-                                if (!prodExiste) {
-                                    prov.productosIds[prov.cantidadProductos++] = entidad.id;
-                                    prov.fechaUltimaModificacion = time(nullptr);
-                                    provArchivo.seekp(sizeof(ArchivoHeader) +
-                                                          provIndex * sizeof(Proveedor),
-                                                      ios::beg);
-                                    provArchivo.write(reinterpret_cast<const char*>(&prov),
-                                                      sizeof(Proveedor));
-                                }
+                        if (found) {
+                            // Shift left to remove
+                            for (int j = foundIdx; j < oldProv.cantidadProductos - 1; j++) {
+                                oldProv.productosIds[j] = oldProv.productosIds[j + 1];
                             }
+                            oldProv.cantidadProductos--;
+                            oldProv.fechaUltimaModificacion = time(nullptr);
+
+                            provArchivo.seekp(
+                                sizeof(ArchivoHeader) + oldProvIdx * sizeof(Proveedor), ios::beg);
+                            provArchivo.write(reinterpret_cast<const char*>(&oldProv),
+                                              sizeof(Proveedor));
                         }
                     }
                 }
+                provArchivo.close();
                 break;
             }
             case ActualizarCancelada:
