@@ -1364,68 +1364,177 @@ bool removerIdDeArreglo(int id, int ids[], int& cantidad) {
     return true;
 }
 
+int buscarProductoEnTransaccion(const Transaccion& transaccion, int idProducto) {
+    for (int i = 0; i < transaccion.cantidadTiposDeProductos; i++) {
+        if (transaccion.productosIds[i] == idProducto) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+// agregar producto en la transaccion previamente seleccionado.
+bool agregarProductoConsolidado(Transaccion& transaccion, int idProducto, int cantidad,
+                                float precioUnitario) {
+    if (idProducto <= 0 || cantidad <= 0) {
+        return false;
+    }
+
+    int idx = buscarProductoEnTransaccion(transaccion, idProducto);
+    if (idx != -1) {
+        transaccion.cantidades[idx] += cantidad;
+        return true;
+    }
+
+    if (transaccion.cantidadTiposDeProductos >= 100) {
+        return false;
+    }
+
+    int pos = transaccion.cantidadTiposDeProductos;
+    transaccion.productosIds[pos] = idProducto;
+    transaccion.cantidades[pos] = cantidad;
+    transaccion.preciosUnitarios[pos] = precioUnitario;
+    transaccion.cantidadTiposDeProductos++;
+    return true;
+}
+
+bool mostrarProductosPorProveedor(int idProveedor) {
+    ifstream archivo(PRODUCTOS_PATH, ios::binary);
+    if (!archivo.is_open()) {
+        cout << CLEAR_SCREEN << COLOR_RED << "Error: No se pudo abrir el archivo de productos."
+             << COLOR_RESET << endl;
+        return false;
+    }
+
+    ArchivoHeader header;
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+
+    bool hayProductos = false;
+    Producto producto;
+    cout << "\n--- Productos del proveedor seleccionado ---" << endl;
+    cout << format("{:<5} | {:<22} | {:<15} | {:<8} | {:<10}", "ID", "Nombre", "Código", "Stock",
+                   "Precio")
+         << endl;
+    cout << "------------------------------------------------------------------"
+            "-----"
+         << endl;
+    while (archivo.read(reinterpret_cast<char*>(&producto), sizeof(Producto))) {
+        if (!producto.eliminado && producto.idProveedor == idProveedor) {
+            cout << format("{:<5} | {:<22} | {:<15} | {:<8} | ${:<9.2f}", producto.id,
+                           producto.nombre, producto.codigo, producto.stock, producto.precio)
+                 << endl;
+            hayProductos = true;
+        }
+    }
+    cout << "------------------------------------------------------------------"
+            "-----"
+         << endl;
+
+    if (!hayProductos) {
+        cout << COLOR_RED
+             << "No hay productos activos asociados a este proveedor para "
+                "registrar una compra."
+             << COLOR_RESET << endl;
+    }
+
+    return hayProductos;
+}
+
 void registrarCompra() {
     cout << "\n===REGISTRAR COMPRA (Entrada de Mercancia)===" << endl;
 
-    mostrarListaEntidades<Producto>("Productos", PRODUCTOS_PATH, PorAmbos);
-
-    // buscar el producto
-    int idProd = leerId("Ingrese ID del Producto: ");
-    if (idProd <= 0) {
+    mostrarListaEntidades<Proveedor>("Proveedores", PROVEEDORES_PATH, PorAmbos);
+    int idProv = leerId("Ingrese ID del Proveedor para esta compra");
+    if (idProv <= 0) {
         cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
         return;
     }
-    int idxProd = buscarEntidadPorId<Producto>(PRODUCTOS_PATH, idProd);
 
-    if (idxProd == -1) {
-        cout << CLEAR_SCREEN << COLOR_RED << "Error: El producto con ID " << idProd << " no existe."
-             << COLOR_RESET << endl;
-        return;
-    }
-
-    Producto producto;
-    fstream archivoProd(PRODUCTOS_PATH, ios::binary | ios::in | ios::out);
-    archivoProd.seekg(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
-    archivoProd.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
-
-    int idProv = producto.idProveedor;
-
-    // Validar que el proveedor exista
     if (buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, idProv) == -1) {
-        cout << CLEAR_SCREEN << COLOR_RED
-             << "Error: El proveedor asociado al producto (ID: " << idProv << ") no existe."
-             << COLOR_RESET << endl;
+        cout << CLEAR_SCREEN << COLOR_RED << "Error: El proveedor no existe." << COLOR_RESET
+             << endl;
         return;
     }
 
-    int cantidad = leerId("Cantidad comprada");
-    if (cantidad <= 0) {
-        cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
+    if (!mostrarProductosPorProveedor(idProv)) {
         return;
     }
-
-    fstream archivoTrans;
-    ArchivoHeader transHeader = leerHeader(TRANSACCIONES_PATH);
 
     Transaccion transaccion = {};
-    transaccion.id = transHeader.proximoID;
     transaccion.tipo = COMPRA;
     transaccion.idRelacionado = idProv;
-    transaccion.cantidadTiposDeProductos = 1;
-    transaccion.productosIds[0] = idProd;
-    transaccion.cantidades[0] = cantidad;
-    transaccion.preciosUnitarios[0] = producto.precio;
-    transaccion.total = cantidad * producto.precio;
+
+    while (true) {
+        int idProd = leerId("Ingrese ID del Producto");
+        if (idProd <= 0) {
+            if (transaccion.cantidadTiposDeProductos == 0) {
+                cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
+                return;
+            }
+            break;
+        }
+
+        int idxProd = buscarEntidadPorId<Producto>(PRODUCTOS_PATH, idProd);
+        if (idxProd == -1) {
+            cout << CLEAR_SCREEN << COLOR_RED << "Error: El producto con ID " << idProd
+                 << " no existe." << COLOR_RESET << endl;
+            continue;
+        }
+
+        Producto producto;
+        ifstream archivoProdRead(PRODUCTOS_PATH, ios::binary);
+        archivoProdRead.seekg(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
+        archivoProdRead.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
+
+        if (!archivoProdRead || producto.eliminado) {
+            cout << CLEAR_SCREEN << COLOR_RED
+                 << "Error: No se pudo leer el producto o está eliminado." << COLOR_RESET << endl;
+            continue;
+        }
+
+        if (producto.idProveedor != idProv) {
+            cout << CLEAR_SCREEN << COLOR_RED
+                 << "Error: El producto no pertenece al proveedor seleccionado." << COLOR_RESET
+                 << endl;
+            continue;
+        }
+
+        int cantidad = leerId("Cantidad comprada para este producto");
+        if (cantidad <= 0) {
+            cout << CLEAR_SCREEN << COLOR_RED << "Cantidad inválida. Producto omitido."
+                 << COLOR_RESET << endl;
+            continue;
+        }
+
+        if (!agregarProductoConsolidado(transaccion, idProd, cantidad, producto.precio)) {
+            cout << CLEAR_SCREEN << COLOR_RED
+                 << "Error: No se pudo agregar más productos (límite alcanzado)." << COLOR_RESET
+                 << endl;
+            return;
+        }
+
+        cout << COLOR_GREEN << "Producto agregado a la compra." << COLOR_RESET << endl;
+        cout << COLOR_YELLOW << "¿Desea agregar otro producto? (s/n): " << COLOR_RESET;
+        char continuar;
+        cin >> continuar;
+        if (tolower(continuar) != 's') {
+            break;
+        }
+
+        mostrarProductosPorProveedor(idProv);
+    }
+
+    ArchivoHeader transHeader = leerHeader(TRANSACCIONES_PATH);
+
+    transaccion.id = transHeader.proximoID;
+    transaccion.total = 0;
+    for (int i = 0; i < transaccion.cantidadTiposDeProductos; i++) {
+        transaccion.total += transaccion.cantidades[i] * transaccion.preciosUnitarios[i];
+    }
     transaccion.eliminado = false;
     transaccion.fechaCreacion = time(nullptr);
     transaccion.fechaUltimaModificacion = transaccion.fechaCreacion;
     obtenerFechaActual(transaccion.fecha);
-
-    producto.stock += cantidad;
-    producto.fechaUltimaModificacion = time(nullptr);
-
-    archivoProd.seekp(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
-    archivoProd.write(reinterpret_cast<const char*>(&producto), sizeof(Producto));
 
     transHeader.cantidadRegistros++;
     transHeader.registrosActivos++;
@@ -1437,8 +1546,41 @@ void registrarCompra() {
 
     actualizarHeader(TRANSACCIONES_PATH, transHeader);
 
+    fstream archivoProdWrite(PRODUCTOS_PATH, ios::binary | ios::in | ios::out);
+    if (!archivoProdWrite.is_open()) {
+        cout << CLEAR_SCREEN << COLOR_RED
+             << "Error: No se pudo abrir archivo de productos para actualizar "
+                "stock."
+             << COLOR_RESET << endl;
+        return;
+    }
+
+    for (int i = 0; i < transaccion.cantidadTiposDeProductos; i++) {
+        int idxProd = buscarEntidadPorId<Producto>(PRODUCTOS_PATH, transaccion.productosIds[i]);
+        if (idxProd == -1) {
+            continue;
+        }
+
+        Producto producto;
+        archivoProdWrite.seekg(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
+        archivoProdWrite.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
+
+        if (!archivoProdWrite || producto.eliminado) {
+            archivoProdWrite.clear();
+            continue;
+        }
+
+        producto.stock += transaccion.cantidades[i];
+        producto.fechaUltimaModificacion = time(nullptr);
+
+        archivoProdWrite.seekp(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
+        archivoProdWrite.write(reinterpret_cast<const char*>(&producto), sizeof(Producto));
+        archivoProdWrite.clear();
+    }
+
     cout << "Compra registrada ID: " << transaccion.id << endl;
-    cout << "Stock actualizado de " << producto.nombre << ": " << producto.stock << endl;
+    cout << "Total de productos distintos en la compra: " << transaccion.cantidadTiposDeProductos
+         << endl;
 }
 
 void registrarVenta() {
@@ -1455,38 +1597,6 @@ void registrarVenta() {
     }
 
     mostrarListaEntidades<Producto>("Productos", PRODUCTOS_PATH, PorAmbos);
-
-    // buscar producto
-    int idProd = leerId("Ingrese ID del Producto: ");
-    if (idProd <= 0) {
-        cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
-        return;
-    }
-    int idxProd = buscarEntidadPorId<Producto>(PRODUCTOS_PATH, idProd);
-
-    if (idxProd == -1) {
-        cout << CLEAR_SCREEN << COLOR_RED << "Error: El producto no existe." << COLOR_RESET << endl;
-        return;
-    }
-
-    Producto producto;
-    fstream archivoProd(PRODUCTOS_PATH, ios::binary | ios::in | ios::out);
-    archivoProd.seekg(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
-    archivoProd.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
-
-    // validar stock
-    int cantidad = leerId("Cantidad a vender: ");
-    if (cantidad <= 0) {
-        cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
-        return;
-    }
-
-    if (producto.stock < cantidad) {
-        cout << CLEAR_SCREEN << COLOR_RED << "Error: Stock insuficiente. Solo hay "
-             << producto.stock << " unidades." << COLOR_RESET << endl;
-        return;
-    }
-
     // validar cliente
     mostrarListaEntidades<Cliente>("Clientes", CLIENTES_PATH, PorAmbos);
 
@@ -1496,7 +1606,6 @@ void registrarVenta() {
         return;
     }
     int idxCli = buscarEntidadPorId<Cliente>(CLIENTES_PATH, idCli);
-    cout << "idxCli: " << idxCli << endl;
     if (idxCli == -1) {
         cout << CLEAR_SCREEN << COLOR_RED << "Error: El cliente no existe." << COLOR_RESET << endl;
         return;
@@ -1519,18 +1628,91 @@ void registrarVenta() {
         return;
     }
 
-    fstream transaccionesFile;
-    ArchivoHeader transHeader = leerHeader(TRANSACCIONES_PATH);
-
     Transaccion transaccion = {};
-    transaccion.id = transHeader.proximoID;
     transaccion.tipo = VENTA;
     transaccion.idRelacionado = idCli;
-    transaccion.cantidadTiposDeProductos = 1;
-    transaccion.productosIds[0] = idProd;
-    transaccion.cantidades[0] = cantidad;
-    transaccion.preciosUnitarios[0] = producto.precio;
-    transaccion.total = cantidad * producto.precio;
+
+    while (true) {
+        int idProd = leerId("Ingrese ID del Producto");
+        if (idProd <= 0 && transaccion.cantidadTiposDeProductos == 0) {
+            cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
+            return;
+        }
+
+        int idxProd = buscarEntidadPorId<Producto>(PRODUCTOS_PATH, idProd);
+        if (idxProd == -1) {
+            cout << CLEAR_SCREEN << COLOR_RED << "Error: El producto no existe." << COLOR_RESET
+                 << endl;
+            continue;
+        }
+
+        Producto producto;
+        ifstream archivoProdRead(PRODUCTOS_PATH, ios::binary);
+        archivoProdRead.seekg(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
+        archivoProdRead.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
+
+        if (!archivoProdRead || producto.eliminado) {
+            cout << CLEAR_SCREEN << COLOR_RED
+                 << "Error: No se pudo leer el producto o está eliminado." << COLOR_RESET << endl;
+            continue;
+        }
+
+        int cantidad = leerId("Cantidad a vender para este producto");
+        if (cantidad <= 0) {
+            cout << CLEAR_SCREEN << COLOR_RED << "Cantidad inválida. Producto omitido."
+                 << COLOR_RESET << endl;
+            continue;
+        }
+
+        if (!agregarProductoConsolidado(transaccion, idProd, cantidad, producto.precio)) {
+            cout << CLEAR_SCREEN << COLOR_RED
+                 << "Error: No se pudo agregar más productos (límite alcanzado)." << COLOR_RESET
+                 << endl;
+            return;
+        }
+
+        cout << COLOR_GREEN << "Producto agregado a la venta." << COLOR_RESET << endl;
+        cout << COLOR_YELLOW << "¿Desea agregar otro producto? (s/n): " << COLOR_RESET;
+        char continuar;
+        cin >> continuar;
+        if (tolower(continuar) != 's') {
+            break;
+        }
+    }
+
+    for (int i = 0; i < transaccion.cantidadTiposDeProductos; i++) {
+        int idxProd = buscarEntidadPorId<Producto>(PRODUCTOS_PATH, transaccion.productosIds[i]);
+        if (idxProd == -1) {
+            cout << CLEAR_SCREEN << COLOR_RED << "Error: Producto no encontrado durante validación."
+                 << COLOR_RESET << endl;
+            return;
+        }
+
+        Producto producto;
+        ifstream archivoProdRead(PRODUCTOS_PATH, ios::binary);
+        archivoProdRead.seekg(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
+        archivoProdRead.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
+
+        if (!archivoProdRead || producto.eliminado) {
+            cout << CLEAR_SCREEN << COLOR_RED
+                 << "Error: Producto inválido durante validación de stock." << COLOR_RESET << endl;
+            return;
+        }
+
+        if (producto.stock < transaccion.cantidades[i]) {
+            cout << CLEAR_SCREEN << COLOR_RED << "Error: Stock insuficiente para "
+                 << producto.nombre << ". Solo hay " << producto.stock << " unidades."
+                 << COLOR_RESET << endl;
+            return;
+        }
+    }
+
+    ArchivoHeader transHeader = leerHeader(TRANSACCIONES_PATH);
+    transaccion.id = transHeader.proximoID;
+    transaccion.total = 0;
+    for (int i = 0; i < transaccion.cantidadTiposDeProductos; i++) {
+        transaccion.total += transaccion.cantidades[i] * transaccion.preciosUnitarios[i];
+    }
     transaccion.eliminado = false;
     transaccion.fechaCreacion = time(nullptr);
     transaccion.fechaUltimaModificacion = transaccion.fechaCreacion;
@@ -1545,11 +1727,6 @@ void registrarVenta() {
         return;
     }
 
-    // restamos el espacio en el stock
-    producto.stock -= cantidad;
-    producto.totalVendido += cantidad;
-    producto.fechaUltimaModificacion = time(nullptr);
-
     cliente.totalCompras += transaccion.total;
     cliente.fechaUltimaModificacion = time(nullptr);
 
@@ -1563,15 +1740,45 @@ void registrarVenta() {
 
     actualizarHeader(TRANSACCIONES_PATH, transHeader);
 
-    archivoProd.seekp(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
-    archivoProd.write(reinterpret_cast<const char*>(&producto), sizeof(Producto));
+    fstream archivoProdWrite(PRODUCTOS_PATH, ios::binary | ios::in | ios::out);
+    if (!archivoProdWrite.is_open()) {
+        cout << CLEAR_SCREEN << COLOR_RED
+             << "Error: No se pudo abrir el archivo de productos para "
+                "actualizar stock."
+             << COLOR_RESET << endl;
+        return;
+    }
+
+    for (int i = 0; i < transaccion.cantidadTiposDeProductos; i++) {
+        int idxProd = buscarEntidadPorId<Producto>(PRODUCTOS_PATH, transaccion.productosIds[i]);
+        if (idxProd == -1) {
+            continue;
+        }
+
+        Producto producto;
+        archivoProdWrite.seekg(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
+        archivoProdWrite.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
+
+        if (!archivoProdWrite || producto.eliminado) {
+            archivoProdWrite.clear();
+            continue;
+        }
+
+        producto.stock -= transaccion.cantidades[i];
+        producto.totalVendido += transaccion.cantidades[i];
+        producto.fechaUltimaModificacion = time(nullptr);
+
+        archivoProdWrite.seekp(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
+        archivoProdWrite.write(reinterpret_cast<const char*>(&producto), sizeof(Producto));
+        archivoProdWrite.clear();
+    }
 
     clientesFile.seekp(sizeof(ArchivoHeader) + idxCli * sizeof(Cliente), ios::beg);
     clientesFile.write(reinterpret_cast<const char*>(&cliente), sizeof(Cliente));
 
     // confirmamos venta
     cout << "¡Venta exitosa! Total: " << transaccion.total
-         << " | Stock restante: " << producto.stock << endl;
+         << " | Productos distintos vendidos: " << transaccion.cantidadTiposDeProductos << endl;
 }
 
 void buscarTransacciones() {
@@ -1634,10 +1841,8 @@ void listarTransacciones() {
             "================"
             "==="
          << endl;
-    cout << format("{:<5} | {:<8} | {:<12} | {:<10} | {:<10} | {:<12} | {:<12} | "
-                   "{:<15}",
-                   "ID", "Tipo", "Fecha", "Prod ID", "Cantidad", "Precio Un.", "Total",
-                   "Asociado ID")
+    cout << format("{:<5} | {:<8} | {:<12} | {:<11} | {:<12} | {:<15}", "ID", "Tipo", "Fecha",
+                   "Items", "Total", "Asociado ID")
          << endl;
     cout << "------------------------------------------------------------------"
             "----------------"
@@ -1652,15 +1857,8 @@ void listarTransacciones() {
         if (!t.eliminado) {
             const char* tipoStr = (t.tipo == COMPRA) ? "COMPRA" : "VENTA";
 
-            // For listing, we show the first product
-            int prodId = t.cantidadTiposDeProductos > 0 ? t.productosIds[0] : 0;
-            int cant = t.cantidadTiposDeProductos > 0 ? t.cantidades[0] : 0;
-            float precioUn = t.cantidadTiposDeProductos > 0 ? t.preciosUnitarios[0] : 0.0f;
-
-            cout << format("{:<5} | {:<8} | {:<12} | {:<10} | {:<10} | ${:<11.2f} "
-                           "| ${:<11.2f} | "
-                           "{:<15}",
-                           t.id, tipoStr, t.fecha, prodId, cant, precioUn, t.total, t.idRelacionado)
+            cout << format("{:<5} | {:<8} | {:<12} | {:<11} | ${:<11.2f} | {:<15}", t.id, tipoStr,
+                           t.fecha, t.cantidadTiposDeProductos, t.total, t.idRelacionado)
                  << endl;
             count++;
         }
@@ -1679,7 +1877,7 @@ void cancelarTransaccion() {
         return;
     }
 
-    int idBuscar = leerId("\nIngrese el ID de la transaccion a CANCELAR: ");
+    int idBuscar = leerId("\nIngrese el ID de la transaccion a cancelar");
     if (idBuscar <= 0) {
         cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
         return;
@@ -1698,28 +1896,60 @@ void cancelarTransaccion() {
     archivoTrans.seekg(sizeof(ArchivoHeader) + idx * sizeof(Transaccion), ios::beg);
     archivoTrans.read(reinterpret_cast<char*>(&transaccion), sizeof(Transaccion));
 
-    if (transaccion.cantidadTiposDeProductos == 0) {
+    if (transaccion.cantidadTiposDeProductos <= 0) {
         cout << "Error: La transaccion no tiene productos asociados." << endl;
         return;
     }
 
-    int idProducto = transaccion.productosIds[0];
-    int cantidad = transaccion.cantidades[0];
+    for (int i = 0; i < transaccion.cantidadTiposDeProductos; i++) {
+        int idProducto = transaccion.productosIds[i];
+        int cantidad = transaccion.cantidades[i];
+        int idxProd = buscarEntidadPorId<Producto>(PRODUCTOS_PATH, idProducto);
 
-    int idxProd = buscarEntidadPorId<Producto>(PRODUCTOS_PATH, idProducto);
+        if (idxProd == -1) {
+            cout << CLEAR_SCREEN << COLOR_RED << "Error: El producto ID " << idProducto
+                 << " de esta transaccion ya no existe en el sistema." << COLOR_RESET << endl;
+            return;
+        }
 
-    if (idxProd == -1) {
-        cout << CLEAR_SCREEN << COLOR_RED
-             << "Error: El producto de esta transaccion ya no existe en el "
-                "sistema."
-             << COLOR_RESET << endl;
-        return;
+        fstream archivoProd(PRODUCTOS_PATH, ios::binary | ios::in | ios::out);
+        if (!archivoProd.is_open()) {
+            cout << CLEAR_SCREEN << COLOR_RED << "Error: No se pudo abrir productos.bin"
+                 << COLOR_RESET << endl;
+            return;
+        }
+
+        Producto producto;
+        archivoProd.seekg(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
+        archivoProd.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
+
+        if (!archivoProd || producto.eliminado) {
+            cout << CLEAR_SCREEN << COLOR_RED << "Error: Producto inválido al cancelar transacción."
+                 << COLOR_RESET << endl;
+            return;
+        }
+
+        if (transaccion.tipo == VENTA) {
+            producto.stock += cantidad;
+            if (producto.totalVendido >= cantidad) {
+                producto.totalVendido -= cantidad;
+            } else {
+                producto.totalVendido = 0;
+            }
+        } else if (transaccion.tipo == COMPRA) {
+            if (producto.stock < cantidad) {
+                cout << "Error: No se puede cancelar la compra. El stock "
+                        "actual de "
+                     << producto.nombre << " es menor a lo que quieres quitar." << endl;
+                return;
+            }
+            producto.stock -= cantidad;
+        }
+
+        producto.fechaUltimaModificacion = time(nullptr);
+        archivoProd.seekp(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
+        archivoProd.write(reinterpret_cast<const char*>(&producto), sizeof(Producto));
     }
-
-    Producto producto;
-    fstream archivoProd(PRODUCTOS_PATH, ios::binary | ios::in | ios::out);
-    archivoProd.seekg(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
-    archivoProd.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
 
     Cliente cliente;
     int idxCli = -1;
@@ -1737,15 +1967,7 @@ void cancelarTransaccion() {
         }
     }
 
-    // Revertir el stock
     if (transaccion.tipo == VENTA) {
-        producto.stock += cantidad;
-        if (producto.totalVendido >= cantidad) {
-            producto.totalVendido -= cantidad;
-        } else {
-            producto.totalVendido = 0;
-        }
-
         if (clienteDisponible) {
             if (cliente.totalCompras >= transaccion.total) {
                 cliente.totalCompras -= transaccion.total;
@@ -1765,30 +1987,21 @@ void cancelarTransaccion() {
                     "venta."
                  << COLOR_RESET << endl;
         }
-
-        cout << "[SISTEMA] Venta cancelada. Se devolvieron " << cantidad << " unidades al stock."
-             << endl;
-    } else if (transaccion.tipo == COMPRA) {
-        if (producto.stock < cantidad) {
-            cout << "Error: No se puede cancelar la compra. El stock actual es "
-                    "menor a lo que "
-                    "quieres quitar."
-                 << endl;
-            return;
-        }
-        producto.stock -= cantidad;
-        cout << "[SISTEMA] Compra cancelada. Se retiraron " << cantidad << " unidades del stock."
-             << endl;
     }
 
     if (archivoCli.is_open()) {
         archivoCli.close();
     }
 
-    // guardar stock modificado
-    producto.fechaUltimaModificacion = time(nullptr);
-    archivoProd.seekp(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
-    archivoProd.write(reinterpret_cast<const char*>(&producto), sizeof(Producto));
+    if (transaccion.tipo == VENTA) {
+        cout << "[SISTEMA] Venta cancelada. Se devolvió el stock de todos los "
+                "productos asociados."
+             << endl;
+    } else if (transaccion.tipo == COMPRA) {
+        cout << "[SISTEMA] Compra cancelada. Se retiró el stock de todos los "
+                "productos asociados."
+             << endl;
+    }
 
     // marcar transaccion eliminada
     transaccion.eliminado = true;
@@ -2376,7 +2589,8 @@ template <typename T> void menuActualizar(T& entidad, fstream& archivo, int inde
                 entidad.idProveedor = newProvIdx;
                 cout << "Proveedor actualizado con éxito." << endl;
 
-                // 3. Actualizar el NUEVO proveedor (agregar producto a su lista)
+                // 3. Actualizar el NUEVO proveedor (agregar producto a su
+                // lista)
                 Proveedor newProv;
                 fstream provArchivo(PROVEEDORES_PATH, ios::binary | ios::in | ios::out);
 
@@ -2403,7 +2617,8 @@ template <typename T> void menuActualizar(T& entidad, fstream& archivo, int inde
                     }
                 }
 
-                // 4. Actualizar el VIEJO proveedor (remover producto de su lista)
+                // 4. Actualizar el VIEJO proveedor (remover producto de su
+                // lista)
                 if (oldProvId > 0 && oldProvId != newProvIdx) {
                     int oldProvIdx = buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, oldProvId);
                     if (oldProvIdx != -1) {
@@ -2535,6 +2750,7 @@ struct OpcionMenu {
     const char* descripcion;
     void (*accion)();
 };
+
 void drawMenu(const char* title, OpcionMenu options[], int numOptions,
               const char* texToExit = "Volver al Menú Principal") {
     int option;
@@ -2583,7 +2799,8 @@ void menuProductos() {
 
     ArchivoHeader proveedoresHeader = leerHeader(PROVEEDORES_PATH);
     if (!proveedoresHeader.registrosActivos) {
-        cout << format("{} {} Error: No hay proveedores registrados. Debe crear al menos un "
+        cout << format("{} {} Error: No hay proveedores registrados. Debe crear al menos "
+                       "un "
                        "proveedor antes de registrar un producto. {}",
                        CLEAR_SCREEN, COLOR_RED, COLOR_RESET);
         return;
