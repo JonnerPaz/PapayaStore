@@ -426,6 +426,9 @@ void crearProducto() {
     int stock;
     asignarPropiedadNum("Ingrese el stock del producto: ", stock);
 
+    int stockMinimo;
+    asignarPropiedadNum("Ingrese el stock mínimo ideal del producto: ", stockMinimo);
+
     mostrarListaEntidades<Proveedor>("Proveedores", PROVEEDORES_PATH);
 
     int idProveedor;
@@ -456,6 +459,7 @@ void crearProducto() {
     producto.precio = precio;
     producto.stock = stock;
     producto.eliminado = false;
+    producto.stockMinimo = stockMinimo;
     auto now = chrono::system_clock::now();
     producto.fechaCreacion = chrono::system_clock::to_time_t(now);
     producto.fechaUltimaModificacion = producto.fechaCreacion;
@@ -479,6 +483,7 @@ void crearProducto() {
     archivoOut.write(reinterpret_cast<const char*>(&producto), sizeof(Producto));
     archivoOut.close();
     actualizarHeader(PRODUCTOS_PATH, productosHeader);
+    // actualiza las entidades activas dentro de tienda
     sincronizarContadoresTienda();
 
     // Actualizar el proveedor con el nuevo producto
