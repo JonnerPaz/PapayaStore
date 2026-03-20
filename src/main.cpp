@@ -53,12 +53,14 @@ bool validarEmail(const char* email);
 bool nombreProductoDuplicado(const char* nombre);
 
 enum TipoDeTransaccion { COMPRA, VENTA };
+
 enum Busqueda {
     BusquedaId = '1',
     BusquedaNombre = '2',
     BusquedaMostrar = '3',
     BusquedaCancelada = '0'
 };
+
 enum Actualizar {
     ActualizarNombre = '1',
     ActualizarCodigo = '2',
@@ -147,7 +149,8 @@ struct Transaccion {
     int productosIds[100];
     int cantidades[100];          // Cantidades de cada producto
     float preciosUnitarios[100];  // Precios unitarios de cada producto
-    int cantidadTiposDeProductos; // Cuantos elementos de los arrays anteriores se están usando
+    int cantidadTiposDeProductos; // Cuantos elementos de los arrays anteriores
+                                  // se están usando
 
     // metadata
     bool eliminado;
@@ -171,6 +174,7 @@ template <typename T>
 // remove_reference_t remueve las referencias de T y devuelve T
 // Ej. si T es int& -> devuelve int
 concept AsignarNum = std::is_arithmetic_v<std::remove_reference_t<T>>;
+
 void asignarPropiedadNum(const char* msg, AsignarNum auto& prop) {
     cout << COLOR_YELLOW << msg << COLOR_RESET;
     while (true) {
@@ -330,7 +334,8 @@ void crearProducto() {
     ArchivoHeader proveedoresHeader = leerHeader(PROVEEDORES_PATH);
 
     if (proveedoresHeader.registrosActivos == 0) {
-        cout << format("{} {} Error: No hay proveedores registrados. Debe crear al menos un "
+        cout << format("{} {} Error: No hay proveedores registrados. Debe crear "
+                       "al menos un "
                        "proveedor antes de registrar un producto. {}",
                        CLEAR_SCREEN, COLOR_RED, COLOR_RESET)
              << endl;
@@ -680,15 +685,17 @@ void actualizarStockProducto() {
                     cin.clear();
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                     cout << CLEAR_SCREEN << COLOR_RED
-                         << "El valor debe ser numérico. Intente nuevamente: " << COLOR_RESET
-                         << endl;
+                         << "El valor debe ser numérico. Intente "
+                            "nuevamente: "
+                         << COLOR_RESET << endl;
                     continue;
                 }
                 if (cantidad > 0)
                     break;
                 cout << CLEAR_SCREEN << COLOR_RED
-                     << "La cantidad debe ser mayor a 0. Intente nuevamente: " << COLOR_RESET
-                     << endl;
+                     << "La cantidad debe ser mayor a 0. Intente "
+                        "nuevamente: "
+                     << COLOR_RESET << endl;
             }
 
             int nuevoStock = producto.stock;
@@ -700,7 +707,8 @@ void actualizarStockProducto() {
                 nuevoStock -= cantidad;
                 if (nuevoStock < 0) {
                     cout << CLEAR_SCREEN << COLOR_RED
-                         << format("Error: El stock no puede ser negativo. Faltan unidades. Stock "
+                         << format("Error: El stock no puede ser negativo. "
+                                   "Faltan unidades. Stock "
                                    "actual: {}",
                                    producto.stock)
                          << COLOR_RESET << endl;
@@ -744,7 +752,8 @@ void listarProductos() {
         return;
     }
     ArchivoHeader prodHeader = leerHeader(PRODUCTOS_PATH);
-    archivo.read(reinterpret_cast<char*>(&prodHeader), sizeof(ArchivoHeader)); // Saltar header
+    archivo.read(reinterpret_cast<char*>(&prodHeader),
+                 sizeof(ArchivoHeader)); // Saltar header
 
     if (prodHeader.registrosActivos == 0) {
         cout << "No hay productos registrados." << endl;
@@ -755,7 +764,9 @@ void listarProductos() {
     cout << format("{:<5} | {:<20} | {:<15} | {:<10} | {:<5} | {:<15}", "ID", "Nombre", "Codigo",
                    "Precio", "Stock", "Proveedores")
          << endl;
-    cout << "----------------------------------------------------------------------" << endl;
+    cout << "------------------------------------------------------------------"
+            "----"
+         << endl;
 
     Producto producto;
     // TODO: Usar O(1) para buscar los proveedores (si es que se puede)
@@ -764,7 +775,8 @@ void listarProductos() {
         ifstream proveedoresFile(PROVEEDORES_PATH, ios::binary);
         if (!proveedoresFile.is_open()) {
             cout << COLOR_RED
-                 << "Error al listar los productos: No se pudo abrir el archivo de "
+                 << "Error al listar los productos: No se pudo abrir el "
+                    "archivo de "
                     "proveedores.\nCerrando..."
                  << COLOR_RESET << endl;
             return;
@@ -788,7 +800,9 @@ void listarProductos() {
                  << endl;
         }
     }
-    cout << "----------------------------------------------------------------------" << endl;
+    cout << "------------------------------------------------------------------"
+            "----"
+         << endl;
     archivo.close();
 }
 
@@ -820,7 +834,8 @@ void eliminarProducto() {
 
     if (tieneTransacciones) {
         cout << CLEAR_SCREEN << COLOR_RED
-             << "Error: No se puede eliminar el producto porque tiene transacciones asociadas. "
+             << "Error: No se puede eliminar el producto porque tiene "
+                "transacciones asociadas. "
              << "Cancele las transacciones primero si desea eliminarlo." << COLOR_RESET << endl;
         return;
     }
@@ -1012,7 +1027,8 @@ void listarProveedores() {
     cout << format("{:<5} | {:<20} | {:<15} | {:<15} | {:<25} | {:<15}", "ID", "Nombre", "RIF",
                    "Telefono", "Email", "Direccion")
          << endl;
-    cout << "----------------------------------------------------------------------------------"
+    cout << "------------------------------------------------------------------"
+            "----------------"
             "----"
             "-----------------"
          << endl;
@@ -1026,7 +1042,8 @@ void listarProveedores() {
                  << endl;
         }
     }
-    cout << "----------------------------------------------------------------------------------"
+    cout << "------------------------------------------------------------------"
+            "----------------"
             "----"
             "-----------------"
          << endl;
@@ -1051,7 +1068,8 @@ void eliminarProveedor() {
 
     if (tieneTransacciones) {
         cout << CLEAR_SCREEN << COLOR_RED
-             << "Error: No se puede eliminar el proveedor porque tiene transacciones asociadas. "
+             << "Error: No se puede eliminar el proveedor porque tiene "
+                "transacciones asociadas. "
              << "Cancele las transacciones primero si desea eliminarlo." << COLOR_RESET << endl;
         return;
     }
@@ -1219,7 +1237,8 @@ void listarClientes() {
     cout << format("{:<5} | {:<20} | {:<15} | {:<15} | {:<25}", "ID", "Nombre", "Cedula",
                    "Telefono", "Email")
          << endl;
-    cout << "----------------------------------------------------------------------------------"
+    cout << "------------------------------------------------------------------"
+            "----------------"
             "----"
             "--"
          << endl;
@@ -1232,7 +1251,8 @@ void listarClientes() {
                  << endl;
         }
     }
-    cout << "----------------------------------------------------------------------------------"
+    cout << "------------------------------------------------------------------"
+            "----------------"
             "----"
             "--"
          << endl;
@@ -1258,7 +1278,8 @@ void eliminarCliente() {
 
     if (tieneTransacciones) {
         cout << CLEAR_SCREEN << COLOR_RED
-             << "Error: No se puede eliminar el cliente porque tiene transacciones asociadas. "
+             << "Error: No se puede eliminar el cliente porque tiene "
+                "transacciones asociadas. "
              << "Cancele las transacciones primero si desea eliminarlo." << COLOR_RESET << endl;
         return;
     }
@@ -1286,6 +1307,61 @@ void eliminarCliente() {
     } else {
         cout << "Eliminación cancelada." << endl;
     }
+}
+
+// agrega una transacción al historial de transacciones de un cliente
+// 1) No agrega IDs inválidos ni cuando el contador está corrupto.
+// 2) Si el ID ya existe, no duplica y retorna true.
+// 3) Si hay espacio, inserta al final y aumenta el contador.
+// 4) Si no hay espacio, retorna false.
+bool agregarIdAArreglo(int id, int ids[], int& cantidad, int capacidad = 100) {
+    if (id <= 0 || cantidad < 0 || cantidad > capacidad) {
+        return false;
+    }
+
+    for (int i = 0; i < cantidad; i++) {
+        if (ids[i] == id) {
+            return true;
+        }
+    }
+
+    if (cantidad >= capacidad) {
+        return false;
+    }
+
+    ids[cantidad] = id;
+    cantidad++;
+    return true;
+}
+
+// elimina una transacción al historial de transacciones de un cliente
+// Elimina un ID de un arreglo fijo manteniendo continuidad.
+// Busca el ID, hace shift a la izquierda para evitar huecos,
+// limpia la última posición y disminuye el contador.
+bool removerIdDeArreglo(int id, int ids[], int& cantidad) {
+    if (id <= 0 || cantidad <= 0) {
+        return false;
+    }
+
+    int index = -1;
+    for (int i = 0; i < cantidad; i++) {
+        if (ids[i] == id) {
+            index = i;
+            break;
+        }
+    }
+
+    if (index == -1) {
+        return false;
+    }
+
+    for (int i = index; i < cantidad - 1; i++) {
+        ids[i] = ids[i + 1];
+    }
+
+    ids[cantidad - 1] = 0;
+    cantidad--;
+    return true;
 }
 
 void registrarCompra() {
@@ -1322,18 +1398,13 @@ void registrarCompra() {
         return;
     }
 
-    int cantidad = leerId("Cantidad comprada: ");
+    int cantidad = leerId("Cantidad comprada");
     if (cantidad <= 0) {
         cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
         return;
     }
 
     fstream archivoTrans;
-    try {
-        ifstream check(TRANSACCIONES_PATH, ios::binary);
-    } catch (...) {
-        ofstream create(TRANSACCIONES_PATH, ios::binary);
-    }
     ArchivoHeader transHeader = leerHeader(TRANSACCIONES_PATH);
 
     Transaccion transaccion = {};
@@ -1372,6 +1443,16 @@ void registrarCompra() {
 
 void registrarVenta() {
     cout << "\n===REGISTRAR VENTA (Salida de Mercancia)===" << endl;
+
+    ArchivoHeader clientesHeader = leerHeader(CLIENTES_PATH);
+    if (clientesHeader.cantidadRegistros == 0) {
+        cout << CLEAR_SCREEN << COLOR_RED
+             << "Error: No hay clientes registrados. Para registrar una venta, "
+                "primero debe "
+                "registrar un cliente."
+             << COLOR_RESET << endl;
+        return;
+    }
 
     mostrarListaEntidades<Producto>("Productos", PRODUCTOS_PATH, PorAmbos);
 
@@ -1414,17 +1495,31 @@ void registrarVenta() {
         cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
         return;
     }
-    if (!existeCliente(idCli)) {
+    int idxCli = buscarEntidadPorId<Cliente>(CLIENTES_PATH, idCli);
+    cout << "idxCli: " << idxCli << endl;
+    if (idxCli == -1) {
         cout << CLEAR_SCREEN << COLOR_RED << "Error: El cliente no existe." << COLOR_RESET << endl;
         return;
     }
 
-    fstream archivoTrans;
-    try {
-        ifstream check(TRANSACCIONES_PATH, ios::binary);
-    } catch (...) {
-        ofstream create(TRANSACCIONES_PATH, ios::binary);
+    Cliente cliente;
+    fstream clientesFile(CLIENTES_PATH, ios::binary | ios::in | ios::out);
+    if (!clientesFile.is_open()) {
+        cout << CLEAR_SCREEN << COLOR_RED << "Error: No se pudo abrir el archivo de clientes."
+             << COLOR_RESET << endl;
+        return;
     }
+
+    clientesFile.seekg(sizeof(ArchivoHeader) + idxCli * sizeof(Cliente), ios::beg);
+    clientesFile.read(reinterpret_cast<char*>(&cliente), sizeof(Cliente));
+
+    if (!clientesFile || cliente.eliminado) {
+        cout << CLEAR_SCREEN << COLOR_RED << "Error: No se pudo leer el cliente o está eliminado."
+             << COLOR_RESET << endl;
+        return;
+    }
+
+    fstream transaccionesFile;
     ArchivoHeader transHeader = leerHeader(TRANSACCIONES_PATH);
 
     Transaccion transaccion = {};
@@ -1441,12 +1536,22 @@ void registrarVenta() {
     transaccion.fechaUltimaModificacion = transaccion.fechaCreacion;
     obtenerFechaActual(transaccion.fecha);
 
+    if (!agregarIdAArreglo(transaccion.id, cliente.transaccionesIds,
+                           cliente.cantidadTransacciones)) {
+        cout << CLEAR_SCREEN << COLOR_RED
+             << "Error: El historial del cliente está lleno. No se puede "
+                "registrar la venta."
+             << COLOR_RESET << endl;
+        return;
+    }
+
     // restamos el espacio en el stock
     producto.stock -= cantidad;
+    producto.totalVendido += cantidad;
     producto.fechaUltimaModificacion = time(nullptr);
 
-    archivoProd.seekp(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
-    archivoProd.write(reinterpret_cast<const char*>(&producto), sizeof(Producto));
+    cliente.totalCompras += transaccion.total;
+    cliente.fechaUltimaModificacion = time(nullptr);
 
     transHeader.cantidadRegistros++;
     transHeader.registrosActivos++;
@@ -1457,6 +1562,12 @@ void registrarVenta() {
     archivoOut.close();
 
     actualizarHeader(TRANSACCIONES_PATH, transHeader);
+
+    archivoProd.seekp(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
+    archivoProd.write(reinterpret_cast<const char*>(&producto), sizeof(Producto));
+
+    clientesFile.seekp(sizeof(ArchivoHeader) + idxCli * sizeof(Cliente), ios::beg);
+    clientesFile.write(reinterpret_cast<const char*>(&cliente), sizeof(Cliente));
 
     // confirmamos venta
     cout << "¡Venta exitosa! Total: " << transaccion.total
@@ -1514,20 +1625,22 @@ void listarTransacciones() {
         cout << "\n[!] El historial de transacciones esta vacio." << endl;
         return;
     }
-    cout << "\n================================================================================"
-            "===="
+    cout << "\n================================================================"
+            "================"
             "====="
          << endl;
     cout << "                         HISTORIAL COMPLETO DE MOVIMIENTOS" << endl;
-    cout << "=================================================================================="
-            "===="
+    cout << "=================================================================="
+            "================"
             "==="
          << endl;
-    cout << format("{:<5} | {:<8} | {:<12} | {:<10} | {:<10} | {:<12} | {:<12} | {:<15}", "ID",
-                   "Tipo", "Fecha", "Prod ID", "Cantidad", "Precio Un.", "Total", "Asociado ID")
+    cout << format("{:<5} | {:<8} | {:<12} | {:<10} | {:<10} | {:<12} | {:<12} | "
+                   "{:<15}",
+                   "ID", "Tipo", "Fecha", "Prod ID", "Cantidad", "Precio Un.", "Total",
+                   "Asociado ID")
          << endl;
-    cout << "----------------------------------------------------------------------------------"
-            "----"
+    cout << "------------------------------------------------------------------"
+            "----------------"
             "---"
          << endl;
 
@@ -1544,15 +1657,16 @@ void listarTransacciones() {
             int cant = t.cantidadTiposDeProductos > 0 ? t.cantidades[0] : 0;
             float precioUn = t.cantidadTiposDeProductos > 0 ? t.preciosUnitarios[0] : 0.0f;
 
-            cout << format("{:<5} | {:<8} | {:<12} | {:<10} | {:<10} | ${:<11.2f} | ${:<11.2f} | "
+            cout << format("{:<5} | {:<8} | {:<12} | {:<10} | {:<10} | ${:<11.2f} "
+                           "| ${:<11.2f} | "
                            "{:<15}",
                            t.id, tipoStr, t.fecha, prodId, cant, precioUn, t.total, t.idRelacionado)
                  << endl;
             count++;
         }
     }
-    cout << "=================================================================================="
-            "===="
+    cout << "=================================================================="
+            "================"
             "==="
          << endl;
     cout << "Total de registros: " << count << endl;
@@ -1596,8 +1710,9 @@ void cancelarTransaccion() {
 
     if (idxProd == -1) {
         cout << CLEAR_SCREEN << COLOR_RED
-             << "Error: El producto de esta transaccion ya no existe en el sistema." << COLOR_RESET
-             << endl;
+             << "Error: El producto de esta transaccion ya no existe en el "
+                "sistema."
+             << COLOR_RESET << endl;
         return;
     }
 
@@ -1606,14 +1721,57 @@ void cancelarTransaccion() {
     archivoProd.seekg(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
     archivoProd.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
 
-    // REVERTIR EL STOCK (La parte lógica)
+    Cliente cliente;
+    int idxCli = -1;
+    bool clienteDisponible = false;
+    fstream archivoCli;
+    if (transaccion.tipo == VENTA) {
+        idxCli = buscarEntidadPorId<Cliente>(CLIENTES_PATH, transaccion.idRelacionado);
+        if (idxCli != -1) {
+            archivoCli.open(CLIENTES_PATH, ios::binary | ios::in | ios::out);
+            if (archivoCli.is_open()) {
+                archivoCli.seekg(sizeof(ArchivoHeader) + idxCli * sizeof(Cliente), ios::beg);
+                archivoCli.read(reinterpret_cast<char*>(&cliente), sizeof(Cliente));
+                clienteDisponible = archivoCli.good() && !cliente.eliminado;
+            }
+        }
+    }
+
+    // Revertir el stock
     if (transaccion.tipo == VENTA) {
         producto.stock += cantidad;
+        if (producto.totalVendido >= cantidad) {
+            producto.totalVendido -= cantidad;
+        } else {
+            producto.totalVendido = 0;
+        }
+
+        if (clienteDisponible) {
+            if (cliente.totalCompras >= transaccion.total) {
+                cliente.totalCompras -= transaccion.total;
+            } else {
+                cliente.totalCompras = 0;
+            }
+            removerIdDeArreglo(transaccion.id, cliente.transaccionesIds,
+                               cliente.cantidadTransacciones);
+            cliente.fechaUltimaModificacion = time(nullptr);
+
+            archivoCli.seekp(sizeof(ArchivoHeader) + idxCli * sizeof(Cliente), ios::beg);
+            archivoCli.write(reinterpret_cast<const char*>(&cliente), sizeof(Cliente));
+        } else {
+            cout << COLOR_YELLOW
+                 << "Advertencia: No se pudo actualizar el historial del "
+                    "cliente al cancelar la "
+                    "venta."
+                 << COLOR_RESET << endl;
+        }
+
         cout << "[SISTEMA] Venta cancelada. Se devolvieron " << cantidad << " unidades al stock."
              << endl;
     } else if (transaccion.tipo == COMPRA) {
         if (producto.stock < cantidad) {
-            cout << "Error: No se puede cancelar la compra. El stock actual es menor a lo que "
+            cout << "Error: No se puede cancelar la compra. El stock actual es "
+                    "menor a lo que "
                     "quieres quitar."
                  << endl;
             return;
@@ -1621,6 +1779,10 @@ void cancelarTransaccion() {
         producto.stock -= cantidad;
         cout << "[SISTEMA] Compra cancelada. Se retiraron " << cantidad << " unidades del stock."
              << endl;
+    }
+
+    if (archivoCli.is_open()) {
+        archivoCli.close();
     }
 
     // guardar stock modificado
@@ -1901,7 +2063,8 @@ void obtenerFechaActual(char* fecha) {
     unsigned mes = static_cast<unsigned>(ymd.month());
     unsigned dia = static_cast<unsigned>(ymd.day());
 
-    // Formateamos como "YYYY-MM-DD" y lo guardamos en el buffer (máximo 11 caracteres)
+    // Formateamos como "YYYY-MM-DD" y lo guardamos en el buffer
+    // (máximo 11 caracteres)
     snprintf(fecha, 11, "%04d-%02u-%02u", anio, mes, dia);
     fecha[10] = '\0'; // Aseguramos el null-termination por si acaso
 }
@@ -1955,8 +2118,9 @@ int leerId(const char* msg) {
 
             if (id <= 0) {
                 cout << CLEAR_SCREEN << COLOR_RED
-                     << "El id debe ser numérico y mayor a 0. Intente nuevamente." << COLOR_RESET
-                     << endl;
+                     << "El id debe ser numérico y mayor a 0. Intente "
+                        "nuevamente."
+                     << COLOR_RESET << endl;
                 continue;
             }
 
@@ -2020,9 +2184,9 @@ void crearBackup() {
     cout << format("{}Backup realizado con exito en {}\"{}\"{}", COLOR_GREEN, COLOR_CYAN,
                    BACKUP_PATH.string(), COLOR_RESET)
          << endl;
-    cout << format(
-                "{}Fecha y hora del backup (Año-Mes-Día) (Hora:Minutos:Segundos):{} \"{} {:%T}\"{}",
-                COLOR_YELLOW, COLOR_CYAN, ymd, localTime, COLOR_RESET)
+    cout << format("{}Fecha y hora del backup (Año-Mes-Día) "
+                   "(Hora:Minutos:Segundos):{} \"{} {:%T}\"{}",
+                   COLOR_YELLOW, COLOR_CYAN, ymd, localTime, COLOR_RESET)
          << endl;
 }
 
@@ -2135,7 +2299,8 @@ void verificarIntegridadReferencial() {
     cout << "\n----------------------------------------" << endl;
     if (erroresEncontrados == 0) {
         cout << COLOR_GREEN
-             << "[+] SALUDABLE: No se encontraron referencias rotas. La integridad referencial "
+             << "[+] SALUDABLE: No se encontraron referencias rotas. La "
+                "integridad referencial "
                 "está intacta."
              << COLOR_RESET << endl;
     } else {
