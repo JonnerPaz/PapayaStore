@@ -330,10 +330,9 @@ void crearProducto() {
     ArchivoHeader proveedoresHeader = leerHeader(PROVEEDORES_PATH);
 
     if (proveedoresHeader.registrosActivos == 0) {
-        cout << format(
-                    "{} {} Error: No hay proveedores registrados. Debe crear al menos un proveedor "
-                    "antes de registrar un producto. {}",
-                    CLEAR_SCREEN, COLOR_RED, COLOR_RESET)
+        cout << format("{} {} Error: No hay proveedores registrados. Debe crear al menos un "
+                       "proveedor antes de registrar un producto. {}",
+                       CLEAR_SCREEN, COLOR_RED, COLOR_RESET)
              << endl;
         return;
     }
@@ -2005,12 +2004,16 @@ void crearBackup() {
     chrono::zoned_time localTime{chrono::current_zone(), nowSec};
 
     for (fs::path path : paths) {
+        int fileSize = fs::file_size(path);
         string baseName = path.stem().string();
         fs::path ymd_suffix =
             BACKUP_PATH / fs::path(format("{}.{:%Y-%m-%d}.{:%T}.bin", baseName, ymd, localTime));
         fs::copy(path, ymd_suffix);
         cout << format("{}{:>20} {}Respaldado en {}\"{}\"{}", COLOR_CYAN, path.stem().string(),
                        COLOR_GREEN, COLOR_CYAN, ymd_suffix.string(), COLOR_RESET)
+             << endl;
+        cout << format("{} Tamaño del archivo: {}{} Bytes{}", COLOR_YELLOW, COLOR_CYAN, fileSize,
+                       COLOR_RESET)
              << endl;
     }
 
@@ -2029,30 +2032,38 @@ void verificarIntegridadReferencial() {
     cout << COLOR_CYAN << "   DIAGNÓSTICO DE SALUD DE BASE DE DATOS  " << COLOR_RESET << endl;
     cout << COLOR_CYAN << "========================================" << COLOR_RESET << endl;
 
-    // 1. Recorrer productos
+    int erroresProductosProveedor = 0;
+    int erroresTransaccionRelacionado = 0;
+    int erroresTransaccionProducto = 0;
+    int erroresTipoTransaccion = 0;
+
+    // 1. Recorrer productos activos y validar proveedor
     ifstream productosFile(PRODUCTOS_PATH, ios::binary);
     if (!productosFile.is_open()) {
         cout << COLOR_RED << "Error: No se pudo abrir el archivo de productos." << COLOR_RESET
              << endl;
         return;
     }
-    productosFile.seekg(0, ios::end);
 
-    int erroresEncontrados = 0;
+    ArchivoHeader headerProductos;
+    productosFile.read(reinterpret_cast<char*>(&headerProductos), sizeof(ArchivoHeader));
+
     Producto temp;
     while (productosFile.read(reinterpret_cast<char*>(&temp), sizeof(Producto))) {
-        // Verificando que los proveedores existan
+        if (temp.eliminado) {
+            continue;
+        }
+
         int hasProveedor = buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, temp.idProveedor) != -1;
-        if (!temp.eliminado && temp.idProveedor > 0 && !hasProveedor) {
+        if (temp.idProveedor > 0 && !hasProveedor) {
             cout << COLOR_RED << "Error: El proveedor con id " << temp.idProveedor << " no existe."
                  << COLOR_RESET << endl;
-            erroresEncontrados++;
-            return;
+            erroresProductosProveedor++;
         }
     }
     productosFile.close();
 
-    // 2. Recorrer el archivo de transacciones
+    // 2. Recorrer transacciones activas y validar relaciones
     ifstream transaccionesFile(TRANSACCIONES_PATH, ios::binary);
     if (!transaccionesFile.is_open()) {
         cout << COLOR_RED << "Error: No se pudo abrir el archivo de transacciones." << COLOR_RESET
@@ -2066,49 +2077,77 @@ void verificarIntegridadReferencial() {
     Transaccion trans;
     while (transaccionesFile.read(reinterpret_cast<char*>(&trans), sizeof(Transaccion))) {
         if (!trans.eliminado) {
-            // 2.1 Verificar Cliente o Proveedor asociado
-            int hasRelatedId =
-                buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, trans.idRelacionado) != -1;
-            if (trans.tipo == COMPRA && !hasRelatedId) {
+            bool tipoValido = trans.tipo == COMPRA || trans.tipo == VENTA;
+            if (!tipoValido) {
+                cout << COLOR_RED << "[ERROR - Transaccion ID " << trans.id << "] " << COLOR_RESET
+                     << "Tipo de transaccion inválido en datos persistidos." << endl;
+                erroresTipoTransaccion++;
+            }
+
+            // 2.1 Verificar Cliente/Proveedor relacionado
+            if (trans.tipo == COMPRA &&
+                buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, trans.idRelacionado) == -1) {
                 cout << COLOR_RED << "[ERROR - Transaccion ID " << trans.id << "] " << COLOR_RESET
                      << "Es una COMPRA pero el Proveedor ID " << trans.idRelacionado
                      << " NO EXISTE." << endl;
-                erroresEncontrados++;
+                erroresTransaccionRelacionado++;
             }
 
-            if (trans.tipo == VENTA && !hasRelatedId) {
+            if (trans.tipo == VENTA &&
+                buscarEntidadPorId<Cliente>(CLIENTES_PATH, trans.idRelacionado) == -1) {
                 cout << COLOR_RED << "[ERROR - Transaccion ID " << trans.id << "] " << COLOR_RESET
                      << "Es una VENTA pero el Cliente ID " << trans.idRelacionado << " NO EXISTE."
                      << endl;
-                erroresEncontrados++;
+                erroresTransaccionRelacionado++;
             }
 
             // 2.2 Verificar Productos asociados a la transacción
-            for (int i = 0; i < trans.cantidadTiposDeProductos; i++) {
+            int cantidadProductos = trans.cantidadTiposDeProductos;
+            if (cantidadProductos < 0 || cantidadProductos > 100) {
+                cout << COLOR_RED << "[ERROR - Transaccion ID " << trans.id << "] " << COLOR_RESET
+                     << "cantidadTiposDeProductos fuera de rango: " << cantidadProductos << endl;
+                erroresTransaccionProducto++;
+                if (cantidadProductos < 0) {
+                    cantidadProductos = 0;
+                } else {
+                    cantidadProductos = 100;
+                }
+            }
+
+            for (int i = 0; i < cantidadProductos; i++) {
                 int idProducto = trans.productosIds[i];
                 int hasProductId = buscarEntidadPorId<Producto>(PRODUCTOS_PATH, idProducto) != -1;
                 if (!hasProductId) {
                     cout << COLOR_RED << "[ERROR - Transaccion ID " << trans.id << "] "
                          << COLOR_RESET << "Contiene el Producto ID " << idProducto
                          << " que NO EXISTE." << endl;
-                    erroresEncontrados++;
+                    erroresTransaccionProducto++;
                 }
             }
         }
     }
     transaccionesFile.close();
 
-    // 3. Reporte final
+    int erroresEncontrados = erroresProductosProveedor + erroresTransaccionRelacionado +
+                             erroresTransaccionProducto + erroresTipoTransaccion;
+
+    // 3. Reporte final con subtotales
     cout << "\n----------------------------------------" << endl;
     if (erroresEncontrados == 0) {
-        cout << format("{} [+] SALUDABLE: {} No se encontraron referencias rotas. La integridad "
-                       "referencial está intacta.",
-                       CLEAR_SCREEN, COLOR_GREEN, COLOR_RESET);
+        cout << COLOR_GREEN
+             << "[+] SALUDABLE: No se encontraron referencias rotas. La integridad referencial "
+                "está intacta."
+             << COLOR_RESET << endl;
     } else {
-        cout << format(
-            "{} [-] ADVERTENCIA: {} Se detectaron {} referencias rotas en la base de datos. Te "
-            "sugerimos usar el sistema de respaldo y restaurar una base de datos estable",
-            COLOR_RED, COLOR_RESET, erroresEncontrados);
+        cout << COLOR_RED << "[-] ADVERTENCIA: Se detectaron " << erroresEncontrados
+             << " referencias rotas en la base de datos." << COLOR_RESET << endl;
+        cout << COLOR_YELLOW << "Subtotales de errores:" << COLOR_RESET << endl;
+        cout << " - Productos -> Proveedor inexistente: " << erroresProductosProveedor << endl;
+        cout << " - Transacciones -> Cliente/Proveedor inexistente: "
+             << erroresTransaccionRelacionado << endl;
+        cout << " - Transacciones -> Producto inexistente / cantidad inválida: "
+             << erroresTransaccionProducto << endl;
+        cout << " - Transacciones -> Tipo inválido: " << erroresTipoTransaccion << endl;
     }
     cout << "----------------------------------------" << endl;
 }
@@ -2379,7 +2418,6 @@ void menuProductos() {
 
     ArchivoHeader proveedoresHeader = leerHeader(PROVEEDORES_PATH);
     if (!proveedoresHeader.registrosActivos) {
-
         cout << format("{} {} Error: No hay proveedores registrados. Debe crear al menos un "
                        "proveedor antes de registrar un producto. {}",
                        CLEAR_SCREEN, COLOR_RED, COLOR_RESET);
