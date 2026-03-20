@@ -772,7 +772,6 @@ void listarProductos() {
          << endl;
 
     Producto producto;
-    // TODO: Usar O(1) para buscar los proveedores (si es que se puede)
     while (archivo.read(reinterpret_cast<char*>(&producto), sizeof(Producto))) {
         string nombresProveedores = "";
         ifstream proveedoresFile(PROVEEDORES_PATH, ios::binary);
@@ -2614,6 +2613,206 @@ void verificarIntegridadReferencial() {
     cout << "----------------------------------------" << endl;
 }
 
+void reporteStockCritico() {
+    ifstream productosFile(PRODUCTOS_PATH, ios::binary);
+    if (!productosFile.is_open()) {
+        cout << CLEAR_SCREEN << COLOR_RED << "Error: No se pudo abrir el archivo de productos."
+             << COLOR_RESET << endl;
+        return;
+    }
+
+    ArchivoHeader header;
+    productosFile.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+    if (header.registrosActivos == 0) {
+        cout << CLEAR_SCREEN << COLOR_YELLOW << "No hay productos registrados." << COLOR_RESET
+             << endl;
+        return;
+    }
+
+    cout << CLEAR_SCREEN;
+    cout << COLOR_CYAN << "========================================" << COLOR_RESET << endl;
+    cout << COLOR_CYAN << "      REPORTE: STOCK CRÍTICO          " << COLOR_RESET << endl;
+    cout << COLOR_CYAN << "========================================" << COLOR_RESET << endl;
+    cout << format("{:<5} | {:<22} | {:<8} | {:<12} | {:<20}", "ID", "Producto", "Stock",
+                   "Stock Mín.", "Proveedor")
+         << endl;
+    cout << "------------------------------------------------------------------"
+            "---------"
+         << endl;
+
+    int totalCriticos = 0;
+    Producto producto;
+    while (productosFile.read(reinterpret_cast<char*>(&producto), sizeof(Producto))) {
+        if (producto.eliminado || producto.stock > producto.stockMinimo) {
+            continue;
+        }
+
+        string nombreProveedor = "N/A";
+        int idxProv = buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, producto.idProveedor);
+        if (idxProv != -1) {
+            ifstream proveedoresFile(PROVEEDORES_PATH, ios::binary);
+            if (proveedoresFile.is_open()) {
+                Proveedor proveedor;
+                proveedoresFile.seekg(sizeof(ArchivoHeader) + idxProv * sizeof(Proveedor),
+                                      ios::beg);
+                proveedoresFile.read(reinterpret_cast<char*>(&proveedor), sizeof(Proveedor));
+                if (proveedoresFile && !proveedor.eliminado) {
+                    nombreProveedor = proveedor.nombre;
+                }
+            }
+        }
+
+        cout << format("{:<5} | {:<22} | {:<8} | {:<12} | {:<20}", producto.id, producto.nombre,
+                       producto.stock, producto.stockMinimo, nombreProveedor)
+             << endl;
+        totalCriticos++;
+    }
+
+    cout << "------------------------------------------------------------------"
+            "---------"
+         << endl;
+    if (totalCriticos == 0) {
+        cout << COLOR_GREEN << "No hay productos en estado crítico." << COLOR_RESET << endl;
+    } else {
+        cout << COLOR_YELLOW << "Total de productos críticos: " << totalCriticos << COLOR_RESET
+             << endl;
+    }
+}
+
+void reporteHistorialCliente() {
+    ArchivoHeader headerClientes = leerHeader(CLIENTES_PATH);
+    if (headerClientes.registrosActivos == 0) {
+        cout << CLEAR_SCREEN << COLOR_YELLOW << "No hay clientes registrados." << COLOR_RESET
+             << endl;
+        return;
+    }
+
+    mostrarListaEntidades<Cliente>("Clientes", CLIENTES_PATH, PorAmbos);
+    int idCliente = leerId("Ingrese el id del cliente");
+    if (idCliente <= 0) {
+        cout << CLEAR_SCREEN << COLOR_RED << "Operación cancelada." << COLOR_RESET << endl;
+        return;
+    }
+
+    int idxCliente = buscarEntidadPorId<Cliente>(CLIENTES_PATH, idCliente);
+    if (idxCliente == -1) {
+        cout << CLEAR_SCREEN << COLOR_RED << "Cliente no encontrado." << COLOR_RESET << endl;
+        return;
+    }
+
+    Cliente cliente;
+    ifstream clientesFile(CLIENTES_PATH, ios::binary);
+    clientesFile.seekg(sizeof(ArchivoHeader) + idxCliente * sizeof(Cliente), ios::beg);
+    clientesFile.read(reinterpret_cast<char*>(&cliente), sizeof(Cliente));
+    if (!clientesFile || cliente.eliminado) {
+        cout << CLEAR_SCREEN << COLOR_RED << "No se pudo leer el cliente seleccionado."
+             << COLOR_RESET << endl;
+        return;
+    }
+
+    cout << CLEAR_SCREEN;
+    cout << COLOR_CYAN << "========================================" << COLOR_RESET << endl;
+    cout << COLOR_CYAN << "      REPORTE: HISTORIAL DE CLIENTE    " << COLOR_RESET << endl;
+    cout << COLOR_CYAN << "========================================" << COLOR_RESET << endl;
+    cout << COLOR_YELLOW << "ID: " << COLOR_RESET << cliente.id << endl;
+    cout << COLOR_YELLOW << "Nombre: " << COLOR_RESET << cliente.nombre << endl;
+    cout << COLOR_YELLOW << "Cédula: " << COLOR_RESET << cliente.cedula << endl;
+    cout << COLOR_YELLOW << "Total Compras: " << COLOR_RESET
+         << format("${:.2f}", cliente.totalCompras) << endl;
+    cout << COLOR_YELLOW << "Transacciones guardadas: " << COLOR_RESET
+         << cliente.cantidadTransacciones << endl;
+
+    int cantidadHistorial = cliente.cantidadTransacciones;
+    if (cantidadHistorial < 0) {
+        cantidadHistorial = 0;
+    }
+    if (cantidadHistorial > 100) {
+        cantidadHistorial = 100;
+    }
+
+    if (cantidadHistorial == 0) {
+        cout << COLOR_GREEN << "Este cliente no tiene transacciones en su historial." << COLOR_RESET
+             << endl;
+        return;
+    }
+
+    cout << "\n---------------- TRANSACCIONES ----------------" << endl;
+    int transaccionesMostradas = 0;
+    for (int i = 0; i < cantidadHistorial; i++) {
+        int idTransaccion = cliente.transaccionesIds[i];
+        if (idTransaccion <= 0) {
+            continue;
+        }
+
+        int idxTrans = buscarEntidadPorId<Transaccion>(TRANSACCIONES_PATH, idTransaccion);
+        if (idxTrans == -1) {
+            cout << COLOR_YELLOW << "[Aviso] Transacción ID " << idTransaccion
+                 << " no encontrada o eliminada." << COLOR_RESET << endl;
+            continue;
+        }
+
+        Transaccion transaccion;
+        ifstream transaccionesFile(TRANSACCIONES_PATH, ios::binary);
+        transaccionesFile.seekg(sizeof(ArchivoHeader) + idxTrans * sizeof(Transaccion), ios::beg);
+        transaccionesFile.read(reinterpret_cast<char*>(&transaccion), sizeof(Transaccion));
+        if (!transaccionesFile || transaccion.eliminado) {
+            continue;
+        }
+
+        if (transaccion.tipo != VENTA || transaccion.idRelacionado != cliente.id) {
+            cout << COLOR_YELLOW << "[Aviso] Transacción ID " << transaccion.id
+                 << " no pertenece a una venta válida de este cliente." << COLOR_RESET << endl;
+            continue;
+        }
+
+        const char* tipoStr = transaccion.tipo == COMPRA ? "COMPRA" : "VENTA";
+        cout << "\nTransacción #" << transaccion.id << " | Tipo: " << tipoStr
+             << " | Fecha: " << transaccion.fecha
+             << " | Total: " << format("${:.2f}", transaccion.total) << endl;
+        cout << format("{:<10} | {:<22} | {:<10} | {:<12} | {:<12}", "Prod ID", "Producto",
+                       "Cantidad", "Precio U.", "Subtotal")
+             << endl;
+        cout << "--------------------------------------------------------------"
+                "---------"
+             << endl;
+
+        int cantidadItems = transaccion.cantidadTiposDeProductos;
+        if (cantidadItems < 0) {
+            cantidadItems = 0;
+        }
+        if (cantidadItems > 100) {
+            cantidadItems = 100;
+        }
+
+        for (int j = 0; j < cantidadItems; j++) {
+            int idProducto = transaccion.productosIds[j];
+            int cantidad = transaccion.cantidades[j];
+            float precioUnitario = transaccion.preciosUnitarios[j];
+            float subtotal = cantidad * precioUnitario;
+
+            string nombreProducto = "(No encontrado)";
+            int idxProd = buscarEntidadPorId<Producto>(PRODUCTOS_PATH, idProducto);
+            if (idxProd != -1) {
+                Producto producto;
+                ifstream productosFile(PRODUCTOS_PATH, ios::binary);
+                productosFile.seekg(sizeof(ArchivoHeader) + idxProd * sizeof(Producto), ios::beg);
+                productosFile.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
+                if (productosFile && !producto.eliminado) {
+                    nombreProducto = producto.nombre;
+                }
+            }
+
+            cout << format("{:<10} | {:<22} | {:<10} | ${:<11.2f} | ${:<11.2f}", idProducto,
+                           nombreProducto, cantidad, precioUnitario, subtotal)
+                 << endl;
+        }
+
+        transaccionesMostradas++;
+    }
+
+    cout << "\nTransacciones válidas mostradas: " << transaccionesMostradas << endl;
+}
+
 /// MENUS ////////////////////////////////////////////////////////////////////
 template <typename T> void menuActualizar(T& entidad, fstream& archivo, int index) {
     char opcion;
@@ -2922,8 +3121,10 @@ void menuTransacciones() {
 
 void menuReportes() {
     OpcionMenu options[] = {{"Integridad Referencial", verificarIntegridadReferencial},
-                            {"Crear Backup", crearBackup}};
-    drawMenu("Reportes", options, 2);
+                            {"Crear Backup", crearBackup},
+                            {"Productos con stock crítico", reporteStockCritico},
+                            {"Historial de Cliente", reporteHistorialCliente}};
+    drawMenu("Reportes", options, 4);
 }
 
 int main() {
