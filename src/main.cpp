@@ -54,6 +54,10 @@ bool nombreProductoDuplicado(const char* nombre);
 bool productoTieneTransaccionesActivas(int idProducto);
 bool proveedorTieneTransaccionesActivas(int idProveedor);
 bool clienteTieneTransaccionesActivas(int idCliente);
+bool leerTienda(Tienda& tienda);
+bool actualizarTiendaRegistro(const Tienda& tienda);
+void sincronizarContadoresTienda();
+void mostrarResumenTienda();
 
 enum TipoDeTransaccion { COMPRA, VENTA };
 
@@ -162,9 +166,18 @@ struct Transaccion {
 };
 
 struct Tienda {
-    char nombre[100]; // Nombre de la tienda
-    char rif[20];     // RIF de la tienda
-    float totalTransacciones;
+    int id;
+    char nombre[100];
+    char rif[20];
+    int totalProductosActivos;
+    int totalProveedoresActivos;
+    int totalClientesActivos;
+    int totalTransaccionesActivas;
+    float montoTotalVentas;
+    float montoTotalCompras;
+    bool eliminado;
+    time_t fechaCreacion;
+    time_t fechaUltimaModificacion;
 };
 
 enum ListarPorPropiedad { PorId, PorNombre, PorAmbos };
@@ -312,16 +325,39 @@ bool actualizarHeader(fs::path path, ArchivoHeader header) {
 }
 
 void inicializarTienda(const char* nombre, const char* rif) {
-    Tienda tienda = {};
-    copiarString(tienda.nombre, nombre);
-    copiarString(tienda.rif, rif);
-
     string paths[5] = {PRODUCTOS_PATH, PROVEEDORES_PATH, CLIENTES_PATH, TRANSACCIONES_PATH,
                        TIENDA_PATH};
 
     // Inicializar todos los archivos tan pronto como inicie el programa
     for (string path : paths) {
         inicializarArchivo(path.c_str());
+    }
+
+    ArchivoHeader tiendaHeader = leerHeader(TIENDA_PATH);
+    if (tiendaHeader.cantidadRegistros == 0) {
+        Tienda tienda = {};
+        tienda.id = 1;
+        copiarString(tienda.nombre, nombre);
+        copiarString(tienda.rif, rif);
+        tienda.totalProductosActivos = 0;
+        tienda.totalProveedoresActivos = 0;
+        tienda.totalClientesActivos = 0;
+        tienda.totalTransaccionesActivas = 0;
+        tienda.montoTotalVentas = 0;
+        tienda.montoTotalCompras = 0;
+        tienda.eliminado = false;
+        tienda.fechaCreacion = time(nullptr);
+        tienda.fechaUltimaModificacion = tienda.fechaCreacion;
+
+        ofstream archivoOut(TIENDA_PATH, ios::binary | ios::app);
+        archivoOut.write(reinterpret_cast<const char*>(&tienda), sizeof(Tienda));
+        archivoOut.close();
+
+        tiendaHeader.cantidadRegistros = 1;
+        tiendaHeader.registrosActivos = 1;
+        tiendaHeader.proximoID = 2;
+        tiendaHeader.version = 1;
+        actualizarHeader(TIENDA_PATH, tiendaHeader);
     }
 }
 
@@ -443,6 +479,7 @@ void crearProducto() {
     archivoOut.write(reinterpret_cast<const char*>(&producto), sizeof(Producto));
     archivoOut.close();
     actualizarHeader(PRODUCTOS_PATH, productosHeader);
+    sincronizarContadoresTienda();
 
     // Actualizar el proveedor con el nuevo producto
     int provIndex = buscarEntidadPorId<Proveedor>(PROVEEDORES_PATH, idProveedor);
@@ -870,6 +907,7 @@ void eliminarProducto() {
     ArchivoHeader header = leerHeader(PRODUCTOS_PATH);
     header.registrosActivos--;
     actualizarHeader(PRODUCTOS_PATH, header);
+    sincronizarContadoresTienda();
 
     cout << COLOR_GREEN << "Producto eliminado exitosamente." << COLOR_RESET << endl;
 }
@@ -952,6 +990,7 @@ void crearProveedor() {
     archivoOut.close();
 
     actualizarHeader(PROVEEDORES_PATH, proveedoresHeader);
+    sincronizarContadoresTienda();
 
     cout << COLOR_GREEN << "Proveedor creado con exito." << COLOR_RESET << endl;
 }
@@ -1092,6 +1131,7 @@ void eliminarProveedor() {
         ArchivoHeader header = leerHeader(PROVEEDORES_PATH);
         header.registrosActivos--;
         actualizarHeader(PROVEEDORES_PATH, header);
+        sincronizarContadoresTienda();
 
         cout << "Proveedor eliminado exitosamente." << endl;
     } else {
@@ -1161,6 +1201,7 @@ void crearCliente() {
         archivoOut.close();
 
         actualizarHeader(CLIENTES_PATH, clientesHeader);
+        sincronizarContadoresTienda();
 
         cout << "Cliente creado con exito." << endl;
     } else {
@@ -1301,6 +1342,7 @@ void eliminarCliente() {
         ArchivoHeader header = leerHeader(CLIENTES_PATH);
         header.registrosActivos--;
         actualizarHeader(CLIENTES_PATH, header);
+        sincronizarContadoresTienda();
 
         cout << "Cliente eliminado exitosamente." << endl;
     } else {
@@ -1481,6 +1523,78 @@ bool clienteTieneTransaccionesActivas(int idCliente) {
     return false;
 }
 
+bool leerTienda(Tienda& tienda) {
+    ifstream archivo(TIENDA_PATH, ios::binary);
+    if (!archivo.is_open()) {
+        return false;
+    }
+
+    archivo.seekg(sizeof(ArchivoHeader), ios::beg);
+    archivo.read(reinterpret_cast<char*>(&tienda), sizeof(Tienda));
+    return archivo.good() && !tienda.eliminado;
+}
+
+bool actualizarTiendaRegistro(const Tienda& tienda) {
+    fstream archivo(TIENDA_PATH, ios::binary | ios::in | ios::out);
+    if (!archivo.is_open()) {
+        return false;
+    }
+
+    archivo.seekp(sizeof(ArchivoHeader), ios::beg);
+    archivo.write(reinterpret_cast<const char*>(&tienda), sizeof(Tienda));
+    return archivo.good();
+}
+
+// Actualiza los registros activos de todas las entidades en la tienda
+void sincronizarContadoresTienda() {
+    Tienda tienda;
+    if (!leerTienda(tienda)) {
+        return;
+    }
+
+    ArchivoHeader headerProductos = leerHeader(PRODUCTOS_PATH);
+    ArchivoHeader headerProveedores = leerHeader(PROVEEDORES_PATH);
+    ArchivoHeader headerClientes = leerHeader(CLIENTES_PATH);
+    ArchivoHeader headerTransacciones = leerHeader(TRANSACCIONES_PATH);
+
+    tienda.totalProductosActivos = headerProductos.registrosActivos;
+    tienda.totalProveedoresActivos = headerProveedores.registrosActivos;
+    tienda.totalClientesActivos = headerClientes.registrosActivos;
+    tienda.totalTransaccionesActivas = headerTransacciones.registrosActivos;
+    tienda.fechaUltimaModificacion = time(nullptr);
+
+    actualizarTiendaRegistro(tienda);
+}
+
+void mostrarResumenTienda() {
+    Tienda tienda;
+    if (!leerTienda(tienda)) {
+        cout << CLEAR_SCREEN << COLOR_RED << "Error: No se pudo leer el registro de tienda."
+             << COLOR_RESET << endl;
+        return;
+    }
+
+    cout << CLEAR_SCREEN;
+    cout << COLOR_CYAN << "========================================" << COLOR_RESET << endl;
+    cout << COLOR_CYAN << "         RESUMEN DE TIENDA             " << COLOR_RESET << endl;
+    cout << COLOR_CYAN << "========================================" << COLOR_RESET << endl;
+    cout << COLOR_YELLOW << "ID: " << COLOR_RESET << tienda.id << endl;
+    cout << COLOR_YELLOW << "Nombre: " << COLOR_RESET << tienda.nombre << endl;
+    cout << COLOR_YELLOW << "RIF: " << COLOR_RESET << tienda.rif << endl;
+    cout << COLOR_YELLOW << "Productos activos: " << COLOR_RESET << tienda.totalProductosActivos
+         << endl;
+    cout << COLOR_YELLOW << "Proveedores activos: " << COLOR_RESET << tienda.totalProveedoresActivos
+         << endl;
+    cout << COLOR_YELLOW << "Clientes activos: " << COLOR_RESET << tienda.totalClientesActivos
+         << endl;
+    cout << COLOR_YELLOW << "Transacciones activas: " << COLOR_RESET
+         << tienda.totalTransaccionesActivas << endl;
+    cout << COLOR_YELLOW << "Monto total ventas: " << COLOR_RESET
+         << format("${:.2f}", tienda.montoTotalVentas) << endl;
+    cout << COLOR_YELLOW << "Monto total compras: " << COLOR_RESET
+         << format("${:.2f}", tienda.montoTotalCompras) << endl;
+}
+
 bool mostrarProductosPorProveedor(int idProveedor) {
     ifstream archivo(PRODUCTOS_PATH, ios::binary);
     if (!archivo.is_open()) {
@@ -1628,6 +1742,14 @@ void registrarCompra() {
     archivoOut.close();
 
     actualizarHeader(TRANSACCIONES_PATH, transHeader);
+    sincronizarContadoresTienda();
+
+    Tienda tiendaCompra;
+    if (leerTienda(tiendaCompra)) {
+        tiendaCompra.montoTotalCompras += transaccion.total;
+        tiendaCompra.fechaUltimaModificacion = time(nullptr);
+        actualizarTiendaRegistro(tiendaCompra);
+    }
 
     fstream archivoProdWrite(PRODUCTOS_PATH, ios::binary | ios::in | ios::out);
     if (!archivoProdWrite.is_open()) {
@@ -1822,6 +1944,14 @@ void registrarVenta() {
     archivoOut.close();
 
     actualizarHeader(TRANSACCIONES_PATH, transHeader);
+    sincronizarContadoresTienda();
+
+    Tienda tiendaVenta;
+    if (leerTienda(tiendaVenta)) {
+        tiendaVenta.montoTotalVentas += transaccion.total;
+        tiendaVenta.fechaUltimaModificacion = time(nullptr);
+        actualizarTiendaRegistro(tiendaVenta);
+    }
 
     fstream archivoProdWrite(PRODUCTOS_PATH, ios::binary | ios::in | ios::out);
     if (!archivoProdWrite.is_open()) {
@@ -2094,6 +2224,26 @@ void cancelarTransaccion() {
 
     header.registrosActivos--;
     actualizarHeader(TRANSACCIONES_PATH, header);
+    sincronizarContadoresTienda();
+
+    Tienda tiendaCancelacion;
+    if (leerTienda(tiendaCancelacion)) {
+        if (transaccion.tipo == VENTA) {
+            if (tiendaCancelacion.montoTotalVentas >= transaccion.total) {
+                tiendaCancelacion.montoTotalVentas -= transaccion.total;
+            } else {
+                tiendaCancelacion.montoTotalVentas = 0;
+            }
+        } else if (transaccion.tipo == COMPRA) {
+            if (tiendaCancelacion.montoTotalCompras >= transaccion.total) {
+                tiendaCancelacion.montoTotalCompras -= transaccion.total;
+            } else {
+                tiendaCancelacion.montoTotalCompras = 0;
+            }
+        }
+        tiendaCancelacion.fechaUltimaModificacion = time(nullptr);
+        actualizarTiendaRegistro(tiendaCancelacion);
+    }
 
     cout << "\n[!] Transaccion #" << idBuscar << " eliminada del historial con exito." << endl;
 }
@@ -3123,13 +3273,15 @@ void menuReportes() {
     OpcionMenu options[] = {{"Integridad Referencial", verificarIntegridadReferencial},
                             {"Crear Backup", crearBackup},
                             {"Productos con stock crítico", reporteStockCritico},
-                            {"Historial de Cliente", reporteHistorialCliente}};
-    drawMenu("Reportes", options, 4);
+                            {"Historial de Cliente", reporteHistorialCliente},
+                            {"Resumen de Tienda", mostrarResumenTienda}};
+    drawMenu("Reportes", options, 5);
 }
 
 int main() {
     setlocale(LC_ALL, "Spanish");
     inicializarTienda("Papaya Store", "J-123456789");
+    sincronizarContadoresTienda();
 
     OpcionMenu options[] = {{"Gestión de Productos", menuProductos},
                             {"Gestión de Proveedores", menuProveedores},
