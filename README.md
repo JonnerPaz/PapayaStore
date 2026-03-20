@@ -1,71 +1,65 @@
 <div align="center">
   <h1>🍎 Papaya Store</h1>
-  <p><b>Sistema de Gestión de Inventario en C++20</b></p>
+  <p><b>Sistema de Gestión de Inventario con persistencia binaria</b></p>
   <p><i>Proyecto de Programación II - Universidad Rafael Urdaneta (URU)</i></p>
   <p>Desarrollado por <b>Jonner Paz</b> y <b>Andrés Martínez</b></p>
 </div>
 
 ---
 
-¡Bienvenido a **Papaya Store**! Este es un robusto sistema de gestión empresarial desarrollado en consola con **C++**. El software permite administrar el ciclo completo de una tienda: desde la llegada de mercancía por proveedores hasta la venta final al cliente, garantizando la integridad de los datos y una gestión eficiente de la memoria dinámica.
+Papaya Store es un sistema de consola en C++ enfocado en gestión de inventario con persistencia real en disco. Es un sistema ligero y estable capaz de almacenar una gran cantidad de productos
 
-## 🚀 Características Principales
+## Qué hace el sistema
 
-*   **📦 Gestión Integral:** Control total sobre **Productos**, **Proveedores** y **Clientes**.
-*   **💳 Sistema de Transacciones Inteligente:**
-    *   Registro de **Compras** y **Ventas**.
-    *   **Validación de Stock:** No se permiten ventas si no hay existencias.
-*   **🔍 Búsquedas Avanzadas:**
-    *   Búsqueda exacta por ID.
-    *   Búsqueda por nombre
-*   **🛡️ Validaciones Robustas:**
-    *   Verificación de email.
-    *   Validación de fechas 
-    *   Prevención RIF duplicados.
+- Gestiona **Productos**, **Proveedores**, **Clientes**, **Transacciones** y **Tienda**.
+- Guarda todo en archivos `.bin` independientes dentro de `data/`.
+- Aplica **borrado lógico** (`eliminado = true`) para preservar offsets físicos.
+- Permite registrar **compras y ventas con múltiples productos por transacción**.
+- Mantiene estadísticas por entidad (ej. `totalVendido`, `totalCompras`) y resumen global en `tienda.bin`.
+- Incluye diagnóstico de integridad referencial, backup y reportes analíticos.
 
-## 🛠️ Detalles Técnicos
+## Estructura de persistencia
 
-El código implementa conceptos de C++ para asegurar escalabilidad y limpieza, adhiriéndose a restricciones educativas:
+Archivos operativos:
 
-*   **Memoria Dinámica Manual:** Uso exclusivo de punteros (`new[]` / `delete[]`) y arrays dinámicos que crecen automáticamente (`redimensionarEntidad`) al alcanzar su capacidad.
-*   **Templates y Conceptos:** Implementación de funciones genéricas para buscar cualquier entidad por ID y validación de tipos aritméticos mediante `std::concepts`.
-*   **Seguridad de Entrada:** Manejo riguroso de `cin.fail()` y limpieza de buffer para evitar bucles infinitos por entradas de usuario erróneas.
-*   **Formato Moderno:** Uso de `std::format` (C++20) para una salida de consola elegante, tabulada y legible.
+- `data/productos.bin`
+- `data/proveedores.bin`
+- `data/clientes.bin`
+- `data/transacciones.bin`
+- `data/tienda.bin`
 
-### 📂 Arquitectura Central
-El corazón del sistema reside en la estructura `Tienda`, que actúa como contenedor principal:
+Cada archivo inicia con un `ArchivoHeader` y luego los registros de su estructura correspondiente.
 
-```cpp
-struct Tienda {
-    Producto* productos;        // Array dinámico
-    Proveedor* proveedores;     // Array dinámico
-    Cliente* clientes;          // Array dinámico
-    Transaccion* transacciones; // Historial de movimientos
-    // ... contadores (num) y capacidades máximas
-};
-```
+## Funcionalidades destacadas
 
-## 🚦 Instalación y Uso
+### Transacciones
 
-### Requisitos
-*   Compilador compatible con **C++20** (GCC 10+, Clang 10+ o MSVC 19.29+).
+- Registro de compra y venta.
+- Soporte de múltiples productos por transacción.
+- Validación de stock por producto antes de confirmar una venta.
+- Cancelación de transacción con reversión de stock y métricas.
 
-### Compilación
-Abre tu terminal en la raíz del proyecto y ejecuta:
+### Integridad y seguridad de datos
+
+- Verificación de integridad referencial entre productos, proveedores, clientes y transacciones.
+- Restricción de borrado lógico cuando existen transacciones activas asociadas.
+- Sistema de backup de los 5 archivos binarios con timestamp.
+
+### Reportes
+
+- Productos con stock crítico.
+- Historial de cliente con detalle de transacciones y productos.
+- Resumen general de tienda (contadores globales y montos acumulados).
+
+## Requisitos
+
+- Compilador con soporte para C++23 (o C++20 con soporte suficiente de `std::format` y `<chrono>` moderno).
+
+## Compilación y ejecución
+
+Desde la raíz del proyecto:
 
 ```bash
-g++ -std=c++20 -Wall -Wextra src/main.cpp -o papaya
-```
-
-### Ejecución
-```bash
+g++ -std=c++23 -Wall -Wextra src/main.cpp -o papaya
 ./papaya
 ```
-
-## 📖 Guía de Uso Rápida
-
-1.  **Inicialización:** El sistema arranca cargando la configuración base de la tienda en memoria.
-2.  **Registro:** Antes de poder vender algo, asegúrate de registrar al menos un **Proveedor** y un **Producto**.
-3.  **Compras (Abastecimiento):** Usa el módulo de transacciones para cargar el stock inicial de tus productos mediante una nueva "Compra".
-4.  **Ventas:** Registra a un **Cliente** en el sistema y procede a realizar la venta. Papaya Store calculará los totales y descontará el inventario automáticamente.
-5.  **Mantenimiento:** Puedes actualizar precios, descripciones o datos de contacto en sus respectivos módulos en cualquier momento.
