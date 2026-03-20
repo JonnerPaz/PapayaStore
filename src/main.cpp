@@ -1360,13 +1360,14 @@ void eliminarCliente() {
 // 2) Si el ID ya existe, no duplica y retorna true.
 // 3) Si hay espacio, inserta al final y aumenta el contador.
 // 4) Si no hay espacio, retorna false.
-bool agregarIdAArreglo(int id, int ids[], int& cantidad, int capacidad = 100) {
-    if (id <= 0 || cantidad < 0 || cantidad > capacidad) {
+bool agregarIdAArreglo(int transactionId, int wholeTransactions[], int& cantidad,
+                       int capacidad = 100) {
+    if (transactionId <= 0 || cantidad < 0 || cantidad > capacidad) {
         return false;
     }
 
     for (int i = 0; i < cantidad; i++) {
-        if (ids[i] == id) {
+        if (wholeTransactions[i] == transactionId) {
             return true;
         }
     }
@@ -1375,7 +1376,7 @@ bool agregarIdAArreglo(int id, int ids[], int& cantidad, int capacidad = 100) {
         return false;
     }
 
-    ids[cantidad] = id;
+    wholeTransactions[cantidad] = transactionId;
     cantidad++;
     return true;
 }
@@ -1384,14 +1385,14 @@ bool agregarIdAArreglo(int id, int ids[], int& cantidad, int capacidad = 100) {
 // Elimina un ID de un arreglo fijo manteniendo continuidad.
 // Busca el ID, hace shift a la izquierda para evitar huecos,
 // limpia la última posición y disminuye el contador.
-bool removerIdDeArreglo(int id, int ids[], int& cantidad) {
-    if (id <= 0 || cantidad <= 0) {
+bool removerIdDeArreglo(int transactionId, int wholeTransactions[], int& cantidad) {
+    if (transactionId <= 0 || cantidad <= 0) {
         return false;
     }
 
     int index = -1;
     for (int i = 0; i < cantidad; i++) {
-        if (ids[i] == id) {
+        if (wholeTransactions[i] == transactionId) {
             index = i;
             break;
         }
@@ -1402,10 +1403,10 @@ bool removerIdDeArreglo(int id, int ids[], int& cantidad) {
     }
 
     for (int i = index; i < cantidad - 1; i++) {
-        ids[i] = ids[i + 1];
+        wholeTransactions[i] = wholeTransactions[i + 1];
     }
 
-    ids[cantidad - 1] = 0;
+    wholeTransactions[cantidad - 1] = 0;
     cantidad--;
     return true;
 }
@@ -1737,7 +1738,6 @@ void registrarCompra() {
     transaccion.fechaCreacion = time(nullptr);
     transaccion.fechaUltimaModificacion = transaccion.fechaCreacion;
     obtenerFechaActual(transaccion.fecha);
-
     transHeader.cantidadRegistros++;
     transHeader.registrosActivos++;
     transHeader.proximoID++;
@@ -2089,8 +2089,8 @@ void listarTransacciones() {
 }
 
 void cancelarTransaccion() {
-    ArchivoHeader header = leerHeader(TRANSACCIONES_PATH);
-    if (header.registrosActivos == 0) {
+    ArchivoHeader transactionsHeader = leerHeader(TRANSACCIONES_PATH);
+    if (transactionsHeader.registrosActivos == 0) {
         cout << "\n[!] No hay transacciones para cancelar." << endl;
         return;
     }
@@ -2227,8 +2227,8 @@ void cancelarTransaccion() {
     archivoTrans.seekp(sizeof(ArchivoHeader) + idx * sizeof(Transaccion), ios::beg);
     archivoTrans.write(reinterpret_cast<const char*>(&transaccion), sizeof(Transaccion));
 
-    header.registrosActivos--;
-    actualizarHeader(TRANSACCIONES_PATH, header);
+    transactionsHeader.registrosActivos--;
+    actualizarHeader(TRANSACCIONES_PATH, transactionsHeader);
     sincronizarContadoresTienda();
 
     Tienda tiendaCancelacion;
@@ -2478,25 +2478,6 @@ int* buscarProductosPorNombre(const char* nombre) {
     }
 
     return result;
-}
-
-int obtenerIndiceFisico(const char* path, int idSearch) {
-    ifstream archivo(path, ios::binary);
-    if (!archivo)
-        return -1;
-
-    ArchivoHeader header;
-    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
-
-    Producto temp;
-    int indice = 0;
-    while (archivo.read(reinterpret_cast<char*>(&temp), sizeof(Producto))) {
-        if (!temp.eliminado && temp.id == idSearch) {
-            return indice; // Retornamos la posición física (0, 1, 2...)
-        }
-        indice++;
-    }
-    return -1;
 }
 
 //// UTILIDADES
