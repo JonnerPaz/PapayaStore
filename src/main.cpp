@@ -51,6 +51,9 @@ bool codigoDuplicado(const char* codigo);
 bool rifDuplicado(const char* rif);
 bool validarEmail(const char* email);
 bool nombreProductoDuplicado(const char* nombre);
+bool productoTieneTransaccionesActivas(int idProducto);
+bool proveedorTieneTransaccionesActivas(int idProveedor);
+bool clienteTieneTransaccionesActivas(int idCliente);
 
 enum TipoDeTransaccion { COMPRA, VENTA };
 
@@ -829,8 +832,7 @@ void eliminarProducto() {
     cout << COLOR_YELLOW << "Datos del producto a eliminar:" << COLOR_RESET << endl;
     mostrarDetallesEntidad(producto);
 
-    bool tieneTransacciones = false;
-    // TODO: Comprobar transacciones usando archivos
+    bool tieneTransacciones = productoTieneTransaccionesActivas(id);
 
     if (tieneTransacciones) {
         cout << CLEAR_SCREEN << COLOR_RED
@@ -1063,8 +1065,7 @@ void eliminarProveedor() {
         return;
     }
 
-    bool tieneTransacciones = false;
-    // TODO: Comprobar en archivo de transacciones
+    bool tieneTransacciones = proveedorTieneTransaccionesActivas(id);
 
     if (tieneTransacciones) {
         cout << CLEAR_SCREEN << COLOR_RED
@@ -1273,8 +1274,7 @@ void eliminarCliente() {
         return;
     }
 
-    bool tieneTransacciones = false;
-    // TODO: Comprobar transacciones
+    bool tieneTransacciones = clienteTieneTransaccionesActivas(id);
 
     if (tieneTransacciones) {
         cout << CLEAR_SCREEN << COLOR_RED
@@ -1396,6 +1396,90 @@ bool agregarProductoConsolidado(Transaccion& transaccion, int idProducto, int ca
     transaccion.preciosUnitarios[pos] = precioUnitario;
     transaccion.cantidadTiposDeProductos++;
     return true;
+}
+
+bool productoTieneTransaccionesActivas(int idProducto) {
+    if (idProducto <= 0) {
+        return false;
+    }
+
+    ifstream archivo(TRANSACCIONES_PATH, ios::binary);
+    if (!archivo.is_open()) {
+        return false;
+    }
+
+    ArchivoHeader header;
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+
+    Transaccion transaccion;
+    // revisa todos las transacciones
+    while (archivo.read(reinterpret_cast<char*>(&transaccion), sizeof(Transaccion))) {
+        if (transaccion.eliminado) {
+            continue;
+        }
+
+        int cantidadItems = transaccion.cantidadTiposDeProductos;
+        if (cantidadItems < 0 || cantidadItems > 100) {
+            continue;
+        }
+
+        // revisa si el producto solicitado tiene alguna transaccion
+        for (int i = 0; i < cantidadItems; i++) {
+            if (transaccion.productosIds[i] == idProducto) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool proveedorTieneTransaccionesActivas(int idProveedor) {
+    if (idProveedor <= 0) {
+        return false;
+    }
+
+    ifstream archivo(TRANSACCIONES_PATH, ios::binary);
+    if (!archivo.is_open()) {
+        return false;
+    }
+
+    ArchivoHeader header;
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+
+    Transaccion transaccion;
+    while (archivo.read(reinterpret_cast<char*>(&transaccion), sizeof(Transaccion))) {
+        if (!transaccion.eliminado && transaccion.tipo == COMPRA &&
+            transaccion.idRelacionado == idProveedor) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool clienteTieneTransaccionesActivas(int idCliente) {
+    if (idCliente <= 0) {
+        return false;
+    }
+
+    ifstream archivo(TRANSACCIONES_PATH, ios::binary);
+    if (!archivo.is_open()) {
+        return false;
+    }
+
+    ArchivoHeader header;
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+
+    Transaccion transaccion;
+    while (archivo.read(reinterpret_cast<char*>(&transaccion), sizeof(Transaccion))) {
+        if (!transaccion.eliminado && transaccion.tipo == VENTA &&
+            transaccion.idRelacionado == idCliente) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool mostrarProductosPorProveedor(int idProveedor) {
