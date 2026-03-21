@@ -1,7 +1,8 @@
 #pragma once
+#include "domain/entities/usuario.entity.hpp"
 #include <chrono>
 
-class Proveedor {
+class Proveedor : public Usuario {
   private:
     int id;                 // Identificador único (autoincremental)
     char nombre[100];       // Nombre del proveedor
