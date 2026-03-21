@@ -8,6 +8,11 @@
 using namespace Constants::ASCII_CODES;
 using std::string;
 
+template <typename T>
+// remove_reference_t remueve las referencias de T y devuelve T
+// Ej. si T es int& -> devuelve int
+concept AsignarNum = std::is_arithmetic_v<std::remove_reference_t<T>>;
+
 class Utils {
   public:
     static void convertirAMinusculas(char* cadena) {
@@ -73,5 +78,45 @@ class Utils {
         delete[] copySubcadena;
 
         return result;
+    }
+
+    static void asignarPropiedadNum(const char* msg, AsignarNum auto& prop) {
+        std::cout << COLOR_YELLOW << msg << COLOR_RESET;
+        while (true) {
+            std::cin >> prop;
+            if (std::cin.fail()) {
+                std::cin.clear();
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                std::cout << COLOR_RED
+                          << "El valor debe ser numérico. Intente nuevamente: " << COLOR_RESET
+                          << std::endl;
+                continue;
+            }
+            // Clean buffer no matter if std::cin fail or not
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+            if (prop >= 0) {
+                break;
+            }
+            std::cout << CLEAR_SCREEN << COLOR_RED
+                      << "El valor debe ser mayor o igual a 0. Intente nuevamente: " << COLOR_RESET
+                      << std::endl;
+        }
+        std::cout << std::endl;
+    }
+
+    template <size_t N> static void asignarPropiedadString(const char* msg, char (&prop)[N]) {
+        std::cout << COLOR_YELLOW << msg << COLOR_RESET;
+        if (std::cin.peek() == '\n') {
+            std::cin.ignore();
+        }
+
+        std::cin.getline(prop, N);
+
+        if (std::cin.fail()) {
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+        std::cout << std::endl;
     }
 };
