@@ -1,11 +1,10 @@
 #pragma once
+#include "domain/entities/entidad.entity.hpp"
 #include <ctime>
 #include <string>
 
-class Producto {
+class Producto : public Entidad {
   private:
-    int id;                 // Identificador único (autoincremental)
-    char nombre[100];       // Nombre del producto
     char codigo[20];        // Código del producto (ej: "PROD-001")
     char descripcion[200];  // Descripción del producto
     char fechaRegistro[11]; // Formato: YYYY-MM-DD
@@ -17,7 +16,6 @@ class Producto {
     int stockMinimo;
     int totalVendido;
     // metadata
-    bool eliminado;
     time_t fechaCreacion;
     time_t fechaUltimaModificacion;
 
