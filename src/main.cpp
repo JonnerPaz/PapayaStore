@@ -1,3 +1,4 @@
+#include "domain/constants.hpp"
 #include <cctype>
 #include <chrono>
 #include <clocale>
