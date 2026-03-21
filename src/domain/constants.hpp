@@ -21,6 +21,7 @@ inline const fs::path PROVEEDORES_PATH = "./data/proveedores.bin";
 inline const fs::path PRODUCTOS_PATH = "./data/productos.bin";
 inline const fs::path TRANSACCIONES_PATH = "./data/transacciones.bin";
 inline const fs::path TIENDA_PATH = "./data/tienda.bin";
+inline const fs::path BACKUP_PATH = "./backup/";
 }; // namespace PATHS
 
 } // namespace Constants

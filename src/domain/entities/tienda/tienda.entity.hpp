@@ -38,4 +38,5 @@ class Tienda {
     };
 
     void initTienda();
+    virtual void mostrarResumenTienda() = 0;
 };
