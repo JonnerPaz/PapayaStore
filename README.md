@@ -60,6 +60,7 @@ Cada archivo inicia con un `ArchivoHeader` y luego los registros de su estructur
 Desde la raíz del proyecto:
 
 ```bash
-g++ -std=c++23 -Wall -Wextra src/main.cpp -o papaya
-./papaya
+cmake -S . -B build
+cmake --build build
+./build/PapayaStore
 ```
