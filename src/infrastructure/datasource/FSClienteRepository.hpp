@@ -23,4 +23,8 @@ class FSClienteRepository : public IClienteRepository, private FSBaseRepository<
     std::variant<bool, std::string> eliminarLogicamente(int id) override {
         return eliminarLogicamenteTemplate(id);
     }
+
+    std::variant<ArchivoStats, std::string> obtenerEstadisticas() override {
+        return obtenerEstadisticasTemplate();
+    }
 };

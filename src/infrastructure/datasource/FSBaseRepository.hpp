@@ -1,4 +1,5 @@
 #pragma once
+#include "domain/entities/ArchivoStats.hpp"
 #include "infrastructure/datasource/EntityTraits.hpp"
 #include "presentation/HeaderFile.hpp"
 #include <filesystem>
@@ -15,10 +16,31 @@ template <typename T> class FSBaseRepository {
     FSBaseRepository(fs::path path) : filePath(path) {
     }
 
+    std::variant<ArchivoStats, std::string> obtenerEstadisticasTemplate() {
+        std::ifstream file(filePath, std::ios::binary);
+        if (!file.is_open()) {
+            return "Error abriendo archivo para obtener estadísticas: " + filePath.string();
+        }
+
+        HeaderFile header;
+        file.read(reinterpret_cast<char*>(&header), sizeof(HeaderFile));
+
+        if (!file) {
+            return "Error leyendo el encabezado del archivo";
+        }
+
+        ArchivoStats stats;
+        stats.cantidadRegistros = header.cantidadRegistros;
+        stats.proximoID = header.proximoID;
+        stats.registrosActivos = header.registrosActivos;
+
+        return stats;
+    }
+
     std::variant<T, std::string> leerTemplate(int id) {
         std::ifstream file(filePath, std::ios::binary);
         if (!file.is_open())
-            return "Error abriendo archivo " + filePath.string();
+            return "Error abriendo archivo para lectura: " + filePath.string();
 
         HeaderFile header;
         file.read(reinterpret_cast<char*>(&header), sizeof(HeaderFile));
