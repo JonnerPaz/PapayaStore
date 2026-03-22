@@ -1,13 +1,10 @@
 #pragma once
 #include "Menu.hpp"
+#include "domain/repositories/AppRepositories.hpp"
 
 class MenuProductos : public Menu {
   public:
-    MenuProductos() : Menu() {
-        this->setTitle("Gestión de Productos");
-        this->setTexToExit("Salir");
-        this->setNumOptions(5);
-    }
+    explicit MenuProductos(AppRepositories& repository);
 
     void crearProducto();
     void buscarProducto();

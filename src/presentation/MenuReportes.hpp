@@ -6,9 +6,6 @@
 
 class MenuReportes : public Menu
 {
-   private:
-    AppRepositories& repos;
-
    public:
     MenuReportes(std::string title, std::string texToExit, int numOptions,
                  AppRepositories& repos);

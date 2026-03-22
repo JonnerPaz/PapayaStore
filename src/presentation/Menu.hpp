@@ -1,8 +1,17 @@
 #pragma once
 #include "domain/constants.hpp"
+#include "domain/entities/ArchivoStats.hpp"
+#include "domain/entities/cliente/Cliente.entity.hpp"
+#include "domain/entities/producto/producto.entity.hpp"
+#include "domain/entities/proveedor/Proveedor.entity.hpp"
+#include "domain/entities/transaccion/transaccion.entity.hpp"
+#include "domain/repositories/AppRepositories.hpp"
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <string>
+#include <type_traits>
+#include <variant>
 
 using namespace Constants::ASCII_CODES;
 
@@ -18,8 +27,47 @@ class Menu {
     std::string texToExit = "Volver al menú principal";
     OpcionMenu options[5];
 
+    std::variant<ArchivoStats, std::string> leerHeader(const fs::path& path) const {
+        try {
+            ArchivoStats header = {};
+            std::ifstream archivo(path, std::ios::binary | std::ios::in);
+            if (!archivo.is_open()) {
+                return "Error al abrir el archivo: " + path.string();
+            }
+
+            archivo.seekg(0);
+            archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoStats));
+            if (!archivo) {
+                return "Error al leer el header del archivo: " + path.string();
+            }
+
+            return header;
+        } catch (const std::exception& error) {
+            return "Error al leer el archivo " + path.string() + ": " + error.what();
+        }
+    }
+
   protected:
+    AppRepositories& repositories;
+
+    explicit Menu(AppRepositories& repositories) : numOptions(0), repositories(repositories) {
+    }
+
     virtual void showMenu() = 0;
+
+    template <typename T> std::variant<ArchivoStats, std::string> obtenerEntidadHeader() const {
+        if constexpr (std::is_same_v<T, Producto>) {
+            return leerHeader(Constants::PATHS::PRODUCTOS_PATH);
+        } else if constexpr (std::is_same_v<T, Proveedor>) {
+            return leerHeader(Constants::PATHS::PROVEEDORES_PATH);
+        } else if constexpr (std::is_same_v<T, Cliente>) {
+            return leerHeader(Constants::PATHS::CLIENTES_PATH);
+        } else if constexpr (std::is_same_v<T, Transaccion>) {
+            return leerHeader(Constants::PATHS::TRANSACCIONES_PATH);
+        }
+
+        return "Entidad no soportada para obtener header.";
+    }
 
     void drawMenu() {
         int option;
@@ -88,5 +136,5 @@ class Menu {
     }
 
   public:
-    virtual ~Menu();
+    virtual ~Menu() = default;
 };

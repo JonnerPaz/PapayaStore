@@ -4,7 +4,7 @@ using std::string;
 
 MenuReportes::MenuReportes(string title, string texToExit, int numOptions,
                            AppRepositories& r)
-    : Menu(), repos(r)
+    : Menu(r)
 {
     this->setTitle("Reportes");
     this->setTexToExit("Salir");
@@ -13,22 +13,22 @@ MenuReportes::MenuReportes(string title, string texToExit, int numOptions,
 
 void MenuReportes::verificarIntegridadReferencial()
 {
-    this->repos.admin.verificarIntegridadReferencial();
+    this->repositories.admin.verificarIntegridadReferencial();
 }
 
 void MenuReportes::crearBackup()
 {
-    this->repos.admin.crearBackup();
+    this->repositories.admin.crearBackup();
 }
 
 void MenuReportes::reporteStockCritico()
 {
-    this->repos.admin.reporteStockCritico();
+    this->repositories.admin.reporteStockCritico();
 }
 
 void MenuReportes::reporteHistorialCliente()
 {
-    this->repos.admin.reporteHistorialCliente();
+    this->repositories.admin.reporteHistorialCliente();
 }
 
 void MenuReportes::mostrarResumenTienda()

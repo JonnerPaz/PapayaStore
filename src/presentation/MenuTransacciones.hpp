@@ -4,7 +4,7 @@
 class MenuTransacciones : public Menu
 {
    public:
-    MenuTransacciones() : Menu()
+    explicit MenuTransacciones(AppRepositories& repositories) : Menu(repositories)
     {
         this->setTitle("Gestión de Transacciones");
         this->setTexToExit("Salir");

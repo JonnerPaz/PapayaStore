@@ -4,7 +4,7 @@
 class MenuProveedores : public Menu
 {
    public:
-    MenuProveedores() : Menu()
+    explicit MenuProveedores(AppRepositories& repositories) : Menu(repositories)
     {
         this->setTitle("Gestión de Proveedores");
         this->setTexToExit("Salir");
