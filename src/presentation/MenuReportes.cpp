@@ -2,38 +2,51 @@
 
 using std::string;
 
-MenuReportes::MenuReportes(string title, string texToExit, int numOptions, DB& dbService)
-    : Menu(), backupService(dbService) {
+MenuReportes::MenuReportes(string title, string texToExit, int numOptions,
+                           AppRepositories& r)
+    : Menu(), repos(r)
+{
     this->setTitle("Reportes");
     this->setTexToExit("Salir");
     this->setNumOptions(3);
 }
 
-void MenuReportes::verificarIntegridadReferencial() {
-    this->backupService.verificarIntegridadReferencial();
+void MenuReportes::verificarIntegridadReferencial()
+{
+    this->repos.admin.verificarIntegridadReferencial();
 }
 
-void MenuReportes::crearBackup() {
-    this->backupService.crearBackup();
+void MenuReportes::crearBackup()
+{
+    this->repos.admin.crearBackup();
 }
 
-void MenuReportes::reporteStockCritico() {
-    this->backupService.reporteStockCritico();
+void MenuReportes::reporteStockCritico()
+{
+    this->repos.admin.reporteStockCritico();
 }
 
-void MenuReportes::reporteHistorialCliente() {
-    this->backupService.reporteHistorialCliente();
+void MenuReportes::reporteHistorialCliente()
+{
+    this->repos.admin.reporteHistorialCliente();
 }
 
-void MenuReportes::mostrarResumenTienda() {
-    // this->backupService.mostrarResumenTienda();
+void MenuReportes::mostrarResumenTienda()
+{
+    // this->repos.admin.mostrarResumenTienda();
 }
 
-void MenuReportes::showMenu() {
-    OpcionMenu options[] = {{"Integridad Referencial", verificarIntegridadReferencial},
-                            {"Crear Backup", crearBackup},
-                            {"Productos con stock crítico", reporteStockCritico},
-                            {"Historial de Cliente", reporteHistorialCliente},
-                            {"Resumen de Tienda", mostrarResumenTienda}};
+void MenuReportes::showMenu()
+{
+    setNumOptions(5);
+    setOption(0, "Integridad Referencial",
+              [this]() { this->verificarIntegridadReferencial(); });
+    setOption(1, "Crear Backup", [this]() { this->crearBackup(); });
+    setOption(2, "Productos con stock crítico",
+              [this]() { this->reporteStockCritico(); });
+    setOption(3, "Historial de Cliente",
+              [this]() { this->reporteHistorialCliente(); });
+    setOption(4, "Resumen de Tienda",
+              [this]() { this->mostrarResumenTienda(); });
     drawMenu();
 }

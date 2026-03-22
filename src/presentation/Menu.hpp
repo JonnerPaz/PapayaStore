@@ -1,5 +1,6 @@
 #pragma once
 #include "domain/constants.hpp"
+#include <functional>
 #include <iostream>
 #include <string>
 
@@ -7,7 +8,7 @@ using namespace Constants::ASCII_CODES;
 
 struct OpcionMenu {
     const char* descripcion;
-    void (*accion)();
+    std::function<void()> accion;
 };
 
 class Menu {
@@ -77,6 +78,13 @@ class Menu {
 
     void setNumOptions(int numOptions) {
         this->numOptions = numOptions;
+    }
+
+    void setOption(int index, const char* desc, std::function<void()> act) {
+        if (index >= 0 && index < 5) {
+            this->options[index].descripcion = desc;
+            this->options[index].accion = act;
+        }
     }
 
   public:

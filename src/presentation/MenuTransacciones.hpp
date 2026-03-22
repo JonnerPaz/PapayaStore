@@ -1,9 +1,11 @@
 #pragma once
 #include "Menu.hpp"
 
-class MenuTransacciones : public Menu {
-  public:
-    MenuTransacciones() : Menu() {
+class MenuTransacciones : public Menu
+{
+   public:
+    MenuTransacciones() : Menu()
+    {
         this->setTitle("Gestión de Transacciones");
         this->setTexToExit("Salir");
         this->setNumOptions(5);
