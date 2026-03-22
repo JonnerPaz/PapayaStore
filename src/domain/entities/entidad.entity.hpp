@@ -2,39 +2,50 @@
 #include <chrono>
 #include <cstring>
 
+using std::chrono::system_clock;
+using std::chrono::time_point;
+
 class Entidad {
   private:
     int id;           // Identificador único (autoincremental)
     char nombre[100]; // Nombre de la entidad
     bool eliminado;   // Indica si la entidad ha sido eliminada
-    std::chrono::time_point<std::chrono::system_clock> fechaCreacion;
-    std::chrono::time_point<std::chrono::system_clock> fechaUltimaModificacion;
+    time_point<system_clock> fechaCreacion;
+    time_point<system_clock> fechaUltimaModificacion;
 
   protected:
-    Entidad(int id, const char* nombre) {
+    int setId(int id) {
         this->id = id;
-        strcpy(this->nombre, nombre);
-        this->eliminado = false;
-        this->fechaCreacion = std::chrono::system_clock::now();
-        this->fechaUltimaModificacion = std::chrono::system_clock::now();
+        return id;
     }
 
-    virtual int getId() {
+    int getId() {
         return this->id;
     }
 
-    virtual char* getNombre() {
+    char* getNombre() {
         return this->nombre;
     }
 
-    virtual char* setNombre(const char* nombre) {
+    char* setNombre(const char* nombre) {
         strcpy(this->nombre, nombre);
         return this->nombre;
     }
 
-    virtual bool setEliminado(bool eliminado) {
+    bool setEliminado(bool eliminado) {
         this->eliminado = eliminado;
         return true;
+    }
+
+    time_point<system_clock> setFechaCreacion(time_point<system_clock> fechaCreacion) {
+        this->fechaCreacion = fechaCreacion;
+        return fechaCreacion;
+    }
+
+    time_point<system_clock>
+    setFechaUltimaModificacion(time_point<system_clock> fechaUltimaModificacion) {
+        this->fechaUltimaModificacion = fechaUltimaModificacion;
+        return fechaUltimaModificacion;
     }
 
     void obtenerFechaActual(char* fecha) {
