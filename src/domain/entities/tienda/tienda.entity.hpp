@@ -1,10 +1,11 @@
-#include <ctime>
-#include <string.h>
+#include "domain/entities/entidad.entity.hpp"
+#include <chrono>
 
-class Tienda {
+using std::chrono::system_clock;
+using std::chrono::time_point;
+
+class Tienda : Entidad {
   private:
-    int id;
-    char nombre[100];
     char rif[20];
     int totalProductosActivos;
     int totalProveedoresActivos;
@@ -12,31 +13,12 @@ class Tienda {
     int totalTransaccionesActivas;
     float montoTotalVentas;
     float montoTotalCompras;
-    bool eliminado;
-    time_t fechaCreacion;
-    time_t fechaUltimaModificacion;
 
   public:
     Tienda(int id, const char* nombre, const char* rif, int totalProductosActivos,
-           int totalProveedoresActivos, bool eliminado = false, int totalClientesActivos = 0,
-           time_t fechaCreacion = time(nullptr), int montoTotalVentas = 0,
-           int montoTotalCompras = 0, int totalTransaccionesActivas = 0,
-           time_t fechaUltimaModificacion = time(nullptr)) {
-        this->id = id;
-        strncpy(this->nombre, nombre, 100);
-        strncpy(this->rif, rif, 20);
-        strncpy(this->rif, rif, 20);
-        this->totalProductosActivos = totalProductosActivos;
-        this->totalProveedoresActivos = totalProveedoresActivos;
-        this->totalClientesActivos = totalClientesActivos;
-        this->totalTransaccionesActivas = totalTransaccionesActivas;
-        this->montoTotalVentas = montoTotalVentas;
-        this->montoTotalCompras = montoTotalCompras;
-        this->eliminado = eliminado;
-        this->fechaCreacion = fechaCreacion;
-        this->fechaUltimaModificacion = fechaUltimaModificacion;
-    };
+           int totalProveedoresActivos, bool eliminado, int totalClientesActivos,
+           time_point<system_clock> fechaCreacion, int montoTotalVentas, int montoTotalCompras,
+           int totalTransaccionesActivas, time_point<system_clock> fechaUltimaModificacion);
 
-    void initTienda();
-    virtual void mostrarResumenTienda() = 0;
+    ~Tienda();
 };
