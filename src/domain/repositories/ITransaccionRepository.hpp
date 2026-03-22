@@ -1,4 +1,5 @@
 #pragma once
+#include "domain/entities/ArchivoStats.hpp"
 #include "domain/entities/transaccion/transaccion.entity.hpp"
 #include <string>
 #include <variant>
@@ -9,5 +10,6 @@ class ITransaccionRepository {
     virtual std::variant<bool, std::string> guardar(const Transaccion& entidad) = 0;
     virtual std::variant<bool, std::string> actualizar(int id, const Transaccion& entidad) = 0;
     virtual std::variant<bool, std::string> eliminarLogicamente(int id) = 0;
+    virtual std::variant<ArchivoStats, std::string> obtenerEstadisticas() = 0;
     virtual ~ITransaccionRepository() = default;
 };

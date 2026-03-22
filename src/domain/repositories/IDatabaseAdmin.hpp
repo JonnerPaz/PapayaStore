@@ -1,5 +1,8 @@
 #pragma once
 
+/**
+ * @brief - Clase para tareas administrativas del sistema
+ */
 class IDatabaseAdmin {
   public:
     virtual void crearBackup() = 0;

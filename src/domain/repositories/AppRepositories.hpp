@@ -5,6 +5,9 @@
 #include "IProveedorRepository.hpp"
 #include "ITransaccionRepository.hpp"
 
+/**
+ * @brief - Dependecy injection de repositorios en el sistema
+ */
 struct AppRepositories {
     IProductoRepository& productos;
     IClienteRepository& clientes;
