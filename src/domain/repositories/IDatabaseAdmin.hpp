@@ -1,15 +1,11 @@
 #pragma once
 
-class DB {
-
+class IDatabaseAdmin {
   public:
     virtual void crearBackup() = 0;
     virtual void verificarIntegridadReferencial() = 0;
-    virtual void leerEntidad() = 0;
-    virtual void escribirEntidad() = 0;
-    virtual void guardarEntidad() = 0;
-
     virtual void reporteStockCritico() = 0;
     virtual void reporteHistorialCliente() = 0;
-    virtual ~DB() = default;
+    virtual void sincronizarContadoresTienda() = 0;
+    virtual ~IDatabaseAdmin() = default;
 };
