@@ -13,13 +13,13 @@ class Entidad {
     time_point<system_clock> fechaCreacion;
     time_point<system_clock> fechaUltimaModificacion;
 
-  protected:
+  public:
     int setId(int id) {
         this->id = id;
         return id;
     }
 
-    int getId() {
+    int getId() const {
         return this->id;
     }
 
@@ -35,6 +35,10 @@ class Entidad {
     bool setEliminado(bool eliminado) {
         this->eliminado = eliminado;
         return true;
+    }
+
+    bool isEliminado() const {
+        return this->eliminado;
     }
 
     time_point<system_clock> setFechaCreacion(time_point<system_clock> fechaCreacion) {
@@ -66,6 +70,5 @@ class Entidad {
         fecha[10] = '\0'; // Aseguramos el null-termination por si acaso
     }
 
-  public:
-    virtual ~Entidad() = default;
+    ~Entidad() = default;
 };

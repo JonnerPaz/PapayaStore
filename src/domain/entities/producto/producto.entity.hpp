@@ -29,5 +29,5 @@ class Producto : public Entidad {
     Producto listarProductos();
     Producto eliminarProducto(int id);
 
-    ~Producto();
+    ~Producto() = default;
 };

@@ -4,7 +4,7 @@
 enum TipoDeTransaccion { COMPRA, VENTA };
 
 class Transaccion {
-  private:
+  public:
     int id;                 // Identificador único (autoincremental)
     TipoDeTransaccion tipo; // COMPRA o VENTA
     int idRelacionado;      // ID del proveedor (compra) o cliente (venta)

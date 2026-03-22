@@ -20,5 +20,5 @@ class Tienda : Entidad {
            time_point<system_clock> fechaCreacion, int montoTotalVentas, int montoTotalCompras,
            int totalTransaccionesActivas, time_point<system_clock> fechaUltimaModificacion);
 
-    ~Tienda();
+    ~Tienda() = default;
 };

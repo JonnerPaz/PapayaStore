@@ -3,7 +3,7 @@
 #include <chrono>
 
 class Proveedor : public Usuario {
-  private:
+  public:
     int id;                 // Identificador único (autoincremental)
     char nombre[100];       // Nombre del proveedor
     char rif[20];           // RIF o identificación fiscal

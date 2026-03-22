@@ -1,5 +1,6 @@
 #pragma once
 #include "entidad.entity.hpp"
+#include <sstream>
 
 class Usuario : public Entidad {
   private:
@@ -63,17 +64,17 @@ class Usuario : public Entidad {
     }
 
   protected:
-    virtual char* getTelefono() {
+    char* getTelefono() {
         return this->telefono;
     }
 
-    virtual int setTelefono(char* telefono);
+    int setTelefono(char* telefono);
 
-    virtual char* getEmail() {
+    char* getEmail() {
         return this->email;
     }
 
-    virtual int setEmail(char* email) {
+    int setEmail(char* email) {
         if (!validarEmail(email)) {
             return 1;
         }
@@ -82,24 +83,24 @@ class Usuario : public Entidad {
         return 0;
     }
 
-    virtual char* getDireccion() {
+    char* getDireccion() {
         return this->direccion;
     }
 
-    virtual char* setDireccion(char* direccion);
+    char* setDireccion(char* direccion);
 
-    virtual char* getFechaRegistro() {
+    char* getFechaRegistro() {
         return this->fechaRegistro;
     }
 
-    virtual int getCantidad() {
+    int getCantidad() {
         return this->cantidad;
     };
 
-    virtual int* getHistorialIds() {
+    int* getHistorialIds() {
         return this->historialIds;
     }
 
   public:
-    virtual ~Usuario() = default;
+    ~Usuario() = default;
 };
