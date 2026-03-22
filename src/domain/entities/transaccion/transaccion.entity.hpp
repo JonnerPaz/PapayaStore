@@ -1,11 +1,11 @@
 #pragma once
+#include "domain/entities/entidad.entity.hpp"
 #include <chrono>
 
 enum TipoDeTransaccion { COMPRA, VENTA };
 
-class Transaccion {
+class Transaccion : Entidad {
   public:
-    int id;                 // Identificador único (autoincremental)
     TipoDeTransaccion tipo; // COMPRA o VENTA
     int idRelacionado;      // ID del proveedor (compra) o cliente (venta)
     float total;            // cantidad * precioUnitario
@@ -18,9 +18,6 @@ class Transaccion {
     float preciosUnitarios[100];  // Precios unitarios de cada producto
     int cantidadTiposDeProductos; // Cuantos elementos de los arrays anteriores
                                   // se están usando
-
-    // metadata
-    bool eliminado;
     std::chrono::time_point<std::chrono::system_clock> fechaCreacion;
     std::chrono::time_point<std::chrono::system_clock> fechaUltimaModificacion;
 };

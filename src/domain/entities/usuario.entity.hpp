@@ -68,7 +68,10 @@ class Usuario : public Entidad {
         return this->telefono;
     }
 
-    int setTelefono(char* telefono);
+    int setTelefono(char* telefono) {
+        strcpy(this->telefono, telefono);
+        return 0;
+    }
 
     char* getEmail() {
         return this->email;
@@ -87,7 +90,10 @@ class Usuario : public Entidad {
         return this->direccion;
     }
 
-    char* setDireccion(char* direccion);
+    char* setDireccion(char* direccion) {
+        strcpy(this->direccion, direccion);
+        return this->direccion;
+    }
 
     char* getFechaRegistro() {
         return this->fechaRegistro;
