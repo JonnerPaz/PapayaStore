@@ -1,7 +1,11 @@
 #include "presentation/MenuClientes.hpp"
+#include "presentation/Menu.hpp"
 
-// MenuClientes::MenuClientes() : Menu() {
-// }
+MenuClientes::MenuClientes(string title, string texToExit, int numOptions) : Menu() {
+    this->setTitle(title);
+    this->setTexToExit(texToExit);
+    this->setNumOptions(numOptions);
+}
 
 void MenuClientes::showMenu() {
     OpcionMenu options[] = {{"Crear Cliente", crearCliente},
@@ -9,7 +13,7 @@ void MenuClientes::showMenu() {
                             {"Actualizar Cliente", actualizarCliente},
                             {"Listar Clientes", listarClientes},
                             {"Eliminar Cliente", eliminarCliente}};
-    Menu::drawMenu("Gestión de Clientes", options, 5);
+    Menu::drawMenu();
 }
 
 MenuClientes::~MenuClientes() {

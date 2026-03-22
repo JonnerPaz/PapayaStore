@@ -1,14 +1,14 @@
 #pragma once
 #include "Menu.hpp"
+#include "domain/datasource/DB.datasource.hpp"
+#include <string>
 
 class MenuReportes : public Menu {
-  public:
-    MenuReportes() : Menu() {
-        this->setTitle("Reportes");
-        this->setTexToExit("Salir");
-        this->setNumOptions(3);
-    }
+  private:
+    DB& backupService;
 
+  public:
+    MenuReportes(std::string title, std::string texToExit, int numOptions, DB& dbService);
     void verificarIntegridadReferencial();
     void crearBackup();
     void reporteStockCritico();

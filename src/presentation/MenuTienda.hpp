@@ -1,10 +1,11 @@
 #pragma once
 #include "Menu.hpp"
 
-class MenuTienda : Menu
-{
-   public:
-    void mostrarMenu() override;
-    void drawMenu(const char* title, OpcionMenu options[], int numOptions,
-                  const char* texToExit = "Volver al menú principal") override;
+class MenuTienda : Menu {
+  public:
+    void showMenu() override;
+    void drawMenu();
+    void mostrarMenuTienda();
+
+    void initLoop();
 };
