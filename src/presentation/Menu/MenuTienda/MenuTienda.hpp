@@ -1,9 +1,8 @@
 #pragma once
-#include "Menu.hpp"
+#include "presentation/Menu/Menu.hpp"
 
-class MenuTienda : Menu
-{
-   public:
+class MenuTienda : Menu {
+  public:
     void showMenu() override;
     void drawMenu();
     void mostrarMenuTienda();

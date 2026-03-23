@@ -1,14 +1,11 @@
 #pragma once
+#include "domain/repositories/AppRepositories.hpp"
+#include "presentation/Menu/Menu.hpp"
 #include <string>
 
-#include "Menu.hpp"
-#include "domain/repositories/AppRepositories.hpp"
-
-class MenuReportes : public Menu
-{
-   public:
-    MenuReportes(std::string title, std::string texToExit, int numOptions,
-                 AppRepositories& repos);
+class MenuReportes : public Menu {
+  public:
+    MenuReportes(std::string title, std::string texToExit, int numOptions, AppRepositories& repos);
     void verificarIntegridadReferencial();
     void crearBackup();
     void reporteStockCritico();

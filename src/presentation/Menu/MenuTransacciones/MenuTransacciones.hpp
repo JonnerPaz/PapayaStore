@@ -1,11 +1,9 @@
 #pragma once
-#include "Menu.hpp"
+#include "presentation/Menu/Menu.hpp"
 
-class MenuTransacciones : public Menu
-{
-   public:
-    explicit MenuTransacciones(AppRepositories& repositories) : Menu(repositories)
-    {
+class MenuTransacciones : public Menu {
+  public:
+    explicit MenuTransacciones(AppRepositories& repositories) : Menu(repositories) {
         this->setTitle("Gestión de Transacciones");
         this->setTexToExit("Salir");
         this->setNumOptions(5);

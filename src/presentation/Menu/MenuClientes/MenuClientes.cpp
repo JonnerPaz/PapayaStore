@@ -1,5 +1,5 @@
-#include "presentation/MenuClientes.hpp"
-#include "presentation/Menu.hpp"
+#include "MenuClientes.hpp"
+#include "presentation/Menu/Menu.hpp"
 #include <format>
 #include <iostream>
 #include <variant>
@@ -52,7 +52,7 @@ void MenuClientes::listarClientes() {
         auto result = repositories.clientes.leerPorId(id);
         if (std::holds_alternative<Cliente>(result)) {
             Cliente cliente = std::get<Cliente>(result);
-            if (!cliente.eliminado) {
+            if (!cliente.isEliminado()) {
                 std::cout << std::format("{:<5} | {:<20} | {:<15} | {:<15} | {:<25}\n", cliente.id,
                                          cliente.nombre, cliente.cedula, cliente.telefono,
                                          cliente.email);

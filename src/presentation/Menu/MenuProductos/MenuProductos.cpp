@@ -13,11 +13,12 @@ MenuProductos::MenuProductos(AppRepositories& repository) : Menu(repository) {
 
 bool MenuProductos::asignarOpcion(auto& opcion) {
     while (true) {
-        Utils::asignarPropiedadString("Ingrese el nombre del producto (q para cancelar): ", nombre);
+        CliUtils::asignarPropiedadString("Ingrese el nombre del producto (q para cancelar): ",
+                                         nombre);
         if (opcion[0] == 'q' && opcion[1] == '\0')
             return;
 
-        if (Utils::existeDuplicado<Producto>(opcion, &Producto::nombre)) {
+        if (CliUtils::existeDuplicado<Producto>(opcion, &Producto::nombre)) {
             std::cout << COLOR_RED << "Error: Ya existe un producto con ese nombre" << COLOR_RESET
                       << std::endl;
             continue;
@@ -53,11 +54,12 @@ void MenuProductos::crearProducto() {
     float precio;
 
     while (true) {
-        Utils::asignarPropiedadString("Ingrese el nombre del producto (q para cancelar): ", nombre);
+        CliUtils::asignarPropiedadString("Ingrese el nombre del producto (q para cancelar): ",
+                                         nombre);
         if (nombre[0] == 'q' && nombre[1] == '\0')
             return;
 
-        if (Utils::existeDuplicado<Producto>(Constants::PATHS::PRODUCTOS_PATH, nombre)) {
+        if (CliUtils::existeDuplicado<Producto>(Constants::PATHS::PRODUCTOS_PATH, nombre)) {
             std::cout << COLOR_RED << "Error: Ya existe un producto con ese nombre" << COLOR_RESET
                       << std::endl;
             continue;
@@ -66,7 +68,8 @@ void MenuProductos::crearProducto() {
     }
 
     while (true) {
-        Utils::asignarPropiedadString("Ingrese el código del producto (q para cancelar): ", codigo);
+        CliUtils::asignarPropiedadString("Ingrese el código del producto (q para cancelar): ",
+                                         codigo);
         if (codigo[0] == 'q' && codigo[1] == '\0')
             return;
 
@@ -84,16 +87,16 @@ void MenuProductos::crearProducto() {
         break;
     }
 
-    Utils::asignarPropiedadString("Ingrese la descripcion del producto (q para cancelar): ",
-                                  descripcion);
+    CliUtils::asignarPropiedadString("Ingrese la descripcion del producto (q para cancelar): ",
+                                     descripcion);
     if (descripcion[0] == 'q' && descripcion[1] == '\0')
         return;
 
-    Utils::asignarPropiedadNum("Ingrese el precio del producto: ", precio);
+    CliUtils::asignarPropiedadNum("Ingrese el precio del producto: ", precio);
 
-    Utils::asignarPropiedadNum("Ingrese el stock del producto: ", stock);
+    CliUtils::asignarPropiedadNum("Ingrese el stock del producto: ", stock);
 
-    Utils::asignarPropiedadNum("Ingrese el stock mínimo ideal del producto: ", stockMinimo);
+    CliUtils::asignarPropiedadNum("Ingrese el stock mínimo ideal del producto: ", stockMinimo);
 
     mostrarListaEntidades<Proveedor>("Proveedores", PROVEEDORES_PATH);
 
