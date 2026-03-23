@@ -6,6 +6,7 @@
 #include "domain/entities/proveedor/Proveedor.entity.hpp"
 #include "domain/entities/transaccion/transaccion.entity.hpp"
 #include "domain/repositories/AppRepositories.hpp"
+#include "presentation/CliUtils.hpp"
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -49,7 +50,6 @@ class Menu {
 
   protected:
     AppRepositories& repositories;
-
     explicit Menu(AppRepositories& repositories) : numOptions(0), repositories(repositories) {
     }
 

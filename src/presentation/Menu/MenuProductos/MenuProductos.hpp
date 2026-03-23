@@ -1,10 +1,12 @@
 #pragma once
 #include "domain/repositories/AppRepositories.hpp"
+#include "presentation/CliUtils.hpp"
 #include "presentation/Menu/Menu.hpp"
 
 class MenuProductos : public Menu {
   public:
-    explicit MenuProductos(AppRepositories& repository);
+    CliUtils utils;
+    explicit MenuProductos(AppRepositories& repository, CliUtils utils);
 
     void crearProducto();
     void buscarProducto();
@@ -13,5 +15,5 @@ class MenuProductos : public Menu {
     void eliminarProducto();
 
     void showMenu() override;
-    ~MenuProductos();
+    ~MenuProductos() override = default;
 };

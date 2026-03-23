@@ -34,6 +34,10 @@ class EntidadBase {
         return nombre;
     }
 
+    const char* getNombre() const {
+        return nombre;
+    }
+
     void setNombre(const char* nombre) {
         strcpy(this->nombre, nombre);
     }
