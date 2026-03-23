@@ -10,6 +10,20 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(${PROJECT_NAME}
     src/main.cpp
+    src/domain/entities/cliente/Cliente.entity.cpp
+    src/domain/entities/entidad.entity.cpp
+    src/domain/entities/producto/producto.entity.cpp
+    src/domain/entities/proveedor/Proveedor.entity.cpp
+    src/domain/entities/tienda/tienda.entity.cpp
+    src/domain/entities/transaccion/transaccion.entity.cpp
+    src/infrastructure/datasource/FSDatabaseAdmin.cpp
+    src/presentation/CliUtils.cpp
+    src/presentation/Menu/MenuClientes/MenuClientes.cpp
+    src/presentation/Menu/MenuProductos/MenuProductos.cpp
+    src/presentation/Menu/MenuProveedores/MenuProveedores.cpp
+    src/presentation/Menu/MenuReportes/MenuReportes.cpp
+    src/presentation/Menu/MenuTienda/MenuTienda.cpp
+    src/presentation/Menu/MenuTransacciones/MenuTransacciones.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
