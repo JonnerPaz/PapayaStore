@@ -5,7 +5,7 @@
 using std::chrono::system_clock;
 using std::chrono::time_point;
 
-class Entidad {
+class EntidadBase {
   protected:
     int id;           // Identificador único (autoincremental)
     char nombre[100]; // Nombre de la entidad
@@ -14,8 +14,8 @@ class Entidad {
     time_point<system_clock> fechaUltimaModificacion;
 
   public:
-    Entidad(int id, const char* nombre, bool eliminado, time_point<system_clock> fechaCreacion,
-            time_point<system_clock> fechaUltimaModificacion);
+    EntidadBase(int id, const char* nombre, bool eliminado, time_point<system_clock> fechaCreacion,
+                time_point<system_clock> fechaUltimaModificacion);
 
     time_point<system_clock> setFechaCreacion(time_point<system_clock> fechaCreacion) {
         this->fechaCreacion = fechaCreacion;
@@ -70,5 +70,5 @@ class Entidad {
         fecha[10] = '\0'; // Aseguramos el null-termination por si acaso
     }
 
-    ~Entidad() = default;
+    virtual ~EntidadBase() = 0;
 };
