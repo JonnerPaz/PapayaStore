@@ -4,7 +4,7 @@
 
 enum TipoDeTransaccion { COMPRA, VENTA };
 
-class Transaccion : Entidad {
+class Transaccion : public Entidad {
   public:
     TipoDeTransaccion tipo; // COMPRA o VENTA
     int idRelacionado;      // ID del proveedor (compra) o cliente (venta)

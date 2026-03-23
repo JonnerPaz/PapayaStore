@@ -12,7 +12,7 @@ template <> struct EntityTraits<Producto> {
     }
 
     static bool isDeleted(const Producto& p) {
-        return p.isEliminado();
+        return p.getEliminado();
     }
 
     static void setDeleted(Producto& p, bool val) {
@@ -22,42 +22,42 @@ template <> struct EntityTraits<Producto> {
 
 template <> struct EntityTraits<Cliente> {
     static int getId(const Cliente& c) {
-        return c.id;
+        return c.getId();
     }
 
     static bool isDeleted(const Cliente& c) {
-        return c.eliminado;
+        return c.getEliminado();
     }
 
     static void setDeleted(Cliente& c, bool val) {
-        c.eliminado = val;
+        c.setEliminado(val);
     }
 };
 
 template <> struct EntityTraits<Proveedor> {
     static int getId(const Proveedor& p) {
-        return p.id;
+        return p.getId();
     }
 
     static bool isDeleted(const Proveedor& p) {
-        return p.eliminado;
+        return p.getEliminado();
     }
 
     static void setDeleted(Proveedor& p, bool val) {
-        p.eliminado = val;
+        p.setEliminado(val);
     }
 };
 
 template <> struct EntityTraits<Transaccion> {
     static int getId(const Transaccion& t) {
-        return t.id;
+        return t.getId();
     }
 
     static bool isDeleted(const Transaccion& t) {
-        return t.eliminado;
+        return t.getEliminado();
     }
 
     static void setDeleted(Transaccion& t, bool val) {
-        t.eliminado = val;
+        t.setEliminado(val);
     }
 };

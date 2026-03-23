@@ -1,7 +1,7 @@
 #pragma once
+#include "domain/HeaderFile.hpp"
 #include "domain/entities/ArchivoStats.hpp"
 #include "infrastructure/datasource/EntityTraits.hpp"
-#include "presentation/HeaderFile.hpp"
 #include <filesystem>
 #include <fstream>
 #include <string>
