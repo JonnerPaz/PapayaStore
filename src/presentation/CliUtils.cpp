@@ -1,7 +1,5 @@
 #include "CliUtils.hpp"
 #include "domain/constants.hpp"
-#include "domain/entities/ArchivoStats.hpp"
-#include <fstream>
 #include <iostream>
 #include <string>
 
@@ -98,37 +96,4 @@ void CliUtils::asignarPropiedadNum(const char* msg, AsignarNum auto& prop) {
                   << std::endl;
     }
     std::cout << std::endl;
-}
-
-template <size_t N> void CliUtils::asignarPropiedadString(const char* msg, char (&prop)[N]) {
-    std::cout << COLOR_YELLOW << msg << COLOR_RESET;
-    if (std::cin.peek() == '\n') {
-        std::cin.ignore();
-    }
-
-    std::cin.getline(prop, N);
-
-    if (std::cin.fail()) {
-        std::cin.clear();
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    }
-    std::cout << std::endl;
-}
-
-template <typename T, size_t N>
-bool CliUtils::existeDuplicado(const fs::path& path, const char* valorBusqueda) {
-    std::ifstream archivo(path, std::ios::binary);
-    if (!archivo.is_open())
-        return false;
-
-    ArchivoStats header;
-    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoStats));
-
-    T entidad;
-    while (archivo.read(reinterpret_cast<char*>(&entidad), sizeof(T))) {
-        if (!entidad.eliminado && strcmp(entidad.*propiedad, valorBusqueda) == 0) {
-            return true;
-        }
-    }
-    return false;
 }
