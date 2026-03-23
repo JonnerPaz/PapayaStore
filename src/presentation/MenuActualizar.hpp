@@ -1,7 +1,7 @@
 #pragma once
-#include "Menu.hpp"
+#include "presentation/Menu/Menu.hpp"
 
-class MenuActualizar : Menu {
+class MenuActualizar : public Menu {
   public:
     void mostrarMenu();
     void drawMenu(const char* title, OpcionMenu options[], int numOptions,

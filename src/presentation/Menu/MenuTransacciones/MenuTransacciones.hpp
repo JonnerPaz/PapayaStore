@@ -16,5 +16,5 @@ class MenuTransacciones : public Menu {
     void cancelarTransaccion();
 
     void showMenu() override;
-    ~MenuTransacciones();
+    ~MenuTransacciones() override = default;
 };

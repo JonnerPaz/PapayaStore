@@ -16,5 +16,5 @@ class MenuProveedores : public Menu {
     void eliminarProveedor();
 
     void showMenu() override;
-    ~MenuProveedores();
+    ~MenuProveedores() override = default;
 };
