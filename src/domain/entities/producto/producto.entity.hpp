@@ -5,7 +5,7 @@
 #include <string>
 #include <variant>
 
-class Producto : public Entidad {
+class Producto : public EntidadBase {
   private:
     char codigo[20];        // Código del producto (ej: "PROD-001")
     char descripcion[200];  // Descripción del producto
@@ -226,7 +226,8 @@ class ProductoBuilder {
         if (idProveedor <= 0)
             return "ID de proveedor inválido: debe ser mayor a 0.";
 
-        Producto producto(id, nombre, codigo, descripcion);
+        const auto now = std::chrono::system_clock::now();
+        Producto producto(id, nombre, codigo, descripcion, false, now, now);
         producto.setPrecio(precio);
         producto.setStock(stock);
         producto.setIdProveedor(idProveedor);
