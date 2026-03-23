@@ -4,8 +4,9 @@ using std::string;
 
 MenuReportes::MenuReportes(string title, string texToExit, int numOptions, AppRepositories& r)
     : Menu(r) {
-    this->setTitle("Reportes");
-    this->setTexToExit("Salir");
+    this->setTitle(title);
+    this->setTexToExit(texToExit);
+    this->setNumOptions(numOptions);
 }
 
 void MenuReportes::verificarIntegridadReferencial() {
