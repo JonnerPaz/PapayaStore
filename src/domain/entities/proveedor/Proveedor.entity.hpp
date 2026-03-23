@@ -2,7 +2,7 @@
 #include "domain/entities/entidad.entity.hpp"
 #include <chrono>
 
-class Proveedor : public Entidad {
+class Proveedor : public EntidadBase {
   private:
     char rif[20]; // RIF o identificación fiscal
     int productosIds[100];

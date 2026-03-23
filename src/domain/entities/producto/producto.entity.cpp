@@ -11,7 +11,7 @@ using namespace Constants::PATHS;
 Producto::Producto(int id, const char* nombre, const std::string& codigo, const char* descripcion,
                    bool eliminado, time_point<system_clock> fechaCreacion,
                    time_point<system_clock> fechaUltimaModificacion)
-    : Entidad(id, nombre, eliminado, fechaCreacion, fechaUltimaModificacion) {
+    : EntidadBase(id, nombre, eliminado, fechaCreacion, fechaUltimaModificacion) {
     this->setId(id);
     this->setNombre(nombre);
     strncpy(this->codigo, codigo.c_str(), 20);

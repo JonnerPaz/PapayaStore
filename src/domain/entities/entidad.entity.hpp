@@ -72,3 +72,5 @@ class EntidadBase {
 
     virtual ~EntidadBase() = 0;
 };
+
+using Entidad = EntidadBase;
