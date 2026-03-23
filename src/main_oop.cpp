@@ -9,6 +9,9 @@
 
 namespace fs = std::filesystem;
 
+// Legacy bridge points while migration is in progress.
+void menuProductos();
+
 namespace Bootstrap {
 
 enum class MainOption {
@@ -100,7 +103,8 @@ void printMainMenu() {
 void dispatchOption(MainOption option) {
     switch (option) {
     case MainOption::Productos:
-        std::cout << "Modulo Productos pendiente de conexion\n";
+        std::cout << "Abriendo modulo Productos (legacy bridge)\n";
+        ::menuProductos();
         break;
     case MainOption::Proveedores:
         std::cout << "Modulo Proveedores pendiente de conexion\n";
@@ -129,7 +133,7 @@ void dispatchOption(MainOption option) {
 
 void runMainLoop() {
     if (!bootstrapStorage()) {
-        std::cout << "[OOP] Error inicializando almacenamiento base\n";
+        std::cout << "Error inicializando almacenamiento base\n";
         return;
     }
 

@@ -3239,18 +3239,18 @@ void menuReportes() {
     drawMenu("Reportes", options, 5);
 }
 
+namespace Bootstrap {
+void printMigrationStatus();
+void runMainLoop();
+} // namespace Bootstrap
+
 int main() {
     setlocale(LC_ALL, "Spanish");
     inicializarTienda("Papaya Store", "J-123456789");
     sincronizarContadoresTienda();
 
-    OpcionMenu options[] = {{"Gestión de Productos", menuProductos},
-                            {"Gestión de Proveedores", menuProveedores},
-                            {"Gestión de Clientes", menuClientes},
-                            {"Gestión de Transacciones", menuTransacciones},
-                            {"Gestión de Reportes y seguridad", menuReportes}};
-
-    drawMenu("PAPAYA STORE - Menú Principal", options, 5, "Salir");
+    Bootstrap::printMigrationStatus();
+    Bootstrap::runMainLoop();
 
     return 0;
 }
