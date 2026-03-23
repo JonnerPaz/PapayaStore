@@ -1,5 +1,6 @@
 #pragma once
 #include <chrono>
+#include <cstring>
 
 using std::chrono::system_clock;
 using std::chrono::time_point;
@@ -14,11 +15,35 @@ class Entidad {
 
   public:
     Entidad(int id, const char* nombre, bool eliminado, time_point<system_clock> fechaCreacion,
-            time_point<system_clock> fechaUltimaModificacion) {};
+            time_point<system_clock> fechaUltimaModificacion);
 
     time_point<system_clock> setFechaCreacion(time_point<system_clock> fechaCreacion) {
         this->fechaCreacion = fechaCreacion;
         return fechaCreacion;
+    }
+
+    int getId() const {
+        return id;
+    }
+
+    void setId(int id) {
+        this->id = id;
+    }
+
+    char* getNombre() {
+        return nombre;
+    }
+
+    void setNombre(const char* nombre) {
+        strcpy(this->nombre, nombre);
+    }
+
+    bool getEliminado() const {
+        return eliminado;
+    }
+
+    void setEliminado(bool eliminado) {
+        this->eliminado = eliminado;
     }
 
     time_point<system_clock>
