@@ -7,8 +7,9 @@ Tienda::Tienda(int id, const char* nombre, const char* rif, int totalProductosAc
                int totalProveedoresActivos, bool eliminado, int totalClientesActivos,
                time_point<system_clock> fechaCreacion, int montoTotalVentas, int montoTotalCompras,
                int totalTransaccionesActivas, time_point<system_clock> fechaUltimaModificacion)
-    : Entidad(id, nombre, eliminado, fechaCreacion, fechaUltimaModificacion) {
+    : EntidadBase(id, nombre, eliminado, fechaCreacion, fechaUltimaModificacion) {
     strncpy(this->rif, rif, 20);
+    this->rif[19] = '\0';
 
     this->totalProductosActivos = totalProductosActivos;
     this->totalProveedoresActivos = totalProveedoresActivos;
@@ -16,11 +17,4 @@ Tienda::Tienda(int id, const char* nombre, const char* rif, int totalProductosAc
     this->totalTransaccionesActivas = totalTransaccionesActivas;
     this->montoTotalVentas = montoTotalVentas;
     this->montoTotalCompras = montoTotalCompras;
-
-    this->setId(id);
-    this->setNombre(nombre);
-    this->setNombre(nombre);
-    this->setEliminado(eliminado);
-    this->setFechaCreacion(fechaCreacion);
-    this->setFechaUltimaModificacion(fechaUltimaModificacion);
 }

@@ -1,6 +1,9 @@
 #pragma once
 #include "domain/entities/entidad.entity.hpp"
 #include <chrono>
+#include <cstring>
+#include <sstream>
+#include <string>
 
 class Proveedor : public EntidadBase {
   private:
@@ -70,7 +73,7 @@ class Proveedor : public EntidadBase {
         return this->telefono;
     }
 
-    int setTelefono(char* telefono) {
+    int setTelefono(const char* telefono) {
         strcpy(this->telefono, telefono);
         return 0;
     }
@@ -79,7 +82,7 @@ class Proveedor : public EntidadBase {
         return this->email;
     }
 
-    int setEmail(char* email) {
+    int setEmail(const char* email) {
         if (!validarEmail(email)) {
             return 1;
         }
@@ -92,7 +95,7 @@ class Proveedor : public EntidadBase {
         return this->direccion;
     }
 
-    char* setDireccion(char* direccion) {
+    char* setDireccion(const char* direccion) {
         strcpy(this->direccion, direccion);
         return this->direccion;
     }
@@ -110,10 +113,8 @@ class Proveedor : public EntidadBase {
     }
 
   public:
-    Proveedor(char* telefono, char* email, char* direccion, char* fechaRegistro, int id,
-              char* nombre, bool eliminado, time_point<system_clock> fechaCreacion,
+    Proveedor(const char* telefono, const char* email, const char* rif, const char* direccion,
+              const char* fechaRegistro, int id, const char* nombre, bool eliminado,
+              time_point<system_clock> fechaCreacion,
               time_point<system_clock> fechaUltimaModificacion);
-
-    std::chrono::time_point<std::chrono::system_clock> fechaCreacion;
-    std::chrono::time_point<std::chrono::system_clock> fechaUltimaModificacion;
 };

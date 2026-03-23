@@ -1,10 +1,12 @@
+#pragma once
 #include "domain/entities/entidad.entity.hpp"
 #include <chrono>
+#include <cstring>
 
 using std::chrono::system_clock;
 using std::chrono::time_point;
 
-class Tienda : Entidad {
+class Tienda : public EntidadBase {
   private:
     char rif[20];
     int totalProductosActivos;

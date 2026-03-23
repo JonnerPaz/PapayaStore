@@ -2,8 +2,10 @@
 #include "domain/entities/entidad.entity.hpp"
 #include <chrono>
 #include <cstring>
+#include <sstream>
+#include <string>
 
-class Cliente : public Entidad {
+class Cliente : public EntidadBase {
   private:
     char telefono[20];
     char email[100];
@@ -72,7 +74,7 @@ class Cliente : public Entidad {
         return this->telefono;
     }
 
-    int setTelefono(char* telefono) {
+    int setTelefono(const char* telefono) {
         strcpy(this->telefono, telefono);
         return 0;
     }
@@ -81,7 +83,7 @@ class Cliente : public Entidad {
         return this->email;
     }
 
-    int setEmail(char* email) {
+    int setEmail(const char* email) {
         if (!validarEmail(email)) {
             return 1;
         }
@@ -94,7 +96,7 @@ class Cliente : public Entidad {
         return this->direccion;
     }
 
-    char* setDireccion(char* direccion) {
+    char* setDireccion(const char* direccion) {
         strcpy(this->direccion, direccion);
         return this->direccion;
     }
@@ -113,10 +115,7 @@ class Cliente : public Entidad {
 
   public:
     Cliente(int id, const char* nombre, const char* cedula, const char* telefono, const char* email,
-            char* direccion, bool eliminado, char* fechaRegistro,
+            const char* direccion, bool eliminado, const char* fechaRegistro,
             time_point<system_clock> fechaCreacion,
             time_point<system_clock> fechaUltimaModificacion);
-
-    std::chrono::time_point<std::chrono::system_clock> fechaCreacion;
-    std::chrono::time_point<std::chrono::system_clock> fechaUltimaModificacion;
 };

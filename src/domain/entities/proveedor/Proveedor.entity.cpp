@@ -1,20 +1,18 @@
 #include "Proveedor.entity.hpp"
-#include "domain/entities/entidad.entity.hpp"
-#include <chrono>
 
 using std::chrono::system_clock;
 using std::chrono::time_point;
 
-Proveedor::Proveedor(char* telefono, char* email, char* direccion, char* fechaRegistro, int id,
-                     char* nombre, bool eliminado, time_point<system_clock> fechaCreacion,
+Proveedor::Proveedor(const char* telefono, const char* email, const char* rif,
+                     const char* direccion, const char* fechaRegistro, int id,
+                     const char* nombre, bool eliminado, time_point<system_clock> fechaCreacion,
                      time_point<system_clock> fechaUltimaModificacion)
     : EntidadBase(id, nombre, eliminado, fechaCreacion, fechaUltimaModificacion) {
-
-    this->setEliminado(eliminado);
-    this->setId(id);
-    this->setNombre(nombre);
-    this->setFechaCreacion(fechaCreacion);
     this->setTelefono(telefono);
     this->setEmail(email);
-    strcpy(this->rif, rif);
+    std::strncpy(this->rif, rif, sizeof(this->rif) - 1);
+    this->rif[sizeof(this->rif) - 1] = '\0';
+    this->setDireccion(direccion);
+    std::strncpy(this->fechaRegistro, fechaRegistro, sizeof(this->fechaRegistro) - 1);
+    this->fechaRegistro[sizeof(this->fechaRegistro) - 1] = '\0';
 }
