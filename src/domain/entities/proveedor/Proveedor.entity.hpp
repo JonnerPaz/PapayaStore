@@ -10,7 +10,9 @@ class Proveedor : public Usuario {
     int cantidadProductos;
 
   public:
-    Proveedor(int id, const char* nombre, const char* rif, const char* telefono, const char* email);
+    Proveedor(char* telefono, char* email, char* direccion, char* fechaRegistro, int id,
+              char* nombre, bool eliminado, time_point<system_clock> fechaCreacion,
+              time_point<system_clock> fechaUltimaModificacion);
 
     std::chrono::time_point<std::chrono::system_clock> fechaCreacion;
     std::chrono::time_point<std::chrono::system_clock> fechaUltimaModificacion;

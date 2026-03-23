@@ -71,23 +71,59 @@ class Producto : public Entidad {
         return fechaRegistro;
     }
 
+    void setId(int nuevoId) {
+        if (nuevoId < 0) {
+            // TODO: probar si esto funciona
+            throw std::invalid_argument("Id inválido: debe ser mayor o igual a 0.");
+        }
+        id = nuevoId;
+    }
+
+    void setNombre(const char* nuevoNombre) {
+        if (nuevoNombre == nullptr) {
+            // TODO: probar si esto funciona
+            throw std::invalid_argument("Nombre inválido: debe ser una cadena de caracteres.");
+        }
+        copiarCadenaSeguro(this->nombre, 50, nuevoNombre);
+    }
+
     void setPrecio(float nuevoPrecio) {
+        if (nuevoPrecio < 0) {
+            // TODO: probar si esto funciona
+            throw std::invalid_argument("Precio inválido: debe ser mayor o igual a 0.");
+        }
         precio = nuevoPrecio;
     }
 
     void setStock(int nuevoStock) {
+        if (nuevoStock < 0) {
+            // TODO: probar si esto funciona
+            throw std::invalid_argument("Stock inválido: debe ser mayor o igual a 0.");
+        }
         stock = nuevoStock;
     }
 
     void setIdProveedor(int nuevoIdProveedor) {
+        if (nuevoIdProveedor < 0) {
+            // TODO: probar si esto funciona
+            throw std::invalid_argument("IdProveedor inválido: debe ser mayor o igual a 0.");
+        }
         idProveedor = nuevoIdProveedor;
     }
 
     void setStockMinimo(int nuevoStockMinimo) {
+        if (nuevoStockMinimo < 0) {
+            // TODO: probar si esto funciona
+            throw std::invalid_argument("StockMinimo inválido: debe ser mayor o igual a 0.");
+        }
         stockMinimo = nuevoStockMinimo;
     }
 
     void setTotalVendido(int nuevoTotalVendido) {
+        if (nuevoTotalVendido < 0) {
+            // TODO: probar si esto funciona
+            throw std::invalid_argument("TotalVendido inválido: debe ser mayor o igual a 0.");
+        }
         totalVendido = nuevoTotalVendido;
     }
 

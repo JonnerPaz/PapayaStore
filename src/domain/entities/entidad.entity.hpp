@@ -1,12 +1,11 @@
 #pragma once
 #include <chrono>
-#include <cstring>
 
 using std::chrono::system_clock;
 using std::chrono::time_point;
 
 class Entidad {
-  private:
+  protected:
     int id;           // Identificador único (autoincremental)
     char nombre[100]; // Nombre de la entidad
     bool eliminado;   // Indica si la entidad ha sido eliminada
@@ -14,32 +13,8 @@ class Entidad {
     time_point<system_clock> fechaUltimaModificacion;
 
   public:
-    int setId(int id) {
-        this->id = id;
-        return id;
-    }
-
-    int getId() const {
-        return this->id;
-    }
-
-    char* getNombre() {
-        return this->nombre;
-    }
-
-    char* setNombre(const char* nombre) {
-        strcpy(this->nombre, nombre);
-        return this->nombre;
-    }
-
-    bool setEliminado(bool eliminado) {
-        this->eliminado = eliminado;
-        return true;
-    }
-
-    bool isEliminado() const {
-        return this->eliminado;
-    }
+    Entidad(int id, const char* nombre, bool eliminado, time_point<system_clock> fechaCreacion,
+            time_point<system_clock> fechaUltimaModificacion) {};
 
     time_point<system_clock> setFechaCreacion(time_point<system_clock> fechaCreacion) {
         this->fechaCreacion = fechaCreacion;

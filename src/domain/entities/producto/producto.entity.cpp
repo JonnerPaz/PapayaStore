@@ -22,15 +22,5 @@ Producto::Producto(int id, const char* nombre, const std::string& codigo, const 
     this->idProveedor = 0;
     this->stockMinimo = 0;
     this->totalVendido = 0;
-    this->setEliminado(false);
+    this->eliminado = false;
 }
-
-Producto Producto::crearProducto() {
-}
-
-enum Busqueda {
-    BusquedaId = '1',
-    BusquedaNombre = '2',
-    BusquedaMostrar = '3',
-    BusquedaCancelada = '0'
-};

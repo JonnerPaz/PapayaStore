@@ -1,6 +1,11 @@
 #pragma once
 #include "entidad.entity.hpp"
+#include <chrono>
+#include <cstring>
 #include <sstream>
+
+using std::chrono::system_clock;
+using std::chrono::time_point;
 
 class Usuario : public Entidad {
   private:
@@ -108,5 +113,10 @@ class Usuario : public Entidad {
     }
 
   public:
+    Usuario(char* telefono, char* email, char* direccion, char* fechaRegistro, int id, char* nombre,
+            bool eliminado, time_point<system_clock> fechaCreacion,
+            time_point<system_clock> fechaUltimaModificacion)
+        : Entidad(id, nombre, eliminado, fechaCreacion, fechaUltimaModificacion) {};
+
     ~Usuario() = default;
 };

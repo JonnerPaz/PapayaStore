@@ -4,6 +4,8 @@
 
 class Cliente : Usuario {
   public:
+    Cliente(int id, const char* nombre, const char* cedula, const char* telefono,
+            const char* email);
     char cedula[20]; // Cédula o RIF
     float totalCompras;
     int transaccionesIds[100];
