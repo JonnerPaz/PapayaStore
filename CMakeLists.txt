@@ -10,6 +10,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(${PROJECT_NAME}
     src/main.cpp
+    src/main_oop.cpp
     src/domain/entities/cliente/Cliente.entity.cpp
     src/domain/entities/entidad.entity.cpp
     src/domain/entities/producto/producto.entity.cpp
