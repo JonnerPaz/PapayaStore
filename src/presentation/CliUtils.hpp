@@ -1,9 +1,14 @@
 #pragma once
+#include "domain/constants.hpp"
+#include "domain/entities/ArchivoStats.hpp"
 #include <cstring>
 #include <filesystem>
-#include <limits.h>
+#include <fstream>
+#include <iostream>
+#include <limits>
 
 namespace fs = std::filesystem;
+using namespace Constants::ASCII_CODES;
 
 enum ListarPorPropiedad { PorId, PorNombre, PorAmbos };
 
@@ -30,8 +35,51 @@ class CliUtils {
 
     static void asignarPropiedadNum(const char* msg, AsignarNum auto& prop);
 
-    template <size_t N> static void asignarPropiedadString(const char* msg, char (&prop)[N]);
+    template <size_t N, typename Setter>
+    static void asignarPropiedadString(const char* msg, Setter setter) {
+        char prop[N];
 
-    template <typename T, size_t N>
-    static bool existeDuplicado(const fs::path& path, const char* valorBusqueda);
+        std::cout << COLOR_YELLOW << msg << " (q para salir): " << COLOR_RESET;
+        if (std::cin.peek() == '\n') {
+            std::cin.ignore();
+        }
+
+        std::cin.getline(prop, N);
+
+        if (std::cin.fail()) {
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+        setter(prop);
+    }
+
+    template <typename T, typename Getter>
+    static bool existeDuplicado(const fs::path& path, const char* valorBusqueda,
+                                Getter getPropiedad) {
+        if (valorBusqueda == nullptr)
+            return false;
+
+        std::ifstream archivo(path, std::ios::binary);
+        if (!archivo.is_open())
+            return false;
+
+        ArchivoStats header;
+        archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoStats));
+        if (!archivo)
+            return false;
+
+        T entidad;
+        while (archivo.read(reinterpret_cast<char*>(&entidad), sizeof(T))) {
+            if constexpr (requires(const T& e) { e.getEliminado(); }) {
+                if (entidad.getEliminado())
+                    continue;
+            }
+
+            const char* valor = getPropiedad(entidad);
+            if (valor != nullptr && std::strcmp(valor, valorBusqueda) == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
 };
