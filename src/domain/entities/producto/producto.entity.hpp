@@ -35,14 +35,9 @@ class Producto : public Entidad {
     }
 
   public:
-    Producto(int id, const char* nombre, const std::string& codigo, const char* descripcion);
-    // Metodos
-    Producto crearProducto();
-    Producto buscarProducto(int id);
-    Producto actualizarProducto(int id);
-    Producto actualizarStockProducto(int id);
-    Producto listarProductos();
-    Producto eliminarProducto(int id);
+    Producto(int id, const char* nombre, const std::string& codigo, const char* descripcion,
+             bool eliminado, time_point<system_clock> fechaCreacion,
+             time_point<system_clock> fechaUltimaModificacion);
 
     float getPrecio() const {
         return precio;
