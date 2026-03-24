@@ -87,7 +87,116 @@ MenuProductos::MenuProductos(AppRepositories& repository, CliUtils utils)
 }
 
 void MenuProductos::crearProducto() {
-    std::cout << "Crear producto (En desarrollo)" << std::endl;
+    auto proveedoresStatsResult = repositories.proveedores.obtenerEstadisticas();
+    if (std::holds_alternative<std::string>(proveedoresStatsResult)) {
+        std::cout << "Error: " << std::get<std::string>(proveedoresStatsResult) << std::endl;
+        return;
+    }
+
+    if (std::get<ArchivoStats>(proveedoresStatsResult).registrosActivos == 0) {
+        std::cout << "No hay proveedores registrados. Debe crear al menos uno "
+                     "primero."
+                  << std::endl;
+        return;
+    }
+
+    const std::string nombre = readLine("Ingrese el nombre del producto (q para cancelar): ");
+    if (nombre == "q" || nombre == "Q" || nombre.empty()) {
+        std::cout << "Creacion cancelada." << std::endl;
+        return;
+    }
+
+    const std::string codigo = readLine("Ingrese el codigo del producto (q para cancelar): ");
+    if (codigo == "q" || codigo == "Q" || codigo.empty()) {
+        std::cout << "Creacion cancelada." << std::endl;
+        return;
+    }
+
+    const std::string descripcion =
+        readLine("Ingrese la descripcion del producto (q para cancelar): ");
+    if (descripcion == "q" || descripcion == "Q" || descripcion.empty()) {
+        std::cout << "Creacion cancelada." << std::endl;
+        return;
+    }
+
+    float precio = 0.0f;
+    while (true) {
+        const std::string precioText = readLine("Ingrese el precio del producto: ");
+        if (parseNonNegativeFloat(precioText, precio)) {
+            break;
+        }
+        std::cout << "Precio invalido. Debe ser un numero mayor o igual a 0." << std::endl;
+    }
+
+    int stock = 0;
+    while (true) {
+        const std::string stockText = readLine("Ingrese el stock del producto: ");
+        if (parseNonNegativeInt(stockText, stock)) {
+            break;
+        }
+        std::cout << "Stock invalido. Debe ser un entero mayor o igual a 0." << std::endl;
+    }
+
+    int stockMinimo = 0;
+    while (true) {
+        const std::string stockMinText = readLine("Ingrese el stock minimo del producto: ");
+        if (parseNonNegativeInt(stockMinText, stockMinimo)) {
+            break;
+        }
+        std::cout << "Stock minimo invalido. Debe ser un entero mayor o igual "
+                     "a 0."
+                  << std::endl;
+    }
+
+    listarProductos();
+    const int idProveedor = utils.validarId("Ingrese el id del proveedor");
+    if (idProveedor <= 0) {
+        std::cout << "Creacion cancelada." << std::endl;
+        return;
+    }
+
+    auto proveedorResult = repositories.proveedores.leerPorId(idProveedor);
+    if (std::holds_alternative<std::string>(proveedorResult)) {
+        std::cout << "Proveedor invalido: " << std::get<std::string>(proveedorResult) << std::endl;
+        return;
+    }
+
+    auto productoStatsResult = repositories.productos.obtenerEstadisticas();
+    if (std::holds_alternative<std::string>(productoStatsResult)) {
+        std::cout << "Error: " << std::get<std::string>(productoStatsResult) << std::endl;
+        return;
+    }
+
+    const ArchivoStats productoStats = std::get<ArchivoStats>(productoStatsResult);
+    const int nuevoId = productoStats.proximoID;
+
+    const auto now = std::chrono::system_clock::now();
+    Producto producto(nuevoId, nombre.c_str(), codigo, descripcion.c_str(), false, now, now);
+    producto.setPrecio(precio);
+    producto.setStock(stock);
+    producto.setIdProveedor(idProveedor);
+    producto.setStockMinimo(stockMinimo);
+    producto.setTotalVendido(0);
+
+    char fechaActual[11];
+    producto.obtenerFechaActual(fechaActual);
+    producto.setFechaRegistro(fechaActual);
+
+    std::cout << std::format("Se creara el producto: {} ({})", producto.getNombre(),
+                             producto.getCodigo())
+              << std::endl;
+    if (!confirmAction("Confirma creacion? (s/n): ")) {
+        std::cout << "Creacion cancelada." << std::endl;
+        return;
+    }
+
+    auto saveResult = repositories.productos.guardar(producto);
+    if (std::holds_alternative<std::string>(saveResult)) {
+        std::cout << "Error al guardar: " << std::get<std::string>(saveResult) << std::endl;
+        return;
+    }
+
+    std::cout << "Producto creado con exito." << std::endl;
 }
 
 void MenuProductos::buscarProducto() {
