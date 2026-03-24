@@ -1,27 +1,30 @@
 #pragma once
-#include "domain/entities/entidad.entity.hpp"
+#include <chrono>
 #include <cstring>
 #include <ctime>
 #include <string>
 #include <variant>
 
+#include "domain/entities/entidad.entity.hpp"
+
+using namespace std::chrono;
+using std::chrono::system_clock;
+using std::chrono::time_point;
+
 class Producto : public EntidadBase {
   private:
-    char codigo[20];        // Código del producto (ej: "PROD-001")
-    char descripcion[200];  // Descripción del producto
-    char fechaRegistro[11]; // Formato: YYYY-MM-DD
-    float precio;           // Precio unitario
-    int stock;              // Cantidad en inventario
+    char codigo[20] = "";       // Código del producto (ej: "PROD-001")
+    char descripcion[200] = ""; // Descripción del producto
+    char fechaRegistro[11] = "";
+    float precio = 0.0f; // Precio unitario
+    int stock = 0;       // Cantidad en inventario
     // llaves foraneas
-    int idProveedor;
+    int idProveedor = 0;
     // estadisticas
-    int stockMinimo;
-    int totalVendido;
-    // metadata
-    time_t fechaCreacion;
-    time_t fechaUltimaModificacion;
+    int stockMinimo = 0;
+    int totalVendido = 0;
 
-    static void copiarCadenaSeguro(char* destino, size_t capacidad, const char* fuente) {
+    void copiarCadenaSeguro(char* destino, size_t capacidad, const char* fuente) {
         if (capacidad == 0)
             return;
 
@@ -35,6 +38,12 @@ class Producto : public EntidadBase {
     }
 
   public:
+    Producto()
+        : EntidadBase(0, "", false, std::chrono::system_clock::now(),
+                      std::chrono::system_clock::now()),
+          precio(0.0f), stock(0), idProveedor(0), stockMinimo(0), totalVendido(0), fechaRegistro{} {
+    }
+
     Producto(int id, const char* nombre, const std::string& codigo, const char* descripcion,
              bool eliminado, time_point<system_clock> fechaCreacion,
              time_point<system_clock> fechaUltimaModificacion);

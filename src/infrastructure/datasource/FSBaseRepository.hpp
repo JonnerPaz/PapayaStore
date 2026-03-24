@@ -1,25 +1,29 @@
 #pragma once
-#include "domain/HeaderFile.hpp"
-#include "domain/entities/ArchivoStats.hpp"
-#include "infrastructure/datasource/EntityTraits.hpp"
 #include <filesystem>
 #include <fstream>
 #include <string>
 #include <variant>
 
+#include "domain/HeaderFile.hpp"
+#include "domain/entities/ArchivoStats.hpp"
+#include "infrastructure/datasource/EntityTraits.hpp"
+
 namespace fs = std::filesystem;
 
-template <typename T> class FSBaseRepository {
-  protected:
+template <typename T>
+class FSBaseRepository
+{
+   protected:
     fs::path filePath;
 
-    FSBaseRepository(fs::path path) : filePath(path) {
-    }
+    FSBaseRepository(fs::path path) : filePath(path) {}
 
-    std::variant<ArchivoStats, std::string> obtenerEstadisticasTemplate() {
+    std::variant<ArchivoStats, std::string> obtenerEstadisticasTemplate()
+    {
         std::ifstream file(filePath, std::ios::binary);
         if (!file.is_open()) {
-            return "Error abriendo archivo para obtener estadísticas: " + filePath.string();
+            return "Error abriendo archivo para obtener estadísticas: " +
+                   filePath.string();
         }
 
         HeaderFile header;
@@ -33,11 +37,13 @@ template <typename T> class FSBaseRepository {
         stats.cantidadRegistros = header.cantidadRegistros;
         stats.proximoID = header.proximoID;
         stats.registrosActivos = header.registrosActivos;
+        stats.version = header.version;
 
         return stats;
     }
 
-    std::variant<T, std::string> leerTemplate(int id) {
+    std::variant<T, std::string> leerTemplate(int id)
+    {
         std::ifstream file(filePath, std::ios::binary);
         if (!file.is_open())
             return "Error abriendo archivo para lectura: " + filePath.string();
@@ -51,8 +57,7 @@ template <typename T> class FSBaseRepository {
 
         std::streampos offset = sizeof(HeaderFile) + ((id - 1) * sizeof(T));
         file.seekg(offset);
-        if (!file)
-            return "Error moviendo el puntero de lectura";
+        if (!file) return "Error moviendo el puntero de lectura";
 
         T registro;
         file.read(reinterpret_cast<char*>(&registro), sizeof(T));
@@ -64,10 +69,11 @@ template <typename T> class FSBaseRepository {
         return registro;
     }
 
-    std::variant<bool, std::string> actualizarTemplate(int id, const T& entidad) {
-        std::fstream file(filePath, std::ios::in | std::ios::out | std::ios::binary);
-        if (!file.is_open())
-            return "Error abriendo archivo para escritura";
+    std::variant<bool, std::string> actualizarTemplate(int id, const T& entidad)
+    {
+        std::fstream file(filePath,
+                          std::ios::in | std::ios::out | std::ios::binary);
+        if (!file.is_open()) return "Error abriendo archivo para escritura";
 
         HeaderFile header;
         file.read(reinterpret_cast<char*>(&header), sizeof(HeaderFile));
@@ -83,8 +89,10 @@ template <typename T> class FSBaseRepository {
         return true;
     }
 
-    std::variant<bool, std::string> guardarTemplate(const T& entidad) {
-        std::fstream file(filePath, std::ios::in | std::ios::out | std::ios::binary);
+    std::variant<bool, std::string> guardarTemplate(const T& entidad)
+    {
+        std::fstream file(filePath,
+                          std::ios::in | std::ios::out | std::ios::binary);
         if (!file.is_open()) {
             // create if not exist?
             // In initDB we create them. But let's be safe.
@@ -100,7 +108,8 @@ template <typename T> class FSBaseRepository {
         // its ID set correctly to nuevoId before calling guardarTemplate, or we
         // assume it has. Actually, we just write it at proximoID - 1.
 
-        std::streampos offset = sizeof(HeaderFile) + ((nuevoId - 1) * sizeof(T));
+        std::streampos offset =
+            sizeof(HeaderFile) + ((nuevoId - 1) * sizeof(T));
         file.seekp(offset);
         file.write(reinterpret_cast<const char*>(&entidad), sizeof(T));
 
@@ -114,7 +123,8 @@ template <typename T> class FSBaseRepository {
         return true;
     }
 
-    std::variant<bool, std::string> eliminarLogicamenteTemplate(int id) {
+    std::variant<bool, std::string> eliminarLogicamenteTemplate(int id)
+    {
         auto result = leerTemplate(id);
         if (std::holds_alternative<std::string>(result)) {
             return std::get<std::string>(result);
@@ -133,13 +143,15 @@ template <typename T> class FSBaseRepository {
         }
 
         // decrement active count
-        std::fstream file(filePath, std::ios::in | std::ios::out | std::ios::binary);
+        std::fstream file(filePath,
+                          std::ios::in | std::ios::out | std::ios::binary);
         if (file.is_open()) {
             HeaderFile header;
             file.read(reinterpret_cast<char*>(&header), sizeof(HeaderFile));
             header.registrosActivos--;
             file.seekp(0);
-            file.write(reinterpret_cast<const char*>(&header), sizeof(HeaderFile));
+            file.write(reinterpret_cast<const char*>(&header),
+                       sizeof(HeaderFile));
         }
 
         return true;

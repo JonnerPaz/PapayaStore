@@ -1,9 +1,10 @@
 #pragma once
-#include "domain/entities/entidad.entity.hpp"
 #include <chrono>
 #include <cstring>
 #include <sstream>
 #include <string>
+
+#include "domain/entities/entidad.entity.hpp"
 
 class Proveedor : public EntidadBase {
   private:
@@ -113,6 +114,21 @@ class Proveedor : public EntidadBase {
     }
 
   public:
+    Proveedor()
+        : EntidadBase(0, "", false, std::chrono::system_clock::now(),
+                      std::chrono::system_clock::now()),
+          cantidadProductos(0), cantidad(0) {
+        rif[0] = '\0';
+        telefono[0] = '\0';
+        email[0] = '\0';
+        direccion[0] = '\0';
+        fechaRegistro[0] = '\0';
+        for (int i = 0; i < 100; ++i) {
+            productosIds[i] = 0;
+            historialIds[i] = 0;
+        }
+    }
+
     Proveedor(const char* telefono, const char* email, const char* rif, const char* direccion,
               const char* fechaRegistro, int id, const char* nombre, bool eliminado,
               time_point<system_clock> fechaCreacion,

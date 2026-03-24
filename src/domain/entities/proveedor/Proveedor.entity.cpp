@@ -4,8 +4,8 @@ using std::chrono::system_clock;
 using std::chrono::time_point;
 
 Proveedor::Proveedor(const char* telefono, const char* email, const char* rif,
-                     const char* direccion, const char* fechaRegistro, int id,
-                     const char* nombre, bool eliminado, time_point<system_clock> fechaCreacion,
+                     const char* direccion, const char* fechaRegistro, int id, const char* nombre,
+                     bool eliminado, time_point<system_clock> fechaCreacion,
                      time_point<system_clock> fechaUltimaModificacion)
     : EntidadBase(id, nombre, eliminado, fechaCreacion, fechaUltimaModificacion) {
     this->setTelefono(telefono);
