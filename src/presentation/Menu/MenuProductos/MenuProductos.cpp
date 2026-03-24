@@ -354,6 +354,35 @@ void MenuProductos::listarProductos() {
 }
 
 void MenuProductos::eliminarProducto() {
+    const int id = utils.validarId("Ingrese el id del producto a eliminar");
+    if (id <= 0) {
+        std::cout << "Eliminacion cancelada." << std::endl;
+        return;
+    }
+
+    auto result = repositories.productos.leerPorId(id);
+    if (std::holds_alternative<std::string>(result)) {
+        std::cout << "Error: " << std::get<std::string>(result) << std::endl;
+        return;
+    }
+
+    const Producto& producto = std::get<Producto>(result);
+    std::cout << std::format("Producto a eliminar: {} ({})", producto.getNombre(),
+                             producto.getCodigo())
+              << std::endl;
+
+    if (!confirmAction("Confirma eliminacion? (s/n): ")) {
+        std::cout << "Eliminacion cancelada." << std::endl;
+        return;
+    }
+
+    auto deleteResult = repositories.productos.eliminarLogicamente(id);
+    if (std::holds_alternative<std::string>(deleteResult)) {
+        std::cout << "Error al eliminar: " << std::get<std::string>(deleteResult) << std::endl;
+        return;
+    }
+
+    std::cout << "Producto eliminado con exito." << std::endl;
 }
 
 // [this]() { crearProducto(); } lambda function (como pasar callback)
