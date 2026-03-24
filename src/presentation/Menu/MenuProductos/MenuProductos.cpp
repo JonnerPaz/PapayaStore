@@ -200,7 +200,26 @@ void MenuProductos::crearProducto() {
 }
 
 void MenuProductos::buscarProducto() {
-    std::cout << "Buscar producto (En desarrollo)" << std::endl;
+    const int id = utils.validarId("Ingrese el id del producto a buscar");
+    if (id <= 0) {
+        std::cout << "Busqueda cancelada." << std::endl;
+        return;
+    }
+
+    auto result = repositories.productos.leerPorId(id);
+    if (std::holds_alternative<std::string>(result)) {
+        std::cout << "Error: " << std::get<std::string>(result) << std::endl;
+        return;
+    }
+
+    const Producto& producto = std::get<Producto>(result);
+    std::cout << "Producto encontrado:" << std::endl;
+    std::cout << std::format("ID: {}", producto.getId()) << std::endl;
+    std::cout << std::format("Nombre: {}", producto.getNombre()) << std::endl;
+    std::cout << std::format("Codigo: {}", producto.getCodigo()) << std::endl;
+    std::cout << std::format("Descripcion: {}", producto.getDescripcion()) << std::endl;
+    std::cout << std::format("Precio: {:.2f}", producto.getPrecio()) << std::endl;
+    std::cout << std::format("Stock: {}", producto.getStock()) << std::endl;
 }
 
 void MenuProductos::actualizarProducto() {
