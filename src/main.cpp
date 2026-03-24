@@ -3239,6 +3239,11 @@ void menuReportes() {
     drawMenu("Reportes", options, 5);
 }
 
+void menuTienda() {
+    OpcionMenu options[] = {{"Resumen de Tienda", mostrarResumenTienda}};
+    drawMenu("Gestión de Tienda", options, 1);
+}
+
 namespace Bootstrap {
 void printMigrationStatus();
 void runMainLoop();

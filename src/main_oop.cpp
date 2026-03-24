@@ -1,16 +1,23 @@
+#include "domain/HeaderFile.hpp"
+#include "domain/constants.hpp"
 #include <array>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <limits>
 
-#include "domain/HeaderFile.hpp"
-#include "domain/constants.hpp"
+using namespace Constants::ASCII_CODES;
+using namespace Constants::PATHS;
 
 namespace fs = std::filesystem;
 
 // Legacy bridge points while migration is in progress.
 void menuProductos();
+void menuProveedores();
+void menuClientes();
+void menuTransacciones();
+void menuReportes();
+void menuTienda();
 
 namespace Bootstrap {
 
@@ -70,9 +77,7 @@ MainOption readOption() {
 
 bool bootstrapStorage() {
     const std::array<fs::path, 5> paths = {
-        Constants::PATHS::PRODUCTOS_PATH, Constants::PATHS::PROVEEDORES_PATH,
-        Constants::PATHS::CLIENTES_PATH,  Constants::PATHS::TRANSACCIONES_PATH,
-        Constants::PATHS::TIENDA_PATH,
+        PRODUCTOS_PATH, PROVEEDORES_PATH, CLIENTES_PATH, TRANSACCIONES_PATH, TIENDA_PATH,
     };
 
     bool ok = true;
@@ -103,23 +108,28 @@ void printMainMenu() {
 void dispatchOption(MainOption option) {
     switch (option) {
     case MainOption::Productos:
-        std::cout << "Abriendo modulo Productos (legacy bridge)\n";
+        std::cout << "Abriendo modulo Productos\n";
         ::menuProductos();
         break;
     case MainOption::Proveedores:
-        std::cout << "Modulo Proveedores pendiente de conexion\n";
+        std::cout << "Abriendo modulo Proveedores\n";
+        ::menuProveedores();
         break;
     case MainOption::Clientes:
-        std::cout << "Modulo Clientes pendiente de conexion\n";
+        std::cout << "Abriendo modulo Clientes\n";
+        ::menuClientes();
         break;
     case MainOption::Transacciones:
-        std::cout << "Modulo Transacciones pendiente de conexion\n";
+        std::cout << "Abriendo modulo Transacciones\n";
+        ::menuTransacciones();
         break;
     case MainOption::Reportes:
-        std::cout << "Modulo Reportes pendiente de conexion\n";
+        std::cout << "Abriendo modulo Reportes\n";
+        ::menuReportes();
         break;
     case MainOption::Tienda:
-        std::cout << "Modulo Tienda pendiente de conexion\n";
+        std::cout << "Abriendo modulo Tienda\n";
+        ::menuTienda();
         break;
     case MainOption::Salir:
         std::cout << "Saliendo del programa...\n";
