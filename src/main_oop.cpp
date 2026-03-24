@@ -1,5 +1,13 @@
 #include "domain/HeaderFile.hpp"
 #include "domain/constants.hpp"
+#include "domain/repositories/AppRepositories.hpp"
+#include "infrastructure/datasource/FSClienteRepository.hpp"
+#include "infrastructure/datasource/FSDatabaseAdmin.hpp"
+#include "infrastructure/datasource/FSProductoRepository.hpp"
+#include "infrastructure/datasource/FSProveedorRepository.hpp"
+#include "infrastructure/datasource/FSTransaccionRepository.hpp"
+#include "presentation/CliUtils.hpp"
+#include "presentation/Menu/MenuProductos/MenuProductos.hpp"
 #include <array>
 #include <filesystem>
 #include <fstream>
@@ -12,7 +20,6 @@ using namespace Constants::PATHS;
 namespace fs = std::filesystem;
 
 // Legacy bridge points while migration is in progress.
-void menuProductos();
 void menuProveedores();
 void menuClientes();
 void menuTransacciones();
@@ -33,6 +40,27 @@ enum class MainOption {
 };
 
 namespace {
+
+struct OopContext {
+    FSProductoRepository productos;
+    FSClienteRepository clientes;
+    FSProveedorRepository proveedores;
+    FSTransaccionRepository transacciones;
+    FSDatabaseAdmin admin;
+    AppRepositories repositories;
+    CliUtils cliUtils;
+    MenuProductos menuProductos;
+
+    OopContext()
+        : repositories{productos, clientes, proveedores, transacciones, admin},
+          menuProductos(repositories, cliUtils) {
+    }
+};
+
+OopContext& getOopContext() {
+    static OopContext context;
+    return context;
+}
 
 bool ensureFileWithHeader(const fs::path& path) {
     if (path.has_parent_path()) {
@@ -108,8 +136,7 @@ void printMainMenu() {
 void dispatchOption(MainOption option) {
     switch (option) {
     case MainOption::Productos:
-        std::cout << "Abriendo modulo Productos\n";
-        ::menuProductos();
+        getOopContext().menuProductos.showMenu();
         break;
     case MainOption::Proveedores:
         std::cout << "Abriendo modulo Proveedores\n";
