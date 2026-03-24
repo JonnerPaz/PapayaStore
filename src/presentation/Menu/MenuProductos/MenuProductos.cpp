@@ -223,7 +223,100 @@ void MenuProductos::buscarProducto() {
 }
 
 void MenuProductos::actualizarProducto() {
-    std::cout << "Actualizar producto (En desarrollo)" << std::endl;
+    const int id = utils.validarId("Ingrese el id del producto a actualizar");
+    if (id <= 0) {
+        std::cout << "Actualizacion cancelada." << std::endl;
+        return;
+    }
+
+    auto result = repositories.productos.leerPorId(id);
+    if (std::holds_alternative<std::string>(result)) {
+        std::cout << "Error: " << std::get<std::string>(result) << std::endl;
+        return;
+    }
+
+    Producto producto = std::get<Producto>(result);
+
+    const std::string nuevoNombre = readLine("Nuevo nombre (enter para mantener actual): ");
+    if (!nuevoNombre.empty()) {
+        producto.setNombre(nuevoNombre.c_str());
+    }
+
+    const std::string nuevoCodigo = readLine("Nuevo codigo (enter para mantener actual): ");
+    if (!nuevoCodigo.empty()) {
+        producto.setCodigo(nuevoCodigo.c_str());
+    }
+
+    const std::string nuevaDescripcion =
+        readLine("Nueva descripcion (enter para mantener actual): ");
+    if (!nuevaDescripcion.empty()) {
+        producto.setDescripcion(nuevaDescripcion.c_str());
+    }
+
+    const std::string nuevoPrecioText = readLine("Nuevo precio (enter para mantener actual): ");
+    float nuevoPrecio = 0.0f;
+    if (!nuevoPrecioText.empty()) {
+        if (!parseNonNegativeFloat(nuevoPrecioText, nuevoPrecio)) {
+            std::cout << "Precio invalido." << std::endl;
+            return;
+        }
+        producto.setPrecio(nuevoPrecio);
+    }
+
+    const std::string nuevoStockText = readLine("Nuevo stock (enter para mantener actual): ");
+    int nuevoStock = 0;
+    if (!nuevoStockText.empty()) {
+        if (!parseNonNegativeInt(nuevoStockText, nuevoStock)) {
+            std::cout << "Stock invalido." << std::endl;
+            return;
+        }
+        producto.setStock(nuevoStock);
+    }
+
+    const std::string nuevoStockMinimoText =
+        readLine("Nuevo stock minimo (enter para mantener actual): ");
+    int nuevoStockMinimo = 0;
+    if (!nuevoStockMinimoText.empty()) {
+        if (!parseNonNegativeInt(nuevoStockMinimoText, nuevoStockMinimo)) {
+            std::cout << "Stock minimo invalido." << std::endl;
+            return;
+        }
+        producto.setStockMinimo(nuevoStockMinimo);
+    }
+
+    const std::string nuevoProveedorText =
+        readLine("Nuevo id de proveedor (enter para mantener actual): ");
+    int nuevoIdProveedor = 0;
+    if (!nuevoProveedorText.empty()) {
+        if (!parsePositiveInt(nuevoProveedorText, nuevoIdProveedor)) {
+            std::cout << "ID de proveedor invalido." << std::endl;
+            return;
+        }
+
+        auto proveedorResult = repositories.proveedores.leerPorId(nuevoIdProveedor);
+        if (std::holds_alternative<std::string>(proveedorResult)) {
+            std::cout << "Proveedor invalido: " << std::get<std::string>(proveedorResult)
+                      << std::endl;
+            return;
+        }
+
+        producto.setIdProveedor(nuevoIdProveedor);
+    }
+
+    producto.setFechaUltimaModificacion(std::chrono::system_clock::now());
+
+    if (!confirmAction("Confirma actualizacion? (s/n): ")) {
+        std::cout << "Actualizacion cancelada." << std::endl;
+        return;
+    }
+
+    auto updateResult = repositories.productos.actualizar(id, producto);
+    if (std::holds_alternative<std::string>(updateResult)) {
+        std::cout << "Error al actualizar: " << std::get<std::string>(updateResult) << std::endl;
+        return;
+    }
+
+    std::cout << "Producto actualizado con exito." << std::endl;
 }
 
 void MenuProductos::listarProductos() {
