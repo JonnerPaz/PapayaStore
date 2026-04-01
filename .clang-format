@@ -4,7 +4,7 @@ BasedOnStyle: Google
 
 # Tamaño de indentación (4 espacios es el estándar más legible para educación)
 IndentWidth: 4
-ColumnLimit: 80
+ColumnLimit: 100
 
 # Control de llaves
 BreakBeforeBraces: Custom
@@ -20,6 +20,13 @@ BraceWrapping:
 # Alineación de punteros (Producto* productos en lugar de Producto *productos)
 PointerAlignment: Left
 
+# Control de visibilidad (public, private) 
+AccessModifierOffset: -1
+
+# Ajustes para constructores
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+ConstructorInitializerIndentWidth: 4
+
 # Espaciado y orden
 SpacesBeforeTrailingComments: 2
 SeparateDefinitionBlocks: Always
@@ -34,5 +41,5 @@ SortIncludes: true
 SpaceAfterCStyleCast: false
 
 # Permitir funciones cortas en una sola línea (ej: getters sencillos)
-AllowShortFunctionsOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: Inline
 ---
