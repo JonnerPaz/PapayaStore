@@ -15,7 +15,7 @@ class EntidadBase
     time_point<system_clock> m_fechaUltimaModificacion{system_clock::now()};
 
    protected:
-    void copiarCadenaSeguro(char* destino, size_t capacidad, const char* fuente);
+    bool copiarCadenaSeguro(char* destino, size_t capacidad, const char* fuente);
 
    public:
     EntidadBase(int id, const char* nombre, bool eliminado, time_point<system_clock> fechaCreacion,
@@ -37,5 +37,3 @@ class EntidadBase
 
     virtual ~EntidadBase() = 0;
 };
-
-using Entidad = EntidadBase;

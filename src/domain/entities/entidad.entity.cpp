@@ -6,23 +6,24 @@ EntidadBase::EntidadBase(int id, const char* nombre, bool eliminado,
                          time_point<system_clock> fechaUltimaModificacion)
 {
     this->m_id = id;
-    strcpy(this->m_nombre, nombre);
+    this->copiarCadenaSeguro(this->m_nombre, sizeof(this->m_nombre), nombre);
     this->m_eliminado = eliminado;
     this->m_fechaCreacion = fechaCreacion;
     this->m_fechaUltimaModificacion = fechaUltimaModificacion;
 }
 
-void EntidadBase::copiarCadenaSeguro(char* destino, size_t capacidad, const char* fuente)
+bool EntidadBase::copiarCadenaSeguro(char* destino, size_t capacidad, const char* fuente)
 {
-    if (capacidad == 0) return;
+    if (capacidad == 0) return false;
 
     if (fuente == nullptr) {
         destino[0] = '\0';
-        return;
+        return false;
     }
 
     std::strncpy(destino, fuente, capacidad - 1);
     destino[capacidad - 1] = '\0';
+    return true;
 }
 
 bool EntidadBase::setId(int id)
@@ -41,7 +42,7 @@ bool EntidadBase::setNombre(const char* nombre)
         // TODO: probar si esto funciona
         return false;
     }
-    this->copiarCadenaSeguro(this->m_nombre, 100, nombre);
+    this->copiarCadenaSeguro(this->m_nombre, sizeof(this->m_nombre), nombre);
     return true;
 }
 
