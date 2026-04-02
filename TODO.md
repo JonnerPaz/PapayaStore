@@ -5,15 +5,20 @@ Objetivo: migrar el flujo legacy de `src/main.cpp` a la arquitectura OOP ya crea
 (`domain` + `infrastructure` + `presentation`) sin romper funcionalidad ni datos.
 
 ## Estado actual (resumen rapido)
-- `src/main.cpp` sigue teniendo la logica legacy completa.
-- `src/main_oop.cpp` ya existe como nuevo entrypoint de migracion.
-- El menu principal de `main_oop` ya enruta Productos por OOP.
+- `src/main_oop.cpp` es ahora el unico entrypoint compilado y contiene el unico `main()`.
+- El `main loop` unico vive en `Bootstrap::runMainLoop()` dentro de `src/main_oop.cpp`.
+- `src/main.cpp` se mantiene como legacy temporal, pero ya no forma parte del build OOP.
+- El menu principal de `main_oop` ya enruta Productos, Proveedores, Clientes,
+  Transacciones, Reportes y Tienda por menus OOP (sin bridge legacy en dispatch).
 - `MenuProductos` ya tiene implementacion funcional base (CRUD principal).
-- El resto de menus siguen en bridge legacy o parcialmente en desarrollo.
+- `MenuProveedores`, `MenuClientes`, `MenuTransacciones` y `MenuTienda` siguen
+  con funcionalidades clave pendientes en sus handlers.
+- `MenuReportes` ya esta conectado por OOP, pero la mayoria de funciones de
+  `FSDatabaseAdmin` siguen pendientes.
 
 ## Objetivo de arquitectura
-- Dejar `src/main.cpp` como legacy/deprecado y mantenerlo solo temporalmente.
-- Dejar `src/main_oop.cpp` como composition root definitivo.
+- Mantener `src/main.cpp` solo como referencia legacy/deprecada durante la migracion.
+- Mantener `src/main_oop.cpp` como composition root definitivo.
 - Menus en `presentation` como UI/orquestacion.
 - Reglas de negocio y validaciones en domain/repositories/services.
 - Persistencia en `infrastructure/datasource`.
@@ -25,11 +30,38 @@ Objetivo: migrar el flujo legacy de `src/main.cpp` a la arquitectura OOP ya crea
 
 ## Orden recomendado de menus
 1. Productos (base de referencia, ya avanzado)
-2. Proveedores
+2. Proveedores (siguiente paso)
 3. Clientes
 4. Transacciones
 5. Reportes
 6. Tienda
+
+## Siguiente paso recomendado (iteracion actual)
+
+### Iteracion 1: Cierre funcional de `MenuProveedores`
+Archivos:
+- `src/presentation/Menu/MenuProveedores/MenuProveedores.cpp`
+- `src/presentation/Menu/MenuProveedores/MenuProveedores.hpp` (si hace falta helpers)
+- `src/main_oop.cpp` (ya conectado, no deberia requerir cambios funcionales)
+
+Objetivo:
+- Completar CRUD funcional por OOP para Proveedores y cerrar restricciones de
+  eliminacion relacionadas con transacciones activas.
+
+Checklist:
+- Implementar `crearProveedor`.
+- Implementar `buscarProveedor`.
+- Implementar `actualizarProveedor`.
+- Implementar `listarProveedores`.
+- Implementar `eliminarProveedor`.
+- Validar que no se elimine proveedor con transacciones activas asociadas.
+- Homologar mensajes de UX (errores, exito, cancelacion) en espanol.
+- Mantener consistencia con manejo de IDs y borrado logico.
+
+Definicion de cierre:
+- Flujo `crear -> listar -> buscar -> actualizar -> eliminar` funcionando en OOP.
+- Restriccion de eliminacion aplicada correctamente.
+- Compila con `cmake -S . -B build && cmake --build build`.
 
 ## Plan por menu
 
@@ -41,8 +73,8 @@ Pendiente de consolidar:
 - Revisar consistencia con proveedor asociado al crear/actualizar.
 - Confirmar mensajes UX en espanol y flujo cancelable con `q`.
 
-Switch principal:
-- `src/main_oop.cpp` debe llamar solo a `MenuProductos.showMenu()` (ya hecho).
+Estado de routing:
+- `src/main_oop.cpp` ya llama solo a `MenuProductos.showMenu()`.
 
 Definicion de cierre:
 - Crear, buscar, actualizar, listar y eliminar funcionan solo por OOP.
@@ -56,10 +88,12 @@ Tareas:
 - Implementar `crearProveedor`, `buscarProveedor`, `actualizarProveedor`,
   `listarProveedores`, `eliminarProveedor`.
 - Validar restriccion de eliminacion si hay transacciones activas.
-- Cambiar bridge en `main_oop` para usar `MenuProveedores.showMenu()`.
+
+Estado de routing:
+- Ya conectado por OOP en `main_oop` (sin bridge legacy).
 
 Definicion de cierre:
-- Opcion Proveedores ya no usa `menuProveedores()` legacy.
+- Opcion Proveedores funcional por OOP y sin handlers en desarrollo.
 
 ### 3) MenuClientes
 Archivos:
@@ -69,10 +103,12 @@ Archivos:
 Tareas:
 - Completar `crearCliente`, `buscarCliente`, `actualizarCliente`, `eliminarCliente`.
 - Mantener/ajustar `listarClientes` para consistencia de salida.
-- Cambiar bridge en `main_oop` para usar `MenuClientes.showMenu()`.
+
+Estado de routing:
+- Ya conectado por OOP en `main_oop` (sin bridge legacy).
 
 Definicion de cierre:
-- Opcion Clientes deja de depender de `menuClientes()` legacy.
+- Opcion Clientes funcional por OOP y sin handlers en desarrollo.
 
 ### 4) MenuTransacciones
 Archivos:
@@ -84,7 +120,9 @@ Tareas:
 - Implementar `registrarVenta`.
 - Implementar `buscarTransacciones` y `listarTransacciones`.
 - Implementar `cancelarTransaccion` con validaciones de reversa.
-- Cambiar bridge en `main_oop` a `MenuTransacciones.showMenu()`.
+
+Estado de routing:
+- Ya conectado por OOP en `main_oop` (sin bridge legacy).
 
 Definicion de cierre:
 - Flujo de transacciones 100% OOP y consistente en inventario.
@@ -98,14 +136,16 @@ Archivos:
 Tareas:
 - Completar implementaciones de admin:
   - `verificarIntegridadReferencial`
-  - `crearBackup`
+  - `crearBackup` (revisar robustez y manejo de errores)
   - `reporteStockCritico`
   - `reporteHistorialCliente`
   - `sincronizarContadoresTienda`
-- Conectar opcion Reportes por OOP en `main_oop`.
+
+Estado de routing:
+- Ya conectado por OOP en `main_oop` (sin bridge legacy).
 
 Definicion de cierre:
-- Opcion Reportes sin bridge legacy.
+- Opcion Reportes funcional por OOP con operaciones administrativas reales.
 
 ### 6) MenuTienda
 Archivos:
@@ -114,10 +154,12 @@ Archivos:
 
 Tareas:
 - Implementar resumen real de tienda usando repos/admin.
-- Conectar opcion Tienda por OOP en `main_oop`.
+
+Estado de routing:
+- Ya conectado por OOP en `main_oop` (sin bridge legacy).
 
 Definicion de cierre:
-- Opcion Tienda sin bridge legacy.
+- Opcion Tienda funcional por OOP con informacion real.
 
 ## Cierre final de migracion
 Archivos:
@@ -125,9 +167,9 @@ Archivos:
 - `src/main_oop.cpp`
 
 Tareas:
-- Cuando todos los menus esten en OOP, retirar bridges legacy restantes.
-- Mantener `main.cpp` minimo o marcarlo como deprecated.
-- Dejar `main_oop.cpp` como arranque unico del programa.
+- Cuando todos los menus esten completos en OOP, marcar `main.cpp` como
+  deprecated de forma explicita en documentacion/comentario de cabecera.
+- Mantener `main_oop.cpp` como arranque unico del programa.
 
 ## Criterios de calidad por sesion
 - Ejecutar siempre:
