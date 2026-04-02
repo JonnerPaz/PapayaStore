@@ -1,3 +1,9 @@
+#include <array>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <limits>
+
 #include "domain/HeaderFile.hpp"
 #include "domain/constants.hpp"
 #include "domain/repositories/AppRepositories.hpp"
@@ -7,24 +13,17 @@
 #include "infrastructure/datasource/FSProveedorRepository.hpp"
 #include "infrastructure/datasource/FSTransaccionRepository.hpp"
 #include "presentation/CliUtils.hpp"
+#include "presentation/Menu/MenuClientes/MenuClientes.hpp"
 #include "presentation/Menu/MenuProductos/MenuProductos.hpp"
-#include <array>
-#include <filesystem>
-#include <fstream>
-#include <iostream>
-#include <limits>
+#include "presentation/Menu/MenuProveedores/MenuProveedores.hpp"
+#include "presentation/Menu/MenuReportes/MenuReportes.hpp"
+#include "presentation/Menu/MenuTienda/MenuTienda.hpp"
+#include "presentation/Menu/MenuTransacciones/MenuTransacciones.hpp"
 
 using namespace Constants::ASCII_CODES;
 using namespace Constants::PATHS;
 
 namespace fs = std::filesystem;
-
-// Legacy bridge points while migration is in progress.
-void menuProveedores();
-void menuClientes();
-void menuTransacciones();
-void menuReportes();
-void menuTienda();
 
 namespace Bootstrap {
 
@@ -50,19 +49,32 @@ struct OopContext {
     AppRepositories repositories;
     CliUtils cliUtils;
     MenuProductos menuProductos;
+    MenuProveedores menuProveedores;
+    MenuClientes menuClientes;
+    MenuTransacciones menuTransacciones;
+    MenuReportes menuReportes;
+    MenuTienda menuTienda;
 
     OopContext()
         : repositories{productos, clientes, proveedores, transacciones, admin},
-          menuProductos(repositories, cliUtils) {
+          menuProductos(repositories, cliUtils),
+          menuProveedores(repositories),
+          menuClientes(repositories),
+          menuTransacciones(repositories),
+          menuReportes("Gestion de Reportes y seguridad", "Salir", 5, repositories),
+          menuTienda(repositories)
+    {
     }
 };
 
-OopContext& getOopContext() {
+OopContext& getOopContext()
+{
     static OopContext context;
     return context;
 }
 
-bool ensureFileWithHeader(const fs::path& path) {
+bool ensureFileWithHeader(const fs::path& path)
+{
     if (path.has_parent_path()) {
         std::error_code ec;
         fs::create_directories(path.parent_path(), ec);
@@ -86,7 +98,8 @@ bool ensureFileWithHeader(const fs::path& path) {
     return static_cast<bool>(file);
 }
 
-MainOption readOption() {
+MainOption readOption()
+{
     int option = -1;
     if (!(std::cin >> option)) {
         std::cin.clear();
@@ -101,9 +114,10 @@ MainOption readOption() {
     return static_cast<MainOption>(option);
 }
 
-} // namespace
+}  // namespace
 
-bool bootstrapStorage() {
+bool bootstrapStorage()
+{
     const std::array<fs::path, 5> paths = {
         PRODUCTOS_PATH, PROVEEDORES_PATH, CLIENTES_PATH, TRANSACCIONES_PATH, TIENDA_PATH,
     };
@@ -115,13 +129,15 @@ bool bootstrapStorage() {
     return ok;
 }
 
-void printMigrationStatus() {
+void printMigrationStatus()
+{
     std::cout << "Nuevo entrypoint creado: src/main_oop.cpp\n";
     std::cout << "src/main.cpp queda como legacy temporal\n";
     std::cout << "Bootstrap de storage ya disponible en OOP\n";
 }
 
-void printMainMenu() {
+void printMainMenu()
+{
     std::cout << "\n=== PAPAYA STORE - Menú Principal (Migración) ===\n";
     std::cout << "1. Gestion de Productos\n";
     std::cout << "2. Gestion de Proveedores\n";
@@ -133,42 +149,44 @@ void printMainMenu() {
     std::cout << "Seleccione una opcion: ";
 }
 
-void dispatchOption(MainOption option) {
+void dispatchOption(MainOption option)
+{
     switch (option) {
-    case MainOption::Productos:
-        getOopContext().menuProductos.showMenu();
-        break;
-    case MainOption::Proveedores:
-        std::cout << "Abriendo modulo Proveedores\n";
-        ::menuProveedores();
-        break;
-    case MainOption::Clientes:
-        std::cout << "Abriendo modulo Clientes\n";
-        ::menuClientes();
-        break;
-    case MainOption::Transacciones:
-        std::cout << "Abriendo modulo Transacciones\n";
-        ::menuTransacciones();
-        break;
-    case MainOption::Reportes:
-        std::cout << "Abriendo modulo Reportes\n";
-        ::menuReportes();
-        break;
-    case MainOption::Tienda:
-        std::cout << "Abriendo modulo Tienda\n";
-        ::menuTienda();
-        break;
-    case MainOption::Salir:
-        std::cout << "Saliendo del programa...\n";
-        break;
-    case MainOption::Invalida:
-    default:
-        std::cout << "Opcion invalida\n";
-        break;
+        case MainOption::Productos:
+            getOopContext().menuProductos.showMenu();
+            break;
+        case MainOption::Proveedores:
+            std::cout << "Abriendo modulo Proveedores\n";
+            getOopContext().menuProveedores.showMenu();
+            break;
+        case MainOption::Clientes:
+            std::cout << "Abriendo modulo Clientes\n";
+            getOopContext().menuClientes.showMenu();
+            break;
+        case MainOption::Transacciones:
+            std::cout << "Abriendo modulo Transacciones\n";
+            getOopContext().menuTransacciones.showMenu();
+            break;
+        case MainOption::Reportes:
+            std::cout << "Abriendo modulo Reportes\n";
+            getOopContext().menuReportes.showMenu();
+            break;
+        case MainOption::Tienda:
+            std::cout << "Abriendo modulo Tienda\n";
+            getOopContext().menuTienda.showMenu();
+            break;
+        case MainOption::Salir:
+            std::cout << "Saliendo del programa...\n";
+            break;
+        case MainOption::Invalida:
+        default:
+            std::cout << "Opcion invalida\n";
+            break;
     }
 }
 
-void runMainLoop() {
+void runMainLoop()
+{
     if (!bootstrapStorage()) {
         std::cout << "Error inicializando almacenamiento base\n";
         return;
@@ -182,4 +200,10 @@ void runMainLoop() {
     } while (option != MainOption::Salir);
 }
 
-} // namespace Bootstrap
+}  // namespace Bootstrap
+
+int main()
+{
+    Bootstrap::runMainLoop();
+    return 0;
+}
