@@ -1,131 +1,45 @@
 #pragma once
-#include <chrono>
-#include <cstring>
-#include <sstream>
-#include <string>
 
 #include "domain/entities/entidad.entity.hpp"
 
 class Proveedor : public EntidadBase
 {
    private:
-    char rif[20];  // RIF o identificación fiscal
-    int productosIds[100];
-    int cantidadProductos;
-    char telefono[20];
-    char email[100];
-    char direccion[200];
-    char fechaRegistro[11];
-    int cantidad;           // cantidad de transacciones / productos
-    int historialIds[100];  // Identificadores de transacciones / productos
+    char m_rif[20]{};  // RIF o identificación fiscal
+    int m_productosIds[100]{0};
+    int m_cantidadProductos{0};
+    char m_telefono[20]{0};
+    char m_email[100]{};
+    char m_direccion[200]{};
+    int m_cantidad{0};           // cantidad de transacciones / productos
+    int m_historialIds[100]{0};  // Identificadores de transacciones / productos
 
-    bool validarEmail(const char* email)
-    {
-        int PosicionAt = -1;             // verificar y darle valor al "@"
-        bool TienePuntoDespues = false;  // para comprobar que tenga "." despues del "@"
-        int longitud = strlen(email);    // para que el ciclo for sepa hasta donde buscar
-
-        // la funcion "for" para recorrer todo el email
-        for (int i = 0; i < longitud; i++) {
-            if (email[i] == '@') {
-                // verificacion si ya habia un @ y hay dos @
-                if (PosicionAt != -1) return false;
-                PosicionAt = i;
-            }
-            // verificacion de si hay un '.' despues de ya tener el '@'
-            if (PosicionAt != -1 && email[i] == '.') {
-                if (i > PosicionAt + 1) {
-                    TienePuntoDespues = true;
-                }
-            }
-        }
-
-        // verificacion de los errores
-        if (PosicionAt > 0 && PosicionAt < longitud - 1 && TienePuntoDespues) {
-            return true;
-        }
-
-        return false;
-    }
-
-    bool validarFecha(const char* fecha)
-    {
-        using namespace std;
-        using namespace std::chrono;
-
-        // extraemos los datos de YYYY-MM-DD
-        stringstream ss(fecha);
-        int y, m, d;
-        char dash1, dash2;
-
-        // verificar si es correcto el formato
-        if (!(ss >> y >> dash1 >> m >> dash2 >> d)) {
-            return false;
-        }
-
-        // para ver que tenga los guiones donde van
-        if (dash1 != '-' || dash2 != '-') {
-            return false;
-        }
-        // year_month_day representa una fecha en el calendario civil
-        year_month_day ymd{year{y}, month{(unsigned)m}, day{(unsigned)d}};
-        return ymd.ok();
-    }
-
-    char* getTelefono() { return this->telefono; }
-
-    int setTelefono(const char* telefono)
-    {
-        strcpy(this->telefono, telefono);
-        return 0;
-    }
-
-    char* getEmail() { return this->email; }
-
-    int setEmail(const char* email)
-    {
-        if (!validarEmail(email)) {
-            return 1;
-        }
-
-        strcpy(this->email, email);
-        return 0;
-    }
-
-    char* getDireccion() { return this->direccion; }
-
-    char* setDireccion(const char* direccion)
-    {
-        strcpy(this->direccion, direccion);
-        return this->direccion;
-    }
-
-    char* getFechaRegistro() { return this->fechaRegistro; }
-
-    int getCantidad() { return this->cantidad; };
-
-    int* getHistorialIds() { return this->historialIds; }
+    bool validarEmail(const char* email);
+    bool validarFecha(const char* fecha);
 
    public:
-    Proveedor()
-        : EntidadBase(0, "", false, std::chrono::system_clock::now(),
-                      std::chrono::system_clock::now()),
-          cantidadProductos(0),
-          cantidad(0)
-    {
-        rif[0] = '\0';
-        telefono[0] = '\0';
-        email[0] = '\0';
-        direccion[0] = '\0';
-        fechaRegistro[0] = '\0';
-        for (int i = 0; i < 100; ++i) {
-            productosIds[i] = 0;
-            historialIds[i] = 0;
-        }
-    }
+    Proveedor(int id, const char* nombre, bool eliminado, time_point<system_clock> fechaCreacion,
+              time_point<system_clock> fechaUltimaModificacion, const char* rif, int productosIds[],
+              int cantidadProductos, const char* telefono, const char* email, const char* direccion,
+              int cantidad, int historialIds[]);
 
-    Proveedor(const char* telefono, const char* email, const char* rif, const char* direccion,
-              const char* fechaRegistro, int id, const char* nombre, bool eliminado,
-              time_point<system_clock> fechaCreacion,
-              time_point<system_clock> fechaUltimaModificacion);
+    char* getRif() { return this->m_rif; }
+
+    bool setRif(const char* rif);
+
+    char* getTelefono() { return this->m_telefono; }
+
+    bool setTelefono(const char* telefono);
+
+    char* getEmail() { return this->m_email; }
+
+    bool setEmail(const char* email);
+
+    char* getDireccion() { return this->m_direccion; }
+
+    bool setDireccion(const char* direccion);
+
+    int getCantidad() { return this->m_cantidad; };
+
+    int* getHistorialIds() { return this->m_historialIds; }
 };
