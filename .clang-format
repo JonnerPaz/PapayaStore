@@ -37,8 +37,8 @@ Standard: c++20
 # Ordenar los #include alfabéticamente
 SortIncludes: true
 
-# No añadir espacios después del cast (float)variable
-SpaceAfterCStyleCast: false
+# añadir espacios después del cast (float) variable
+SpaceAfterCStyleCast: true
 
 # Permitir funciones cortas en una sola línea (ej: getters sencillos)
 AllowShortFunctionsOnASingleLine: Inline
