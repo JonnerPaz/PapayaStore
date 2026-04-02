@@ -1,18 +1,20 @@
 #include "FSDatabaseAdmin.hpp"
-#include "domain/constants.hpp"
+
 #include <chrono>
 #include <filesystem>
 #include <format>
 #include <string>
 
+#include "domain/constants.hpp"
+
 namespace fs = std::filesystem;
 using namespace Constants::ASCII_CODES;
 using namespace Constants::PATHS;
 
-FSDatabaseAdmin::FSDatabaseAdmin() {
-}
+FSDatabaseAdmin::FSDatabaseAdmin() {}
 
-void FSDatabaseAdmin::crearBackup() {
+void FSDatabaseAdmin::crearBackup()
+{
     fs::create_directories(BACKUP_PATH);
 
     const std::string paths[5] = {PRODUCTOS_PATH, PROVEEDORES_PATH, CLIENTES_PATH,
@@ -25,8 +27,7 @@ void FSDatabaseAdmin::crearBackup() {
     std::chrono::zoned_time localTime{std::chrono::current_zone(), nowSec};
 
     for (fs::path path : paths) {
-        if (!fs::exists(path))
-            continue;
+        if (!fs::exists(path)) continue;
         std::string baseName = path.stem().string();
         fs::path backupName =
             fs::path(std::format("{}.{:%Y-%m-%d}.{:%T}.bin", baseName, ymd, localTime));
@@ -36,14 +37,10 @@ void FSDatabaseAdmin::crearBackup() {
     }
 }
 
-void FSDatabaseAdmin::verificarIntegridadReferencial() {
-}
+void FSDatabaseAdmin::verificarIntegridadReferencial() {}
 
-void FSDatabaseAdmin::reporteStockCritico() {
-}
+void FSDatabaseAdmin::reporteStockCritico() {}
 
-void FSDatabaseAdmin::reporteHistorialCliente() {
-}
+void FSDatabaseAdmin::reporteHistorialCliente() {}
 
-void FSDatabaseAdmin::sincronizarContadoresTienda() {
-}
+void FSDatabaseAdmin::sincronizarContadoresTienda() {}

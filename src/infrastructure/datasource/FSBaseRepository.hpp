@@ -5,7 +5,6 @@
 #include <variant>
 
 #include "domain/HeaderFile.hpp"
-#include "domain/entities/ArchivoStats.hpp"
 #include "infrastructure/datasource/EntityTraits.hpp"
 
 namespace fs = std::filesystem;
@@ -18,12 +17,11 @@ class FSBaseRepository
 
     FSBaseRepository(fs::path path) : filePath(path) {}
 
-    std::variant<ArchivoStats, std::string> obtenerEstadisticasTemplate()
+    std::variant<HeaderFile, std::string> obtenerEstadisticasTemplate()
     {
         std::ifstream file(filePath, std::ios::binary);
         if (!file.is_open()) {
-            return "Error abriendo archivo para obtener estadísticas: " +
-                   filePath.string();
+            return "Error abriendo archivo para obtener estadísticas: " + filePath.string();
         }
 
         HeaderFile header;
@@ -33,7 +31,7 @@ class FSBaseRepository
             return "Error leyendo el encabezado del archivo";
         }
 
-        ArchivoStats stats;
+        HeaderFile stats;
         stats.cantidadRegistros = header.cantidadRegistros;
         stats.proximoID = header.proximoID;
         stats.registrosActivos = header.registrosActivos;
@@ -45,8 +43,7 @@ class FSBaseRepository
     std::variant<T, std::string> leerTemplate(int id)
     {
         std::ifstream file(filePath, std::ios::binary);
-        if (!file.is_open())
-            return "Error abriendo archivo para lectura: " + filePath.string();
+        if (!file.is_open()) return "Error abriendo archivo para lectura: " + filePath.string();
 
         HeaderFile header;
         file.read(reinterpret_cast<char*>(&header), sizeof(HeaderFile));
@@ -71,8 +68,7 @@ class FSBaseRepository
 
     std::variant<bool, std::string> actualizarTemplate(int id, const T& entidad)
     {
-        std::fstream file(filePath,
-                          std::ios::in | std::ios::out | std::ios::binary);
+        std::fstream file(filePath, std::ios::in | std::ios::out | std::ios::binary);
         if (!file.is_open()) return "Error abriendo archivo para escritura";
 
         HeaderFile header;
@@ -91,8 +87,7 @@ class FSBaseRepository
 
     std::variant<bool, std::string> guardarTemplate(const T& entidad)
     {
-        std::fstream file(filePath,
-                          std::ios::in | std::ios::out | std::ios::binary);
+        std::fstream file(filePath, std::ios::in | std::ios::out | std::ios::binary);
         if (!file.is_open()) {
             // create if not exist?
             // In initDB we create them. But let's be safe.
@@ -108,8 +103,7 @@ class FSBaseRepository
         // its ID set correctly to nuevoId before calling guardarTemplate, or we
         // assume it has. Actually, we just write it at proximoID - 1.
 
-        std::streampos offset =
-            sizeof(HeaderFile) + ((nuevoId - 1) * sizeof(T));
+        std::streampos offset = sizeof(HeaderFile) + ((nuevoId - 1) * sizeof(T));
         file.seekp(offset);
         file.write(reinterpret_cast<const char*>(&entidad), sizeof(T));
 
@@ -143,15 +137,13 @@ class FSBaseRepository
         }
 
         // decrement active count
-        std::fstream file(filePath,
-                          std::ios::in | std::ios::out | std::ios::binary);
+        std::fstream file(filePath, std::ios::in | std::ios::out | std::ios::binary);
         if (file.is_open()) {
             HeaderFile header;
             file.read(reinterpret_cast<char*>(&header), sizeof(HeaderFile));
             header.registrosActivos--;
             file.seekp(0);
-            file.write(reinterpret_cast<const char*>(&header),
-                       sizeof(HeaderFile));
+            file.write(reinterpret_cast<const char*>(&header), sizeof(HeaderFile));
         }
 
         return true;

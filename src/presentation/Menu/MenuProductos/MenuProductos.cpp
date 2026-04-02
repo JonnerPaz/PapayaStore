@@ -11,14 +11,16 @@ namespace {
 
 // Get user input
 // Lo que hacía antes asignarPropiedad* pero no me terminó de servir pa un coño
-std::string readLine(const char* prompt) {
+std::string readLine(const char* prompt)
+{
     std::cout << prompt;
     std::string value;
     std::getline(std::cin >> std::ws, value);
     return value;
 }
 
-bool confirmAction(const char* prompt) {
+bool confirmAction(const char* prompt)
+{
     std::cout << prompt;
     char confirm = 'n';
     std::cin >> confirm;
@@ -26,7 +28,8 @@ bool confirmAction(const char* prompt) {
     return confirm == 's' || confirm == 'S';
 }
 
-bool parsePositiveInt(const std::string& input, int& outValue) {
+bool parsePositiveInt(const std::string& input, int& outValue)
+{
     if (input.empty()) {
         return false;
     }
@@ -43,7 +46,8 @@ bool parsePositiveInt(const std::string& input, int& outValue) {
     }
 }
 
-bool parseNonNegativeInt(const std::string& input, int& outValue) {
+bool parseNonNegativeInt(const std::string& input, int& outValue)
+{
     if (input.empty()) {
         return false;
     }
@@ -60,7 +64,8 @@ bool parseNonNegativeInt(const std::string& input, int& outValue) {
     }
 }
 
-bool parseNonNegativeFloat(const std::string& input, float& outValue) {
+bool parseNonNegativeFloat(const std::string& input, float& outValue)
+{
     if (input.empty()) {
         return false;
     }
@@ -77,23 +82,25 @@ bool parseNonNegativeFloat(const std::string& input, float& outValue) {
     }
 }
 
-} // namespace
+}  // namespace
 
 MenuProductos::MenuProductos(AppRepositories& repository, CliUtils utils)
-    : Menu(repository), utils(utils) {
+    : Menu(repository), utils(utils)
+{
     setTitle("Gestion de Productos");
     setTexToExit("Salir");
     setNumOptions(5);
 }
 
-void MenuProductos::crearProducto() {
+void MenuProductos::crearProducto()
+{
     auto proveedoresStatsResult = repositories.proveedores.obtenerEstadisticas();
     if (std::holds_alternative<std::string>(proveedoresStatsResult)) {
         std::cout << "Error: " << std::get<std::string>(proveedoresStatsResult) << std::endl;
         return;
     }
 
-    if (std::get<ArchivoStats>(proveedoresStatsResult).registrosActivos == 0) {
+    if (std::get<HeaderFile>(proveedoresStatsResult).registrosActivos == 0) {
         std::cout << "No hay proveedores registrados. Debe crear al menos uno "
                      "primero."
                   << std::endl;
@@ -167,7 +174,7 @@ void MenuProductos::crearProducto() {
         return;
     }
 
-    const ArchivoStats productoStats = std::get<ArchivoStats>(productoStatsResult);
+    const HeaderFile productoStats = std::get<HeaderFile>(productoStatsResult);
     const int nuevoId = productoStats.proximoID;
 
     const auto now = std::chrono::system_clock::now();
@@ -199,7 +206,8 @@ void MenuProductos::crearProducto() {
     std::cout << "Producto creado con exito." << std::endl;
 }
 
-void MenuProductos::buscarProducto() {
+void MenuProductos::buscarProducto()
+{
     const int id = utils.validarId("Ingrese el id del producto a buscar");
     if (id <= 0) {
         std::cout << "Busqueda cancelada." << std::endl;
@@ -222,7 +230,8 @@ void MenuProductos::buscarProducto() {
     std::cout << std::format("Stock: {}", producto.getStock()) << std::endl;
 }
 
-void MenuProductos::actualizarProducto() {
+void MenuProductos::actualizarProducto()
+{
     const int id = utils.validarId("Ingrese el id del producto a actualizar");
     if (id <= 0) {
         std::cout << "Actualizacion cancelada." << std::endl;
@@ -319,14 +328,15 @@ void MenuProductos::actualizarProducto() {
     std::cout << "Producto actualizado con exito." << std::endl;
 }
 
-void MenuProductos::listarProductos() {
+void MenuProductos::listarProductos()
+{
     auto statsResult = repositories.productos.obtenerEstadisticas();
     if (std::holds_alternative<std::string>(statsResult)) {
         std::cout << "Error: " << std::get<std::string>(statsResult) << std::endl;
         return;
     }
 
-    ArchivoStats stats = std::get<ArchivoStats>(statsResult);
+    HeaderFile stats = std::get<HeaderFile>(statsResult);
     if (stats.registrosActivos == 0) {
         std::cout << "No hay productos registrados." << std::endl;
         return;
@@ -353,7 +363,8 @@ void MenuProductos::listarProductos() {
     }
 }
 
-void MenuProductos::eliminarProducto() {
+void MenuProductos::eliminarProducto()
+{
     const int id = utils.validarId("Ingrese el id del producto a eliminar");
     if (id <= 0) {
         std::cout << "Eliminacion cancelada." << std::endl;
@@ -386,7 +397,8 @@ void MenuProductos::eliminarProducto() {
 }
 
 // [this]() { crearProducto(); } lambda function (como pasar callback)
-void MenuProductos::showMenu() {
+void MenuProductos::showMenu()
+{
     setOption(0, "Crear Producto", [this]() { crearProducto(); });
     setOption(1, "Buscar Producto", [this]() { buscarProducto(); });
     setOption(2, "Actualizar Producto", [this]() { actualizarProducto(); });

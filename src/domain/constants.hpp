@@ -13,7 +13,7 @@ inline constexpr const char* COLOR_GREEN = "\033[32m";
 inline constexpr const char* COLOR_YELLOW = "\033[33m";
 inline constexpr const char* COLOR_RED = "\033[31m";
 inline constexpr const char* COLOR_MAGENTA = "\033[35m";
-}; // namespace ASCII_CODES
+};  // namespace ASCII_CODES
 
 namespace PATHS {
 inline const fs::path CLIENTES_PATH = "./data/clientes.bin";
@@ -22,6 +22,6 @@ inline const fs::path PRODUCTOS_PATH = "./data/productos.bin";
 inline const fs::path TRANSACCIONES_PATH = "./data/transacciones.bin";
 inline const fs::path TIENDA_PATH = "./data/tienda.bin";
 inline const fs::path BACKUP_PATH = "./backup/";
-}; // namespace PATHS
+};  // namespace PATHS
 
-} // namespace Constants
+}  // namespace Constants

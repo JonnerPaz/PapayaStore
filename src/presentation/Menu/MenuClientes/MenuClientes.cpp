@@ -4,25 +4,30 @@
 #include <iostream>
 #include <variant>
 
-MenuClientes::MenuClientes(AppRepositories& repositorios) : Menu(repositorios) {
+MenuClientes::MenuClientes(AppRepositories& repositorios) : Menu(repositorios)
+{
     setTitle("Gestion de Clientes");
     setTexToExit("Salir");
     setNumOptions(5);
 }
 
-void MenuClientes::crearCliente() {
+void MenuClientes::crearCliente()
+{
     std::cout << "Crear cliente (En desarrollo)" << std::endl;
 }
 
-void MenuClientes::buscarCliente() {
+void MenuClientes::buscarCliente()
+{
     std::cout << "Buscar cliente (En desarrollo)" << std::endl;
 }
 
-void MenuClientes::actualizarCliente() {
+void MenuClientes::actualizarCliente()
+{
     std::cout << "Actualizar cliente (En desarrollo)" << std::endl;
 }
 
-void MenuClientes::listarClientes() {
+void MenuClientes::listarClientes()
+{
     auto statsResult = repositories.clientes.obtenerEstadisticas();
 
     if (std::holds_alternative<std::string>(statsResult)) {
@@ -30,15 +35,14 @@ void MenuClientes::listarClientes() {
         return;
     }
 
-    ArchivoStats stats = std::get<ArchivoStats>(statsResult);
+    HeaderFile stats = std::get<HeaderFile>(statsResult);
 
     if (stats.registrosActivos == 0) {
         std::cout << "No hay clientes registrados." << std::endl;
         return;
     }
 
-    std::cout << std::format("--- Lista de Clientes ({}) ---", stats.registrosActivos)
-              << std::endl;
+    std::cout << std::format("--- Lista de Clientes ({}) ---", stats.registrosActivos) << std::endl;
     std::cout << std::format("{:<5} | {:<20}", "ID", "Nombre") << std::endl;
     std::cout << "------------------------------" << std::endl;
 
@@ -54,11 +58,13 @@ void MenuClientes::listarClientes() {
     }
 }
 
-void MenuClientes::eliminarCliente() {
+void MenuClientes::eliminarCliente()
+{
     std::cout << "Eliminar cliente (En desarrollo)" << std::endl;
 }
 
-void MenuClientes::showMenu() {
+void MenuClientes::showMenu()
+{
     setOption(0, "Crear Cliente", [this]() { crearCliente(); });
     setOption(1, "Buscar Cliente", [this]() { buscarCliente(); });
     setOption(2, "Actualizar Cliente", [this]() { actualizarCliente(); });

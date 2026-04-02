@@ -7,8 +7,11 @@ Cliente::Cliente(int id, const char* nombre, const char* cedula, const char* tel
                  const char* email, const char* direccion, bool eliminado,
                  const char* fechaRegistro, time_point<system_clock> fechaCreacion,
                  time_point<system_clock> fechaUltimaModificacion)
-    : EntidadBase(id, nombre, eliminado, fechaCreacion, fechaUltimaModificacion), cantidad(0),
-      totalCompras(0.0f), cantidadTransacciones(0) {
+    : EntidadBase(id, nombre, eliminado, fechaCreacion, fechaUltimaModificacion),
+      cantidad(0),
+      totalCompras(0.0f),
+      cantidadTransacciones(0)
+{
     setTelefono(telefono);
     setEmail(email);
     setDireccion(direccion);

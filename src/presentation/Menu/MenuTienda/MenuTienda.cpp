@@ -2,17 +2,20 @@
 
 #include <iostream>
 
-MenuTienda::MenuTienda(AppRepositories& repos) : Menu(repos) {
+MenuTienda::MenuTienda(AppRepositories& repos) : Menu(repos)
+{
     setTitle("Gestion de Tienda");
     setTexToExit("Salir");
     setNumOptions(1);
 }
 
-void MenuTienda::mostrarResumenTienda() {
+void MenuTienda::mostrarResumenTienda()
+{
     std::cout << "Resumen de tienda (En desarrollo)" << std::endl;
 }
 
-void MenuTienda::showMenu() {
+void MenuTienda::showMenu()
+{
     setOption(0, "Mostrar resumen de tienda", [this]() { mostrarResumenTienda(); });
     drawMenu();
 }

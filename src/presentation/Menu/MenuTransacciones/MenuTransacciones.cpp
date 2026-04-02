@@ -2,27 +2,33 @@
 
 #include <iostream>
 
-void MenuTransacciones::registrarCompra() {
+void MenuTransacciones::registrarCompra()
+{
     std::cout << "Registrar compra (En desarrollo)" << std::endl;
 }
 
-void MenuTransacciones::registrarVenta() {
+void MenuTransacciones::registrarVenta()
+{
     std::cout << "Registrar venta (En desarrollo)" << std::endl;
 }
 
-void MenuTransacciones::buscarTransacciones() {
+void MenuTransacciones::buscarTransacciones()
+{
     std::cout << "Buscar transacciones (En desarrollo)" << std::endl;
 }
 
-void MenuTransacciones::listarTransacciones() {
+void MenuTransacciones::listarTransacciones()
+{
     std::cout << "Listar transacciones (En desarrollo)" << std::endl;
 }
 
-void MenuTransacciones::cancelarTransaccion() {
+void MenuTransacciones::cancelarTransaccion()
+{
     std::cout << "Cancelar transaccion (En desarrollo)" << std::endl;
 }
 
-void MenuTransacciones::showMenu() {
+void MenuTransacciones::showMenu()
+{
     setOption(0, "Registrar Compra", [this]() { registrarCompra(); });
     setOption(1, "Registrar Venta", [this]() { registrarVenta(); });
     setOption(2, "Buscar Transacciones", [this]() { buscarTransacciones(); });

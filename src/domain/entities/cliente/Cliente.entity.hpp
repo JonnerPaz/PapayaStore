@@ -6,30 +6,31 @@
 
 #include "domain/entities/entidad.entity.hpp"
 
-class Cliente : public EntidadBase {
-  private:
+class Cliente : public EntidadBase
+{
+   private:
     char telefono[20];
     char email[100];
     char direccion[200];
     char fechaRegistro[11];
-    int cantidad;          // cantidad de transacciones / productos
-    int historialIds[100]; // Identificadores de transacciones / productos
-    char cedula[20];       // Cédula o RIF
+    int cantidad;           // cantidad de transacciones / productos
+    int historialIds[100];  // Identificadores de transacciones / productos
+    char cedula[20];        // Cédula o RIF
     float totalCompras;
     int transaccionesIds[100];
     int cantidadTransacciones;
 
-    bool validarEmail(const char* email) {
-        int PosicionAt = -1;            // verificar y darle valor al "@"
-        bool TienePuntoDespues = false; // para comprobar que tenga "." despues del "@"
-        int longitud = strlen(email);   // para que el ciclo for sepa hasta donde buscar
+    bool validarEmail(const char* email)
+    {
+        int PosicionAt = -1;             // verificar y darle valor al "@"
+        bool TienePuntoDespues = false;  // para comprobar que tenga "." despues del "@"
+        int longitud = strlen(email);    // para que el ciclo for sepa hasta donde buscar
 
         // la funcion "for" para recorrer todo el email
         for (int i = 0; i < longitud; i++) {
             if (email[i] == '@') {
                 // verificacion si ya habia un @ y hay dos @
-                if (PosicionAt != -1)
-                    return false;
+                if (PosicionAt != -1) return false;
                 PosicionAt = i;
             }
             // verificacion de si hay un '.' despues de ya tener el '@'
@@ -48,7 +49,8 @@ class Cliente : public EntidadBase {
         return false;
     }
 
-    bool validarFecha(const char* fecha) {
+    bool validarFecha(const char* fecha)
+    {
         using namespace std;
         using namespace std::chrono;
 
@@ -71,20 +73,18 @@ class Cliente : public EntidadBase {
         return ymd.ok();
     }
 
-    char* getTelefono() {
-        return this->telefono;
-    }
+    char* getTelefono() { return this->telefono; }
 
-    int setTelefono(const char* telefono) {
+    int setTelefono(const char* telefono)
+    {
         strcpy(this->telefono, telefono);
         return 0;
     }
 
-    char* getEmail() {
-        return this->email;
-    }
+    char* getEmail() { return this->email; }
 
-    int setEmail(const char* email) {
+    int setEmail(const char* email)
+    {
         if (!validarEmail(email)) {
             return 1;
         }
@@ -93,32 +93,28 @@ class Cliente : public EntidadBase {
         return 0;
     }
 
-    char* getDireccion() {
-        return this->direccion;
-    }
+    char* getDireccion() { return this->direccion; }
 
-    char* setDireccion(const char* direccion) {
+    char* setDireccion(const char* direccion)
+    {
         strcpy(this->direccion, direccion);
         return this->direccion;
     }
 
-    char* getFechaRegistro() {
-        return this->fechaRegistro;
-    }
+    char* getFechaRegistro() { return this->fechaRegistro; }
 
-    int getCantidad() {
-        return this->cantidad;
-    };
+    int getCantidad() { return this->cantidad; };
 
-    int* getHistorialIds() {
-        return this->historialIds;
-    }
+    int* getHistorialIds() { return this->historialIds; }
 
-  public:
+   public:
     Cliente()
         : EntidadBase(0, "", false, std::chrono::system_clock::now(),
                       std::chrono::system_clock::now()),
-          cantidad(0), totalCompras(0.0f), cantidadTransacciones(0) {
+          cantidad(0),
+          totalCompras(0.0f),
+          cantidadTransacciones(0)
+    {
         telefono[0] = '\0';
         email[0] = '\0';
         direccion[0] = '\0';
