@@ -1,37 +1,59 @@
 #pragma once
+
 #include "domain/entities/entidad.entity.hpp"
-#include <chrono>
 
 enum TipoDeTransaccion { COMPRA, VENTA };
-using std::chrono::system_clock;
-using std::chrono::time_point;
 
-class Transaccion : public EntidadBase {
-  public:
-    TipoDeTransaccion tipo;             // COMPRA o VENTA
-    int idRelacionado;                  // ID del proveedor (compra) o cliente (venta)
-    float total;                        // cantidad * precioUnitario
-    time_point<system_clock> fecha[11]; // Formato: YYYY-MM-DD
-    char descripcion[200];              // Notas adicionales (opcional)
+class Transaccion : public EntidadBase
+{
+   private:
+    TipoDeTransaccion tipo;  // COMPRA o VENTA
+    int idRelacionado;       // ID del proveedor (compra) o cliente (venta)
+    float total;             // cantidad * precioUnitario
+    char descripcion[200];   // Notas adicionales (opcional)
 
     // Hasta 100 productos por transacción
     int productosIds[100];
-    int cantidades[100];          // Cantidades de cada producto
-    float preciosUnitarios[100];  // Precios unitarios de cada producto
-    int cantidadTiposDeProductos; // Cuantos elementos de los arrays anteriores
-                                  // se están usando
+    int cantidades[100];           // Cantidades de cada producto
+    float preciosUnitarios[100];   // Precios unitarios de cada producto
+    int cantidadTiposDeProductos;  // Cuantos elementos de los arrays anteriores
+                                   // se están usando
+   public:
+    Transaccion(int id, char* nombre, bool eliminado, time_point<system_clock> fechaCreacion,
+                time_point<system_clock> fechaUltimaModificacion, TipoDeTransaccion tipo,
+                int idRelacionado, float total, char* descripcion, int productosIds[],
+                int cantidades[], float preciosUnitarios[], int cantidadTiposDeProductos);
 
-    Transaccion()
-        : EntidadBase(0, "", false, std::chrono::system_clock::now(),
-                      std::chrono::system_clock::now()),
-          tipo(COMPRA), idRelacionado(0), total(0.0f), cantidadTiposDeProductos(0) {
-        descripcion[0] = '\0';
+    auto getTipoTransaccion() const { return this->tipo; }
 
-        // init arrays
-        for (int i = 0; i < 100; ++i) {
-            productosIds[i] = 0;
-            cantidades[i] = 0;
-            preciosUnitarios[i] = 0.0f;
-        }
+    bool setTipoTransaccion(TipoDeTransaccion nuevoTipo);
+
+    auto getIdRelacionado() const { return this->idRelacionado; }
+
+    bool setIdRelacionado(int nuevoIdRelacionado);
+
+    auto getTotal() const { return this->total; }
+
+    bool setTotal(float nuevoTotal);
+
+    auto getDescripcion() const { return this->descripcion; }
+
+    bool setDescripcion(char* nuevaDescripcion);
+
+    auto getProductosIds() const { return this->productosIds; }
+
+    bool setProductosIds(int productosIds[], int cantidades[], float preciosUnitarios[],
+                         int cantidadTiposDeProductos);
+
+    auto getCantidades() const { return this->cantidades; }
+
+    auto getPreciosUnitarios() const { return this->preciosUnitarios; }
+
+    auto getCantidadTiposDeProductos() const { return this->cantidadTiposDeProductos; }
+
+    bool setCantidadTiposDeProductos(int nuevaCantidadTiposDeProductos)
+    {
+        this->cantidadTiposDeProductos = nuevaCantidadTiposDeProductos;
+        return true;
     }
 };
