@@ -1,9 +1,5 @@
 #pragma once
 #include <chrono>
-#include <cstring>
-#include <ctime>
-#include <string>
-#include <variant>
 
 #include "domain/entities/entidad.entity.hpp"
 
@@ -14,140 +10,49 @@ using std::chrono::time_point;
 class Producto : public EntidadBase
 {
    private:
-    char codigo[20] = "";        // Código del producto (ej: "PROD-001")
-    char descripcion[200] = "";  // Descripción del producto
-    char fechaRegistro[11] = "";
-    float precio = 0.0f;  // Precio unitario
-    int stock = 0;        // Cantidad en inventario
+    char m_codigo[20]{};
+    char m_descripcion[200]{};  // Descripción del producto
+    float m_precio{0.0f};       // Precio unitario
+    int m_stock{0};             // Cantidad en inventario
     // llaves foraneas
-    int idProveedor = 0;
+    int m_idProveedor{0};
     // estadisticas
-    int stockMinimo = 0;
-    int totalVendido = 0;
-
-    void copiarCadenaSeguro(char* destino, size_t capacidad, const char* fuente)
-    {
-        if (capacidad == 0) return;
-
-        if (fuente == nullptr) {
-            destino[0] = '\0';
-            return;
-        }
-
-        std::strncpy(destino, fuente, capacidad - 1);
-        destino[capacidad - 1] = '\0';
-    }
+    int m_stockMinimo{0};
+    int m_totalVendido{0};
 
    public:
-    Producto()
-        : EntidadBase(0, "", false, std::chrono::system_clock::now(),
-                      std::chrono::system_clock::now()),
-          fechaRegistro{},
-          precio(0.0f),
-          stock(0),
-          idProveedor(0),
-          stockMinimo(0),
-          totalVendido(0)
-    {
-    }
+    Producto(int id, const char* nombre, bool eliminado, time_point<system_clock> fechaCreacion,
+             time_point<system_clock> fechaUltimaModificacion, const char* codigo,
+             const char* descripcion, float precio, int stock, int idProveedor, int stockMinimo,
+             int totalVendido);
 
-    Producto(int id, const char* nombre, const std::string& codigo, const char* descripcion,
-             bool eliminado, time_point<system_clock> fechaCreacion,
-             time_point<system_clock> fechaUltimaModificacion);
+    float getPrecio() const { return m_precio; }
 
-    float getPrecio() const { return precio; }
+    bool setPrecio(float nuevoPrecio);
 
-    int getStock() const { return stock; }
+    int getStock() const { return m_stock; }
 
-    int getIdProveedor() const { return idProveedor; }
+    bool setStock(int nuevoStock);
 
-    int getStockMinimo() const { return stockMinimo; }
+    int getIdProveedor() const { return m_idProveedor; }
 
-    int getTotalVendido() const { return totalVendido; }
+    bool setIdProveedor(int nuevoIdProveedor);
 
-    const char* getCodigo() const { return codigo; }
+    int getStockMinimo() const { return m_stockMinimo; }
 
-    const char* getDescripcion() const { return descripcion; }
+    bool setStockMinimo(int nuevoStockMinimo);
 
-    const char* getFechaRegistro() const { return fechaRegistro; }
+    int getTotalVendido() const { return m_totalVendido; }
 
-    void setId(int nuevoId)
-    {
-        if (nuevoId < 0) {
-            // TODO: probar si esto funciona
-            throw std::invalid_argument("Id inválido: debe ser mayor o igual a 0.");
-        }
-        m_id = nuevoId;
-    }
+    bool setTotalVendido(int nuevoTotalVendido);
 
-    void setNombre(const char* nuevoNombre)
-    {
-        if (nuevoNombre == nullptr) {
-            // TODO: probar si esto funciona
-            throw std::invalid_argument("Nombre inválido: debe ser una cadena de caracteres.");
-        }
-        copiarCadenaSeguro(this->m_nombre, 50, nuevoNombre);
-    }
+    const char* getCodigo() const { return m_codigo; }
 
-    void setPrecio(float nuevoPrecio)
-    {
-        if (nuevoPrecio < 0) {
-            // TODO: probar si esto funciona
-            throw std::invalid_argument("Precio inválido: debe ser mayor o igual a 0.");
-        }
-        precio = nuevoPrecio;
-    }
+    bool setCodigo(const char* nuevoCodigo);
 
-    void setStock(int nuevoStock)
-    {
-        if (nuevoStock < 0) {
-            // TODO: probar si esto funciona
-            throw std::invalid_argument("Stock inválido: debe ser mayor o igual a 0.");
-        }
-        stock = nuevoStock;
-    }
+    const char* getDescripcion() const { return m_descripcion; }
 
-    void setIdProveedor(int nuevoIdProveedor)
-    {
-        if (nuevoIdProveedor < 0) {
-            // TODO: probar si esto funciona
-            throw std::invalid_argument("IdProveedor inválido: debe ser mayor o igual a 0.");
-        }
-        idProveedor = nuevoIdProveedor;
-    }
-
-    void setStockMinimo(int nuevoStockMinimo)
-    {
-        if (nuevoStockMinimo < 0) {
-            // TODO: probar si esto funciona
-            throw std::invalid_argument("StockMinimo inválido: debe ser mayor o igual a 0.");
-        }
-        stockMinimo = nuevoStockMinimo;
-    }
-
-    void setTotalVendido(int nuevoTotalVendido)
-    {
-        if (nuevoTotalVendido < 0) {
-            // TODO: probar si esto funciona
-            throw std::invalid_argument("TotalVendido inválido: debe ser mayor o igual a 0.");
-        }
-        totalVendido = nuevoTotalVendido;
-    }
-
-    void setCodigo(const char* nuevoCodigo)
-    {
-        copiarCadenaSeguro(codigo, sizeof(codigo), nuevoCodigo);
-    }
-
-    void setDescripcion(const char* nuevaDescripcion)
-    {
-        copiarCadenaSeguro(descripcion, sizeof(descripcion), nuevaDescripcion);
-    }
-
-    void setFechaRegistro(const char* nuevaFechaRegistro)
-    {
-        copiarCadenaSeguro(fechaRegistro, sizeof(fechaRegistro), nuevaFechaRegistro);
-    }
+    bool setDescripcion(const char* nuevaDescripcion);
 
     ~Producto() = default;
 };
