@@ -1,22 +1,17 @@
 #pragma once
-#include <chrono>
-#include <cstring>
 
 #include "domain/entities/entidad.entity.hpp"
-
-using std::chrono::system_clock;
-using std::chrono::time_point;
 
 class Tienda : public EntidadBase
 {
    private:
-    char rif[20];
-    int totalProductosActivos;
-    int totalProveedoresActivos;
-    int totalClientesActivos;
-    int totalTransaccionesActivas;
-    float montoTotalVentas;
-    float montoTotalCompras;
+    char m_rif[20]{""};
+    int m_totalProductosActivos{0};
+    int m_totalProveedoresActivos{0};
+    int m_totalClientesActivos{0};
+    int m_totalTransaccionesActivas{0};
+    float m_montoTotalVentas{0};
+    float m_montoTotalCompras{0};
 
    public:
     Tienda();
@@ -25,48 +20,33 @@ class Tienda : public EntidadBase
            time_point<system_clock> fechaCreacion, int montoTotalVentas, int montoTotalCompras,
            int totalTransaccionesActivas, time_point<system_clock> fechaUltimaModificacion);
 
-    const char* getRif() const { return rif; }
+    const char* getRif() const { return m_rif; }
 
     bool setRif(const char* rif);
 
-    int getTotalProductosActivos() const { return totalProductosActivos; }
+    int getTotalProductosActivos() const { return m_totalProductosActivos; }
 
-    void setTotalProductosActivos(int totalProductosActivos)
-    {
-        this->totalProductosActivos = totalProductosActivos;
-    }
+    bool setTotalProductosActivos(int totalProductosActivos);
 
-    int getTotalProveedoresActivos() const { return totalProveedoresActivos; }
+    int getTotalProveedoresActivos() const { return m_totalProveedoresActivos; }
 
-    void setTotalProveedoresActivos(int totalProveedoresActivos)
-    {
-        this->totalProveedoresActivos = totalProveedoresActivos;
-    }
+    bool setTotalProveedoresActivos(int totalProveedoresActivos);
 
-    int getTotalClientesActivos() const { return totalClientesActivos; }
+    int getTotalClientesActivos() const { return m_totalClientesActivos; }
 
-    void setTotalClientesActivos(int totalClientesActivos)
-    {
-        this->totalClientesActivos = totalClientesActivos;
-    }
+    bool setTotalClientesActivos(int totalClientesActivos);
 
-    int getTotalTransaccionesActivas() const { return totalTransaccionesActivas; }
+    int getTotalTransaccionesActivas() const { return m_totalTransaccionesActivas; }
 
-    void setTotalTransaccionesActivas(int totalTransaccionesActivas)
-    {
-        this->totalTransaccionesActivas = totalTransaccionesActivas;
-    }
+    bool setTotalTransaccionesActivas(int totalTransaccionesActivas);
 
-    float getMontoTotalVentas() const { return montoTotalVentas; }
+    float getMontoTotalVentas() const { return m_montoTotalVentas; }
 
-    void setMontoTotalVentas(float montoTotalVentas) { this->montoTotalVentas = montoTotalVentas; }
+    bool setMontoTotalVentas(float montoTotalVentas);
 
-    float getMontoTotalCompras() const { return montoTotalCompras; }
+    float getMontoTotalCompras() const { return m_montoTotalCompras; }
 
-    void setMontoTotalCompras(float montoTotalCompras)
-    {
-        this->montoTotalCompras = montoTotalCompras;
-    }
+    bool setMontoTotalCompras(float montoTotalCompras);
 
     ~Tienda() = default;
 };
