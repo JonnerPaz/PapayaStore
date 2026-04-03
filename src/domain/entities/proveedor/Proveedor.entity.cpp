@@ -89,6 +89,15 @@ bool Proveedor::setEmail(const char* email)
     return 0;
 }
 
+bool Proveedor::setRif(const char* rif)
+{
+    if (rif == nullptr) {
+        return false;
+    }
+
+    return EntidadBase::copiarCadenaSeguro(this->m_rif, sizeof(this->m_rif), rif);
+}
+
 bool Proveedor::setDireccion(const char* direccion)
 {
     if (direccion == nullptr) {
