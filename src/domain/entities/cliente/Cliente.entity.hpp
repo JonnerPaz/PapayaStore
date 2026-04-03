@@ -63,6 +63,8 @@ class Cliente : public EntidadBase
         if (!(ss >> y >> dash1 >> m >> dash2 >> d)) {
             return false;
         }
+   public:
+    Cliente();
 
         // para ver que tenga los guiones donde van
         if (dash1 != '-' || dash2 != '-') {
@@ -72,6 +74,10 @@ class Cliente : public EntidadBase
         year_month_day ymd{year{y}, month{(unsigned)m}, day{(unsigned)d}};
         return ymd.ok();
     }
+    Cliente(int id, const char* nombre, const char* cedula, const char* telefono, const char* email,
+            const char* direccion, bool eliminado, const char* fechaRegistro,
+            time_point<system_clock> fechaCreacion,
+            time_point<system_clock> fechaUltimaModificacion);
 
     char* getTelefono() { return this->telefono; }
 
@@ -106,28 +112,4 @@ class Cliente : public EntidadBase
     int getCantidad() { return this->cantidad; };
 
     int* getHistorialIds() { return this->historialIds; }
-
-   public:
-    Cliente()
-        : EntidadBase(0, "", false, std::chrono::system_clock::now(),
-                      std::chrono::system_clock::now()),
-          cantidad(0),
-          totalCompras(0.0f),
-          cantidadTransacciones(0)
-    {
-        telefono[0] = '\0';
-        email[0] = '\0';
-        direccion[0] = '\0';
-        fechaRegistro[0] = '\0';
-        cedula[0] = '\0';
-        for (int i = 0; i < 100; ++i) {
-            historialIds[i] = 0;
-            transaccionesIds[i] = 0;
-        }
-    }
-
-    Cliente(int id, const char* nombre, const char* cedula, const char* telefono, const char* email,
-            const char* direccion, bool eliminado, const char* fechaRegistro,
-            time_point<system_clock> fechaCreacion,
-            time_point<system_clock> fechaUltimaModificacion);
 };

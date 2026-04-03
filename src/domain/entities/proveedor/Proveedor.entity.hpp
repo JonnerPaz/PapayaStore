@@ -18,6 +18,8 @@ class Proveedor : public EntidadBase
     bool validarFecha(const char* fecha);
 
    public:
+    Proveedor();
+
     Proveedor(int id, const char* nombre, bool eliminado, time_point<system_clock> fechaCreacion,
               time_point<system_clock> fechaUltimaModificacion, const char* rif, int productosIds[],
               int cantidadProductos, const char* telefono, const char* email, const char* direccion,

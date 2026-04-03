@@ -1,5 +1,11 @@
 #include "transaccion.entity.hpp"
 
+Transaccion::Transaccion()
+    : EntidadBase(0, "", false, std::chrono::system_clock::now(),
+                  std::chrono::system_clock::now())
+{
+}
+
 Transaccion::Transaccion(int id, char* nombre, bool eliminado,
                          time_point<system_clock> fechaCreacion,
                          time_point<system_clock> fechaUltimaModificacion, TipoDeTransaccion tipo,

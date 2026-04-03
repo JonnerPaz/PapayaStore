@@ -10,7 +10,7 @@ using std::chrono::time_point;
 class Producto : public EntidadBase
 {
    private:
-    char m_codigo[20]{};
+    char m_codigo[20]{0};
     char m_descripcion[200]{};  // Descripción del producto
     float m_precio{0.0f};       // Precio unitario
     int m_stock{0};             // Cantidad en inventario
@@ -21,6 +21,8 @@ class Producto : public EntidadBase
     int m_totalVendido{0};
 
    public:
+    Producto();
+
     Producto(int id, const char* nombre, bool eliminado, time_point<system_clock> fechaCreacion,
              time_point<system_clock> fechaUltimaModificacion, const char* codigo,
              const char* descripcion, float precio, int stock, int idProveedor, int stockMinimo,

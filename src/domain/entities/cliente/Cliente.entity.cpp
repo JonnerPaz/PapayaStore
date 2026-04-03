@@ -1,7 +1,25 @@
 #include "Cliente.entity.hpp"
 
-using std::chrono::system_clock;
-using std::chrono::time_point;
+#include <sstream>
+
+using namespace std::chrono;
+
+Cliente::Cliente()
+    : EntidadBase(0, "", false, std::chrono::system_clock::now(), std::chrono::system_clock::now()),
+      cantidad(0),
+      totalCompras(0.0f),
+      cantidadTransacciones(0)
+{
+    telefono[0] = '\0';
+    email[0] = '\0';
+    direccion[0] = '\0';
+    fechaRegistro[0] = '\0';
+    cedula[0] = '\0';
+    for (int i = 0; i < 100; ++i) {
+        historialIds[i] = 0;
+        transaccionesIds[i] = 0;
+    }
+}
 
 Cliente::Cliente(int id, const char* nombre, const char* cedula, const char* telefono,
                  const char* email, const char* direccion, bool eliminado,

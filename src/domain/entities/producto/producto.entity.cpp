@@ -1,5 +1,10 @@
 #include "domain/entities/producto/producto.entity.hpp"
 
+Producto::Producto()
+    : EntidadBase(0, "", false, std::chrono::system_clock::now(), std::chrono::system_clock::now())
+{
+}
+
 Producto::Producto(int id, const char* nombre, bool eliminado,
                    time_point<system_clock> fechaCreacion,
                    time_point<system_clock> fechaUltimaModificacion, const char* codigo,

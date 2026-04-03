@@ -2,6 +2,12 @@
 
 #include <sstream>
 
+Proveedor::Proveedor()
+    : EntidadBase(0, "", false, std::chrono::system_clock::now(),
+                  std::chrono::system_clock::now())
+{
+}
+
 Proveedor::Proveedor(int id, const char* nombre, bool eliminado,
                      time_point<system_clock> fechaCreacion,
                      time_point<system_clock> fechaUltimaModificacion, const char* rif,

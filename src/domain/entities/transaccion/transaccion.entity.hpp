@@ -16,11 +16,13 @@ class Transaccion : public EntidadBase
     TipoDeTransaccion m_tipo{};       // COMPRA o VENTA
     int m_idRelacionado{0};           // ID del proveedor (compra) o cliente (venta)
     float m_total{0};                 // cantidad * precioUnitario
-    char m_descripcion[200];          // Notas adicionales (opcional)
-    TransaccionDTO m_productos[100];  // Productos de la transaccion (hasta 100)
+    char m_descripcion[200]{};        // Notas adicionales (opcional)
+    TransaccionDTO m_productos[100]{};  // Productos de la transaccion (hasta 100)
     int m_productosTotales{0};        // cuantos productos existen en la transaccion
 
    public:
+    Transaccion();
+
     Transaccion(int id, char* nombre, bool eliminado, time_point<system_clock> fechaCreacion,
                 time_point<system_clock> fechaUltimaModificacion, TipoDeTransaccion tipo,
                 int idRelacionado, float total, char* descripcion, TransaccionDTO& productos);
