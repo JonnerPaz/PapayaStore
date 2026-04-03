@@ -1,93 +1,42 @@
 #pragma once
-#include <chrono>
 #include <cstring>
-#include <sstream>
-#include <string>
 
 #include "domain/entities/entidad.entity.hpp"
 
 class Cliente : public EntidadBase
 {
    private:
-    char telefono[20];
-    char email[100];
-    char direccion[200];
-    char fechaRegistro[11];
-    int cantidad;           // cantidad de transacciones / productos
-    int historialIds[100];  // Identificadores de transacciones / productos
-    char cedula[20];        // Cédula o RIF
-    float totalCompras;
-    int transaccionesIds[100];
-    int cantidadTransacciones;
+    char m_telefono[20];
+    char m_email[100];
+    char m_direccion[200];
+    char m_fechaRegistro[11];
+    int m_cantidad;           // cantidad de transacciones / productos
+    int m_historialIds[100];  // Identificadores de transacciones / productos
+    char m_cedula[20];        // Cédula o RIF
+    float m_totalCompras;
+    int m_transaccionesIds[100];
+    int m_cantidadTransacciones;
 
-    bool validarEmail(const char* email)
-    {
-        int PosicionAt = -1;             // verificar y darle valor al "@"
-        bool TienePuntoDespues = false;  // para comprobar que tenga "." despues del "@"
-        int longitud = strlen(email);    // para que el ciclo for sepa hasta donde buscar
+    bool validarEmail(const char* email);
+    bool validarFecha(const char* fecha);
 
-        // la funcion "for" para recorrer todo el email
-        for (int i = 0; i < longitud; i++) {
-            if (email[i] == '@') {
-                // verificacion si ya habia un @ y hay dos @
-                if (PosicionAt != -1) return false;
-                PosicionAt = i;
-            }
-            // verificacion de si hay un '.' despues de ya tener el '@'
-            if (PosicionAt != -1 && email[i] == '.') {
-                if (i > PosicionAt + 1) {
-                    TienePuntoDespues = true;
-                }
-            }
-        }
-
-        // verificacion de los errores
-        if (PosicionAt > 0 && PosicionAt < longitud - 1 && TienePuntoDespues) {
-            return true;
-        }
-
-        return false;
-    }
-
-    bool validarFecha(const char* fecha)
-    {
-        using namespace std;
-        using namespace std::chrono;
-
-        // extraemos los datos de YYYY-MM-DD
-        stringstream ss(fecha);
-        int y, m, d;
-        char dash1, dash2;
-
-        // verificar si es correcto el formato
-        if (!(ss >> y >> dash1 >> m >> dash2 >> d)) {
-            return false;
-        }
    public:
     Cliente();
 
-        // para ver que tenga los guiones donde van
-        if (dash1 != '-' || dash2 != '-') {
-            return false;
-        }
-        // year_month_day representa una fecha en el calendario civil
-        year_month_day ymd{year{y}, month{(unsigned)m}, day{(unsigned)d}};
-        return ymd.ok();
-    }
     Cliente(int id, const char* nombre, const char* cedula, const char* telefono, const char* email,
             const char* direccion, bool eliminado, const char* fechaRegistro,
             time_point<system_clock> fechaCreacion,
             time_point<system_clock> fechaUltimaModificacion);
 
-    char* getTelefono() { return this->telefono; }
+    char* getTelefono() { return this->m_telefono; }
 
     int setTelefono(const char* telefono)
     {
-        strcpy(this->telefono, telefono);
+        strcpy(this->m_telefono, telefono);
         return 0;
     }
 
-    char* getEmail() { return this->email; }
+    char* getEmail() { return this->m_email; }
 
     int setEmail(const char* email)
     {
@@ -95,21 +44,21 @@ class Cliente : public EntidadBase
             return 1;
         }
 
-        strcpy(this->email, email);
+        strcpy(this->m_email, email);
         return 0;
     }
 
-    char* getDireccion() { return this->direccion; }
+    char* getDireccion() { return this->m_direccion; }
 
     char* setDireccion(const char* direccion)
     {
-        strcpy(this->direccion, direccion);
-        return this->direccion;
+        strcpy(this->m_direccion, direccion);
+        return this->m_direccion;
     }
 
-    char* getFechaRegistro() { return this->fechaRegistro; }
+    char* getFechaRegistro() { return this->m_fechaRegistro; }
 
-    int getCantidad() { return this->cantidad; };
+    int getCantidad() { return this->m_cantidad; };
 
-    int* getHistorialIds() { return this->historialIds; }
+    int* getHistorialIds() { return this->m_historialIds; }
 };
