@@ -12,9 +12,10 @@ namespace fs = std::filesystem;
 template <typename T>
 class FSBaseRepository
 {
-   protected:
+   private:
     fs::path filePath;
 
+   public:
     FSBaseRepository(fs::path path) : filePath(path) {}
 
     std::variant<HeaderFile, std::string> obtenerEstadisticasTemplate()
@@ -126,9 +127,6 @@ class FSBaseRepository
 
         T registro = std::get<T>(result);
 
-        // We can't do this easily generically without a trait to SET deleted.
-        // But let's assume we can just modify the raw struct directly? No.
-        // Let's add setDeleted to EntityTraits.
         EntityTraits<T>::setDeleted(registro, true);
 
         auto updateRes = actualizarTemplate(id, registro);

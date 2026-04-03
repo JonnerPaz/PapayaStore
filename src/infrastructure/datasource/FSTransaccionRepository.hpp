@@ -4,32 +4,38 @@
 #include "domain/repositories/ITransaccionRepository.hpp"
 #include "infrastructure/datasource/FSBaseRepository.hpp"
 
-class FSTransaccionRepository : public ITransaccionRepository, private FSBaseRepository<Transaccion>
+class FSTransaccionRepository : public ITransaccionRepository
 {
    public:
-    FSTransaccionRepository() : FSBaseRepository<Transaccion>(Constants::PATHS::TRANSACCIONES_PATH)
+    FSTransaccionRepository() : baseRepository(Constants::PATHS::TRANSACCIONES_PATH)
     {
     }
 
-    std::variant<Transaccion, std::string> leerPorId(int id) override { return leerTemplate(id); }
+    std::variant<Transaccion, std::string> leerPorId(int id) override
+    {
+        return baseRepository.leerTemplate(id);
+    }
 
     std::variant<bool, std::string> guardar(const Transaccion& entidad) override
     {
-        return guardarTemplate(entidad);
+        return baseRepository.guardarTemplate(entidad);
     }
 
     std::variant<bool, std::string> actualizar(int id, const Transaccion& entidad) override
     {
-        return actualizarTemplate(id, entidad);
+        return baseRepository.actualizarTemplate(id, entidad);
     }
 
     std::variant<bool, std::string> eliminarLogicamente(int id) override
     {
-        return eliminarLogicamenteTemplate(id);
+        return baseRepository.eliminarLogicamenteTemplate(id);
     }
 
     std::variant<HeaderFile, std::string> obtenerEstadisticas() override
     {
-        return obtenerEstadisticasTemplate();
+        return baseRepository.obtenerEstadisticasTemplate();
     }
+
+   private:
+    FSBaseRepository<Transaccion> baseRepository;
 };
