@@ -40,26 +40,10 @@ class Menu
     explicit Menu(AppRepositories& repositories);
 
     virtual void showMenu() = 0;
-
     void drawMenu();
 
-    std::string getTitle() { return title; }
-
-    std::string setTitle(std::string title)
-    {
-        this->title = title;
-        return title;
-    }
-
-    std::string getTexToExit() { return texToExit; }
-
-    void setTexToExit(std::string texToExit) { this->texToExit = texToExit; }
-
-    int getNumOptions() { return numOptions; }
-
-    void setNumOptions(int numOptions) { this->numOptions = numOptions; }
-
-    void setOption(int index, const char* desc, std::function<void()> act);
+    bool confirmAction(const char* prompt);
+    std::string readLine(const char* prompt);
 
     template <typename T>
     std::variant<HeaderFile, std::string> obtenerEntidadHeader() const
@@ -76,6 +60,20 @@ class Menu
 
         return "Entidad no soportada para obtener header.";
     }
+
+    std::string getTitle() { return title; }
+
+    bool setTitle(std::string title);
+
+    std::string getTexToExit() { return texToExit; }
+
+    bool setTexToExit(std::string texToExit);
+
+    int getNumOptions() { return numOptions; }
+
+    bool setNumOptions(int numOptions);
+
+    bool setOption(int index, const char* desc, std::function<void()> act);
 
    public:
     virtual ~Menu() = default;

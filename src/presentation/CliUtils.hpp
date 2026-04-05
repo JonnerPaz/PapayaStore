@@ -29,6 +29,10 @@ class CliUtils
     static void showSearchCriteriaMenu();
     static int esIdValido(int id);
     static void convertirAMinusculas(char* cadena);
+    static bool parsePositiveInt(const std::string& input, int& outValue,
+                                 bool zeroInclusive = true);
+    static bool parsePositiveFloat(const std::string& input, float& outValue,
+                                   bool zeroInclusive = true);
 
     // lee un id y valida que sea un numero y mayor o igual a 0
     // si el usuario ingresa 'q', retorna -1

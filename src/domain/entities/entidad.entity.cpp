@@ -28,7 +28,7 @@ bool EntidadBase::copiarCadenaSeguro(char* destino, size_t capacidad, const char
 
 bool EntidadBase::setId(int id)
 {
-    if (id < 0) {
+    if (id <= 0) {
         return false;
     }
 

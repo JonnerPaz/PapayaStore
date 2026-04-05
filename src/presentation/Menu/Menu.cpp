@@ -15,6 +15,25 @@ Menu::Menu(AppRepositories& repositories)
 {
 }
 
+bool Menu::confirmAction(const char* prompt)
+{
+    std::cout << prompt;
+    char confirm = 'n';
+    std::cin >> confirm;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    return confirm == 's' || confirm == 'S';
+}
+
+// Get user input
+// Lo que hacía antes asignarPropiedad* pero no me terminó de servir pa un coño
+std::string Menu::readLine(const char* prompt)
+{
+    std::cout << prompt;
+    std::string value;
+    std::getline(std::cin >> std::ws, value);
+    return value;
+}
+
 std::variant<HeaderFile, std::string> Menu::leerHeader(const fs::path& path) const
 {
     try {
@@ -70,10 +89,30 @@ void Menu::drawMenu()
     } while (option != 0);
 }
 
-void Menu::setOption(int index, const char* desc, std::function<void()> act)
+bool Menu::setTitle(std::string title)
+{
+    this->title = title;
+    return true;
+}
+
+bool Menu::setTexToExit(std::string texToExit)
+{
+    this->texToExit = texToExit;
+    return true;
+}
+
+bool Menu::setNumOptions(int numOptions)
+{
+    this->numOptions = numOptions;
+    return true;
+}
+
+bool Menu::setOption(int index, const char* desc, std::function<void()> act)
 {
     if (index >= 0 && index < 5) {
         this->options[index].descripcion = desc;
         this->options[index].accion = act;
+        return true;
     }
+    return false;
 }

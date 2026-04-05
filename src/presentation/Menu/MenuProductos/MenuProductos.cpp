@@ -3,111 +3,33 @@
 #include <chrono>
 #include <format>
 #include <iostream>
-#include <limits>
 #include <string>
 #include <variant>
-
-namespace {
-
-// Get user input
-// Lo que hacía antes asignarPropiedad* pero no me terminó de servir pa un coño
-std::string readLine(const char* prompt)
-{
-    std::cout << prompt;
-    std::string value;
-    std::getline(std::cin >> std::ws, value);
-    return value;
-}
-
-bool confirmAction(const char* prompt)
-{
-    std::cout << prompt;
-    char confirm = 'n';
-    std::cin >> confirm;
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    return confirm == 's' || confirm == 'S';
-}
-
-bool parsePositiveInt(const std::string& input, int& outValue)
-{
-    if (input.empty()) {
-        return false;
-    }
-
-    try {
-        const int parsed = std::stoi(input);
-        if (parsed <= 0) {
-            return false;
-        }
-        outValue = parsed;
-        return true;
-    } catch (...) {
-        return false;
-    }
-}
-
-bool parseNonNegativeInt(const std::string& input, int& outValue)
-{
-    if (input.empty()) {
-        return false;
-    }
-
-    try {
-        const int parsed = std::stoi(input);
-        if (parsed < 0) {
-            return false;
-        }
-        outValue = parsed;
-        return true;
-    } catch (...) {
-        return false;
-    }
-}
-
-bool parseNonNegativeFloat(const std::string& input, float& outValue)
-{
-    if (input.empty()) {
-        return false;
-    }
-
-    try {
-        const float parsed = std::stof(input);
-        if (parsed < 0) {
-            return false;
-        }
-        outValue = parsed;
-        return true;
-    } catch (...) {
-        return false;
-    }
-}
-
-}  // namespace
 
 MenuProductos::MenuProductos(AppRepositories& repository, CliUtils utils)
     : Menu(repository), utils(utils)
 {
-    setTitle("Gestion de Productos");
-    setTexToExit("Salir");
-    setNumOptions(5);
+    Menu::setTitle("Gestion de Productos");
+    Menu::setTexToExit("Salir");
+    Menu::setNumOptions(5);
 }
 
 void MenuProductos::crearProducto()
 {
-    auto proveedoresStatsResult = repositories.proveedores.obtenerEstadisticas();
-    if (std::holds_alternative<std::string>(proveedoresStatsResult)) {
-        std::cout << "Error: " << std::get<std::string>(proveedoresStatsResult) << std::endl;
+    auto proveedoresHeader = repositories.proveedores.obtenerEstadisticas();
+    if (std::holds_alternative<std::string>(proveedoresHeader)) {
+        std::cout << "Error: " << std::get<std::string>(proveedoresHeader) << std::endl;
         return;
     }
 
-    if (std::get<HeaderFile>(proveedoresStatsResult).registrosActivos == 0) {
+    if (std::get<HeaderFile>(proveedoresHeader).registrosActivos == 0) {
         std::cout << "No hay proveedores registrados. Debe crear al menos uno "
                      "primero."
                   << std::endl;
         return;
     }
 
-    const std::string nombre = readLine("Ingrese el nombre del producto (q para cancelar): ");
+    std::string nombre = readLine("Ingrese el nombre del producto (q para cancelar): ");
     if (nombre == "q" || nombre == "Q" || nombre.empty()) {
         std::cout << "Creacion cancelada." << std::endl;
         return;
@@ -128,8 +50,8 @@ void MenuProductos::crearProducto()
 
     float precio = 0.0f;
     while (true) {
-        const std::string precioText = readLine("Ingrese el precio del producto: ");
-        if (parseNonNegativeFloat(precioText, precio)) {
+        const std::string precioText = Menu::readLine("Ingrese el precio del producto: ");
+        if (utils.parsePositiveFloat(precioText, precio, false)) {
             break;
         }
         std::cout << "Precio invalido. Debe ser un numero mayor o igual a 0." << std::endl;
@@ -137,8 +59,8 @@ void MenuProductos::crearProducto()
 
     int stock = 0;
     while (true) {
-        const std::string stockText = readLine("Ingrese el stock del producto: ");
-        if (parseNonNegativeInt(stockText, stock)) {
+        const std::string stockText = Menu::readLine("Ingrese el stock del producto: ");
+        if (utils.parsePositiveInt(stockText, stock)) {
             break;
         }
         std::cout << "Stock invalido. Debe ser un entero mayor o igual a 0." << std::endl;
@@ -147,7 +69,7 @@ void MenuProductos::crearProducto()
     int stockMinimo = 0;
     while (true) {
         const std::string stockMinText = readLine("Ingrese el stock minimo del producto: ");
-        if (parseNonNegativeInt(stockMinText, stockMinimo)) {
+        if (utils.parsePositiveInt(stockMinText, stockMinimo)) {
             break;
         }
         std::cout << "Stock minimo invalido. Debe ser un entero mayor o igual "
@@ -168,31 +90,31 @@ void MenuProductos::crearProducto()
         return;
     }
 
-    auto productoStatsResult = repositories.productos.obtenerEstadisticas();
-    if (std::holds_alternative<std::string>(productoStatsResult)) {
-        std::cout << "Error: " << std::get<std::string>(productoStatsResult) << std::endl;
+    auto productosHeader = repositories.productos.obtenerEstadisticas();
+    if (std::holds_alternative<std::string>(productosHeader)) {
+        std::cout << "Error: " << std::get<std::string>(productosHeader) << std::endl;
         return;
     }
 
-    const HeaderFile productoStats = std::get<HeaderFile>(productoStatsResult);
+    const HeaderFile productoStats = std::get<HeaderFile>(productosHeader);
     const int nuevoId = productoStats.proximoID;
 
-    const auto now = std::chrono::system_clock::now();
-    Producto producto(nuevoId, nombre.c_str(), codigo, descripcion.c_str(), false, now, now);
+    // se aprovechan las propiedades por defecto:
+    // eliminado, fechaCreacion, fechaUltimaModificacion, totalVendido
+    Producto producto{};
+    producto.setId(nuevoId);
+    producto.setNombre(nombre.c_str());
+    producto.setCodigo(codigo.c_str());
+    producto.setDescripcion(descripcion.c_str());
     producto.setPrecio(precio);
     producto.setStock(stock);
     producto.setIdProveedor(idProveedor);
     producto.setStockMinimo(stockMinimo);
-    producto.setTotalVendido(0);
-
-    char fechaActual[11];
-    producto.obtenerFechaActual(fechaActual);
-    producto.setFechaRegistro(fechaActual);
 
     std::cout << std::format("Se creara el producto: {} ({})", producto.getNombre(),
                              producto.getCodigo())
               << std::endl;
-    if (!confirmAction("Confirma creacion? (s/n): ")) {
+    if (!Menu::confirmAction("Confirma creacion? (s/n): ")) {
         std::cout << "Creacion cancelada." << std::endl;
         return;
     }
@@ -265,7 +187,7 @@ void MenuProductos::actualizarProducto()
     const std::string nuevoPrecioText = readLine("Nuevo precio (enter para mantener actual): ");
     float nuevoPrecio = 0.0f;
     if (!nuevoPrecioText.empty()) {
-        if (!parseNonNegativeFloat(nuevoPrecioText, nuevoPrecio)) {
+        if (!parsePositiveFloat(nuevoPrecioText, nuevoPrecio, false)) {
             std::cout << "Precio invalido." << std::endl;
             return;
         }
@@ -275,7 +197,7 @@ void MenuProductos::actualizarProducto()
     const std::string nuevoStockText = readLine("Nuevo stock (enter para mantener actual): ");
     int nuevoStock = 0;
     if (!nuevoStockText.empty()) {
-        if (!parseNonNegativeInt(nuevoStockText, nuevoStock)) {
+        if (!parsePositiveInt(nuevoStockText, nuevoStock)) {
             std::cout << "Stock invalido." << std::endl;
             return;
         }
@@ -286,7 +208,7 @@ void MenuProductos::actualizarProducto()
         readLine("Nuevo stock minimo (enter para mantener actual): ");
     int nuevoStockMinimo = 0;
     if (!nuevoStockMinimoText.empty()) {
-        if (!parseNonNegativeInt(nuevoStockMinimoText, nuevoStockMinimo)) {
+        if (!parsePositiveInt(nuevoStockMinimoText, nuevoStockMinimo)) {
             std::cout << "Stock minimo invalido." << std::endl;
             return;
         }
