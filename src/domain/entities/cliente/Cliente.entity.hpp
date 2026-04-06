@@ -1,5 +1,4 @@
 #pragma once
-#include <cstring>
 
 #include "domain/entities/entidad.entity.hpp"
 
@@ -28,37 +27,27 @@ class Cliente : public EntidadBase
             time_point<system_clock> fechaCreacion,
             time_point<system_clock> fechaUltimaModificacion);
 
-    char* getTelefono() { return this->m_telefono; }
+    const char* getCedula() const { return this->m_cedula; }
 
-    int setTelefono(const char* telefono)
-    {
-        strcpy(this->m_telefono, telefono);
-        return 0;
-    }
+    bool setCedula(const char* cedula);
 
-    char* getEmail() { return this->m_email; }
+    const char* getTelefono() const { return this->m_telefono; }
 
-    int setEmail(const char* email)
-    {
-        if (!validarEmail(email)) {
-            return 1;
-        }
+    bool setTelefono(const char* telefono);
 
-        strcpy(this->m_email, email);
-        return 0;
-    }
+    const char* getEmail() const { return this->m_email; }
 
-    char* getDireccion() { return this->m_direccion; }
+    bool setEmail(const char* email);
 
-    char* setDireccion(const char* direccion)
-    {
-        strcpy(this->m_direccion, direccion);
-        return this->m_direccion;
-    }
+    const char* getDireccion() const { return this->m_direccion; }
 
-    char* getFechaRegistro() { return this->m_fechaRegistro; }
+    bool setDireccion(const char* direccion);
 
-    int getCantidad() { return this->m_cantidad; };
+    const char* getFechaRegistro() const { return this->m_fechaRegistro; }
+
+    bool setFechaRegistro(const char* fechaRegistro);
+
+    int getCantidad() const { return this->m_cantidad; };
 
     int* getHistorialIds() { return this->m_historialIds; }
 };

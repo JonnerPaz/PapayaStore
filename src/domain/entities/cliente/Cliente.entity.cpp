@@ -2,10 +2,8 @@
 
 #include <sstream>
 
-using namespace std::chrono;
-
 Cliente::Cliente()
-    : EntidadBase(0, "", false, std::chrono::system_clock::now(), std::chrono::system_clock::now()),
+    : EntidadBase(0, "", false, system_clock::now(), system_clock::now()),
       m_cantidad(0),
       m_totalCompras(0.0f),
       m_cantidadTransacciones(0)
@@ -33,9 +31,9 @@ Cliente::Cliente(int id, const char* nombre, const char* cedula, const char* tel
     this->setTelefono(telefono);
     this->setEmail(email);
     this->setDireccion(direccion);
-    EntidadBase::copiarCadenaSeguro(this->m_cedula, sizeof(this->m_cedula), cedula);
-    EntidadBase::copiarCadenaSeguro(this->m_fechaRegistro, sizeof(this->m_fechaRegistro),
-                                    fechaRegistro);
+    if (!EntidadBase::copiarCadenaSeguro(this->m_cedula, sizeof(this->m_cedula), cedula)) {
+        throw std::runtime_error("Error al copiar la cedula");
+    }
 
     // init arrays
     for (int i = 0; i < 100; ++i) {
@@ -75,6 +73,10 @@ bool Cliente::validarEmail(const char* email)
 
 bool Cliente::validarFecha(const char* fecha)
 {
+    if (fecha == nullptr) {
+        return false;
+    }
+
     // extraemos los datos de YYYY-MM-DD
     std::stringstream ss(fecha);
     int y, m, d;
@@ -90,6 +92,57 @@ bool Cliente::validarFecha(const char* fecha)
         return false;
     }
     // year_month_day representa una fecha en el calendario civil
-    year_month_day ymd{year{y}, month{(unsigned) m}, day{(unsigned) d}};
+    std::chrono::year_month_day ymd{std::chrono::year{y}, std::chrono::month{(unsigned) m},
+                                    std::chrono::day{(unsigned) d}};
     return ymd.ok();
+}
+
+bool Cliente::setCedula(const char* cedula)
+{
+    if (cedula == nullptr) {
+        return false;
+    }
+
+    return EntidadBase::copiarCadenaSeguro(this->m_cedula, sizeof(this->m_cedula), cedula);
+}
+
+bool Cliente::setTelefono(const char* telefono)
+{
+    if (telefono == nullptr) {
+        return false;
+    }
+
+    return EntidadBase::copiarCadenaSeguro(this->m_telefono, sizeof(this->m_telefono), telefono);
+}
+
+bool Cliente::setEmail(const char* email)
+{
+    if (email == nullptr) {
+        return false;
+    }
+
+    if (!validarEmail(email)) {
+        return false;
+    }
+
+    return EntidadBase::copiarCadenaSeguro(this->m_email, sizeof(this->m_email), email);
+}
+
+bool Cliente::setDireccion(const char* direccion)
+{
+    if (direccion == nullptr) {
+        return false;
+    }
+
+    return EntidadBase::copiarCadenaSeguro(this->m_direccion, sizeof(this->m_direccion), direccion);
+}
+
+bool Cliente::setFechaRegistro(const char* fechaRegistro)
+{
+    if (fechaRegistro == nullptr || !validarFecha(fechaRegistro)) {
+        return false;
+    }
+
+    return EntidadBase::copiarCadenaSeguro(this->m_fechaRegistro, sizeof(this->m_fechaRegistro),
+                                           fechaRegistro);
 }
