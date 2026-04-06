@@ -17,7 +17,7 @@ Menu::Menu(AppRepositories& repositories)
 
 bool Menu::confirmAction(const char* prompt)
 {
-    std::cout << prompt;
+    std::cout << COLOR_YELLOW << prompt << COLOR_RESET;
     char confirm = 'n';
     std::cin >> confirm;
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -28,10 +28,20 @@ bool Menu::confirmAction(const char* prompt)
 // Lo que hacía antes asignarPropiedad* pero no me terminó de servir pa un coño
 std::string Menu::readLine(const char* prompt)
 {
-    std::cout << prompt;
+    std::cout << COLOR_YELLOW << prompt << COLOR_RESET;
     std::string value;
     std::getline(std::cin >> std::ws, value);
     return value;
+}
+
+void Menu::printSuccess(const std::string& message) const
+{
+    std::cout << COLOR_GREEN << message << COLOR_RESET << std::endl;
+}
+
+void Menu::printError(const std::string& error) const
+{
+    std::cout << COLOR_RED << error << COLOR_RESET << std::endl;
 }
 
 std::variant<HeaderFile, std::string> Menu::leerHeader(const fs::path& path) const

@@ -3,8 +3,9 @@
 #include "presentation/CliUtils.hpp"
 #include "presentation/Menu/Menu.hpp"
 
-class MenuProductos : public Menu {
-  public:
+class MenuProductos : public Menu
+{
+   public:
     CliUtils utils;
     explicit MenuProductos(AppRepositories& repository, CliUtils utils);
 
@@ -16,4 +17,11 @@ class MenuProductos : public Menu {
 
     void showMenu() override;
     ~MenuProductos() override = default;
+
+   private:
+    bool readValidText(const char* prompt, std::string& outValue);
+    void readValidFloat(const char* prompt, float& outValue, const char* errorMsg,
+                        bool zeroInclusive = true);
+    void readValidInt(const char* prompt, int& outValue, const char* errorMsg,
+                      bool zeroInclusive = true);
 };

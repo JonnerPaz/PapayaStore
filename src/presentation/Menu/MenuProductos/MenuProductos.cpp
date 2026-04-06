@@ -6,6 +6,8 @@
 #include <string>
 #include <variant>
 
+#include "domain/constants.hpp"
+
 MenuProductos::MenuProductos(AppRepositories& repository, CliUtils utils)
     : Menu(repository), utils(utils)
 {
@@ -14,85 +16,99 @@ MenuProductos::MenuProductos(AppRepositories& repository, CliUtils utils)
     Menu::setNumOptions(5);
 }
 
+bool MenuProductos::readValidText(const char* prompt, std::string& outValue)
+{
+    outValue = Menu::readLine(prompt);
+    if (outValue == "q" || outValue == "Q" || outValue.empty()) {
+        Menu::printError("Creacion cancelada.");
+        return false;
+    }
+
+    return true;
+}
+
+void MenuProductos::readValidFloat(const char* prompt, float& outValue, const char* errorMsg,
+                                   bool zeroInclusive)
+{
+    while (true) {
+        const std::string input = Menu::readLine(prompt);
+        if (utils.parsePositiveFloat(input, outValue, zeroInclusive)) {
+            return;
+        }
+
+        Menu::printError(errorMsg);
+    }
+}
+
+void MenuProductos::readValidInt(const char* prompt, int& outValue, const char* errorMsg,
+                                 bool zeroInclusive)
+{
+    while (true) {
+        const std::string input = Menu::readLine(prompt);
+        if (utils.parsePositiveInt(input, outValue, zeroInclusive)) {
+            return;
+        }
+
+        Menu::printError(errorMsg);
+    }
+}
+
 void MenuProductos::crearProducto()
 {
     auto proveedoresHeader = repositories.proveedores.obtenerEstadisticas();
     if (std::holds_alternative<std::string>(proveedoresHeader)) {
-        std::cout << "Error: " << std::get<std::string>(proveedoresHeader) << std::endl;
+        Menu::printError("Error: " + std::get<std::string>(proveedoresHeader));
         return;
     }
 
     if (std::get<HeaderFile>(proveedoresHeader).registrosActivos == 0) {
-        std::cout << "No hay proveedores registrados. Debe crear al menos uno "
-                     "primero."
-                  << std::endl;
+        Menu::printError("No hay proveedores registrados. Debe crear al menos uno primero.");
         return;
     }
 
-    std::string nombre = readLine("Ingrese el nombre del producto (q para cancelar): ");
-    if (nombre == "q" || nombre == "Q" || nombre.empty()) {
-        std::cout << "Creacion cancelada." << std::endl;
+    std::string nombre;
+    if (!readValidText("Ingrese el nombre del producto (q para cancelar): ", nombre)) {
         return;
     }
 
-    const std::string codigo = readLine("Ingrese el codigo del producto (q para cancelar): ");
-    if (codigo == "q" || codigo == "Q" || codigo.empty()) {
-        std::cout << "Creacion cancelada." << std::endl;
+    std::string codigo;
+    if (!readValidText("Ingrese el codigo del producto (q para cancelar): ", codigo)) {
         return;
     }
 
-    const std::string descripcion =
-        readLine("Ingrese la descripcion del producto (q para cancelar): ");
-    if (descripcion == "q" || descripcion == "Q" || descripcion.empty()) {
-        std::cout << "Creacion cancelada." << std::endl;
+    std::string descripcion;
+    if (!readValidText("Ingrese la descripcion del producto (q para cancelar): ", descripcion)) {
         return;
     }
 
     float precio = 0.0f;
-    while (true) {
-        const std::string precioText = Menu::readLine("Ingrese el precio del producto: ");
-        if (utils.parsePositiveFloat(precioText, precio, false)) {
-            break;
-        }
-        std::cout << "Precio invalido. Debe ser un numero mayor o igual a 0." << std::endl;
-    }
+    readValidFloat("Ingrese el precio del producto: ", precio,
+                   "Precio inválido. Debe ser un numero mayor o igual a 0.", false);
 
     int stock = 0;
-    while (true) {
-        const std::string stockText = Menu::readLine("Ingrese el stock del producto: ");
-        if (utils.parsePositiveInt(stockText, stock)) {
-            break;
-        }
-        std::cout << "Stock invalido. Debe ser un entero mayor o igual a 0." << std::endl;
-    }
+    readValidInt("Ingrese el stock del producto: ", stock,
+                 "Stock invalido. Debe ser un numero entero mayor o igual a 0.");
 
     int stockMinimo = 0;
-    while (true) {
-        const std::string stockMinText = readLine("Ingrese el stock minimo del producto: ");
-        if (utils.parsePositiveInt(stockMinText, stockMinimo)) {
-            break;
-        }
-        std::cout << "Stock minimo invalido. Debe ser un entero mayor o igual "
-                     "a 0."
-                  << std::endl;
-    }
+    readValidInt("Ingrese el stock minimo del producto: ", stockMinimo,
+                 "Stock minimo inválido. Debe ser un entero mayor o igual a 0.");
 
     listarProductos();
     const int idProveedor = utils.validarId("Ingrese el id del proveedor");
     if (idProveedor <= 0) {
-        std::cout << "Creacion cancelada." << std::endl;
+        Menu::printError("El Id ingresado no existe. Debe ser mayor a 0.");
         return;
     }
 
-    auto proveedorResult = repositories.proveedores.leerPorId(idProveedor);
-    if (std::holds_alternative<std::string>(proveedorResult)) {
-        std::cout << "Proveedor invalido: " << std::get<std::string>(proveedorResult) << std::endl;
+    auto proveedorHeader = repositories.proveedores.leerPorId(idProveedor);
+    if (std::holds_alternative<std::string>(proveedorHeader)) {
+        Menu::printError("Error: " + std::get<std::string>(proveedorHeader));
         return;
     }
 
     auto productosHeader = repositories.productos.obtenerEstadisticas();
     if (std::holds_alternative<std::string>(productosHeader)) {
-        std::cout << "Error: " << std::get<std::string>(productosHeader) << std::endl;
+        Menu::printError("Error: " + std::get<std::string>(productosHeader));
         return;
     }
 
@@ -111,58 +127,67 @@ void MenuProductos::crearProducto()
     producto.setIdProveedor(idProveedor);
     producto.setStockMinimo(stockMinimo);
 
-    std::cout << std::format("Se creara el producto: {} ({})", producto.getNombre(),
-                             producto.getCodigo())
-              << std::endl;
-    if (!Menu::confirmAction("Confirma creacion? (s/n): ")) {
-        std::cout << "Creacion cancelada." << std::endl;
+    std::cout << COLOR_YELLOW
+              << std::format("Se creara el producto: {}{} {}({}{}{})", COLOR_GREEN,
+                             producto.getNombre(), COLOR_YELLOW, COLOR_GREEN, producto.getCodigo(),
+                             COLOR_YELLOW)
+              << COLOR_RESET << std::endl;
+    if (!Menu::confirmAction("¿Estás seguro? (s/n): ")) {
+        Menu::printError("Creacion cancelada.");
         return;
     }
 
     auto saveResult = repositories.productos.guardar(producto);
     if (std::holds_alternative<std::string>(saveResult)) {
-        std::cout << "Error al guardar: " << std::get<std::string>(saveResult) << std::endl;
+        Menu::printError("Error al guardar: " + std::get<std::string>(saveResult));
         return;
     }
 
-    std::cout << "Producto creado con exito." << std::endl;
+    Menu::printSuccess("Producto creado con exito.");
 }
 
 void MenuProductos::buscarProducto()
 {
     const int id = utils.validarId("Ingrese el id del producto a buscar");
     if (id <= 0) {
-        std::cout << "Busqueda cancelada." << std::endl;
+        Menu::printError("El Id ingresado no existe. Búsqueda cancelada.");
         return;
     }
 
     auto result = repositories.productos.leerPorId(id);
     if (std::holds_alternative<std::string>(result)) {
-        std::cout << "Error: " << std::get<std::string>(result) << std::endl;
+        Menu::printError("Error: " + std::get<std::string>(result));
         return;
     }
 
     const Producto& producto = std::get<Producto>(result);
-    std::cout << "Producto encontrado:" << std::endl;
-    std::cout << std::format("ID: {}", producto.getId()) << std::endl;
-    std::cout << std::format("Nombre: {}", producto.getNombre()) << std::endl;
-    std::cout << std::format("Codigo: {}", producto.getCodigo()) << std::endl;
-    std::cout << std::format("Descripcion: {}", producto.getDescripcion()) << std::endl;
-    std::cout << std::format("Precio: {:.2f}", producto.getPrecio()) << std::endl;
-    std::cout << std::format("Stock: {}", producto.getStock()) << std::endl;
+    Menu::printSuccess("Producto encontrado:");
+    std::cout << std::format("{}ID: {}{}", COLOR_YELLOW, COLOR_GREEN, producto.getId())
+              << std::endl;
+    std::cout << std::format("{}Nombre: {}{}", COLOR_YELLOW, COLOR_GREEN, producto.getNombre())
+              << std::endl;
+    std::cout << std::format("{}Codigo: {}{}", COLOR_YELLOW, COLOR_GREEN, producto.getCodigo())
+              << std::endl;
+    std::cout << std::format("{}Descripcion: {}{}", COLOR_YELLOW, COLOR_GREEN,
+                             producto.getDescripcion())
+              << std::endl;
+    std::cout << std::format("{}Precio: {}{:.2f}", COLOR_YELLOW, COLOR_GREEN, producto.getPrecio())
+              << std::endl;
+    std::cout << std::format("{}Stock: {}{}", COLOR_YELLOW, COLOR_GREEN, producto.getStock())
+              << std::endl;
 }
 
 void MenuProductos::actualizarProducto()
 {
     const int id = utils.validarId("Ingrese el id del producto a actualizar");
     if (id <= 0) {
-        std::cout << "Actualizacion cancelada." << std::endl;
+        Menu::printError("El Id ingresado no existe. Actualizacion cancelada.");
         return;
     }
 
     auto result = repositories.productos.leerPorId(id);
     if (std::holds_alternative<std::string>(result)) {
-        std::cout << "Error: " << std::get<std::string>(result) << std::endl;
+        Menu::printError("Error: " + std::get<std::string>(result));
         return;
     }
 
@@ -187,8 +212,8 @@ void MenuProductos::actualizarProducto()
     const std::string nuevoPrecioText = readLine("Nuevo precio (enter para mantener actual): ");
     float nuevoPrecio = 0.0f;
     if (!nuevoPrecioText.empty()) {
-        if (!parsePositiveFloat(nuevoPrecioText, nuevoPrecio, false)) {
-            std::cout << "Precio invalido." << std::endl;
+        if (!utils.parsePositiveFloat(nuevoPrecioText, nuevoPrecio, false)) {
+            Menu::printError("Precio invalido.");
             return;
         }
         producto.setPrecio(nuevoPrecio);
@@ -197,8 +222,8 @@ void MenuProductos::actualizarProducto()
     const std::string nuevoStockText = readLine("Nuevo stock (enter para mantener actual): ");
     int nuevoStock = 0;
     if (!nuevoStockText.empty()) {
-        if (!parsePositiveInt(nuevoStockText, nuevoStock)) {
-            std::cout << "Stock invalido." << std::endl;
+        if (!utils.parsePositiveInt(nuevoStockText, nuevoStock)) {
+            Menu::printError("Stock invalido.");
             return;
         }
         producto.setStock(nuevoStock);
@@ -208,7 +233,7 @@ void MenuProductos::actualizarProducto()
         readLine("Nuevo stock minimo (enter para mantener actual): ");
     int nuevoStockMinimo = 0;
     if (!nuevoStockMinimoText.empty()) {
-        if (!parsePositiveInt(nuevoStockMinimoText, nuevoStockMinimo)) {
+        if (!utils.parsePositiveInt(nuevoStockMinimoText, nuevoStockMinimo)) {
             std::cout << "Stock minimo invalido." << std::endl;
             return;
         }
@@ -219,15 +244,14 @@ void MenuProductos::actualizarProducto()
         readLine("Nuevo id de proveedor (enter para mantener actual): ");
     int nuevoIdProveedor = 0;
     if (!nuevoProveedorText.empty()) {
-        if (!parsePositiveInt(nuevoProveedorText, nuevoIdProveedor)) {
-            std::cout << "ID de proveedor invalido." << std::endl;
+        if (!utils.parsePositiveInt(nuevoProveedorText, nuevoIdProveedor)) {
+            Menu::printError("ID de Proveedor invalido.");
             return;
         }
 
         auto proveedorResult = repositories.proveedores.leerPorId(nuevoIdProveedor);
         if (std::holds_alternative<std::string>(proveedorResult)) {
-            std::cout << "Proveedor invalido: " << std::get<std::string>(proveedorResult)
-                      << std::endl;
+            Menu::printError("Proveedor inválido: " + std::get<std::string>(proveedorResult));
             return;
         }
 
@@ -237,37 +261,38 @@ void MenuProductos::actualizarProducto()
     producto.setFechaUltimaModificacion(std::chrono::system_clock::now());
 
     if (!confirmAction("Confirma actualizacion? (s/n): ")) {
-        std::cout << "Actualizacion cancelada." << std::endl;
+        Menu::printError("Actualizacion cancelada.");
         return;
     }
 
     auto updateResult = repositories.productos.actualizar(id, producto);
     if (std::holds_alternative<std::string>(updateResult)) {
-        std::cout << "Error al actualizar: " << std::get<std::string>(updateResult) << std::endl;
+        Menu::printError("Error al actualizar: " + std::get<std::string>(updateResult));
         return;
     }
 
-    std::cout << "Producto actualizado con exito." << std::endl;
+    Menu::printSuccess("Producto actualizado con éxito.");
 }
 
 void MenuProductos::listarProductos()
 {
-    auto statsResult = repositories.productos.obtenerEstadisticas();
-    if (std::holds_alternative<std::string>(statsResult)) {
-        std::cout << "Error: " << std::get<std::string>(statsResult) << std::endl;
+    auto productosHeader = repositories.productos.obtenerEstadisticas();
+    if (std::holds_alternative<std::string>(productosHeader)) {
+        Menu::printError("Error: " + std::get<std::string>(productosHeader));
         return;
     }
 
-    HeaderFile stats = std::get<HeaderFile>(statsResult);
+    HeaderFile stats = std::get<HeaderFile>(productosHeader);
     if (stats.registrosActivos == 0) {
-        std::cout << "No hay productos registrados." << std::endl;
+        Menu::printError("No hay productos registrados.");
         return;
     }
 
-    std::cout << std::format("--- Lista de Productos ({}) ---", stats.registrosActivos)
+    std::cout << std::format("{}--- Lista de Productos ({}{}{}) ---", COLOR_CYAN, COLOR_GREEN,
+                             COLOR_YELLOW, stats.registrosActivos)
               << std::endl;
-    std::cout << std::format("{:<5} | {:<20} | {:<15} | {:<10} | {:<5}", "ID", "Nombre", "Codigo",
-                             "Precio", "Stock")
+    std::cout << std::format("{}{:<5} | {:<20} | {:<15} | {:<10} | {:<5}", COLOR_YELLOW, "ID",
+                             "Nombre", "Codigo", "Precio", "Stock")
               << std::endl;
     std::cout << "----------------------------------------------------------------" << std::endl;
 
@@ -278,9 +303,9 @@ void MenuProductos::listarProductos()
         }
 
         const Producto& producto = std::get<Producto>(result);
-        std::cout << std::format("{:<5} | {:<20} | {:<15} | {:<10.2f} | {:<5}", producto.getId(),
-                                 producto.getNombre(), producto.getCodigo(), producto.getPrecio(),
-                                 producto.getStock())
+        std::cout << std::format("{}{:<5} | {:<20} | {:<15} | {:<10.2f} | {:<5}", COLOR_GREEN,
+                                 producto.getId(), producto.getNombre(), producto.getCodigo(),
+                                 producto.getPrecio(), producto.getStock())
                   << std::endl;
     }
 }
@@ -289,13 +314,13 @@ void MenuProductos::eliminarProducto()
 {
     const int id = utils.validarId("Ingrese el id del producto a eliminar");
     if (id <= 0) {
-        std::cout << "Eliminacion cancelada." << std::endl;
+        Menu::printError("Eliminación cancelada.");
         return;
     }
 
     auto result = repositories.productos.leerPorId(id);
     if (std::holds_alternative<std::string>(result)) {
-        std::cout << "Error: " << std::get<std::string>(result) << std::endl;
+        Menu::printError("Error: " + std::get<std::string>(result));
         return;
     }
 
@@ -315,7 +340,7 @@ void MenuProductos::eliminarProducto()
         return;
     }
 
-    std::cout << "Producto eliminado con exito." << std::endl;
+    Menu::printSuccess("Producto eliminado con éxito.");
 }
 
 // [this]() { crearProducto(); } lambda function (como pasar callback)
@@ -327,5 +352,5 @@ void MenuProductos::showMenu()
     setOption(3, "Listar Productos", [this]() { listarProductos(); });
     setOption(4, "Eliminar Producto", [this]() { eliminarProducto(); });
 
-    drawMenu();
+    Menu::drawMenu();
 }

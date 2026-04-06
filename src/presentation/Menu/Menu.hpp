@@ -44,6 +44,8 @@ class Menu
 
     bool confirmAction(const char* prompt);
     std::string readLine(const char* prompt);
+    void printSuccess(const std::string& message) const;
+    void printError(const std::string& error) const;
 
     template <typename T>
     std::variant<HeaderFile, std::string> obtenerEntidadHeader() const
