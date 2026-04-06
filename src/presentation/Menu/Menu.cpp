@@ -24,8 +24,6 @@ bool Menu::confirmAction(const char* prompt)
     return confirm == 's' || confirm == 'S';
 }
 
-// Get user input
-// Lo que hacía antes asignarPropiedad* pero no me terminó de servir pa un coño
 std::string Menu::readLine(const char* prompt)
 {
     std::cout << COLOR_YELLOW << prompt << COLOR_RESET;

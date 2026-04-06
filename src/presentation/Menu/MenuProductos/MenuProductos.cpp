@@ -192,86 +192,330 @@ void MenuProductos::actualizarProducto()
     }
 
     Producto producto = std::get<Producto>(result);
+    while (true) {
+        std::cout << COLOR_CYAN << "\n--- Producto actual ---" << COLOR_RESET << std::endl;
+        std::cout << std::format("{}ID: {}{}", COLOR_YELLOW, COLOR_GREEN, producto.getId())
+                  << std::endl;
+        std::cout << std::format("{}Nombre: {}{}", COLOR_YELLOW, COLOR_GREEN, producto.getNombre())
+                  << std::endl;
+        std::cout << std::format("{}Codigo: {}{}", COLOR_YELLOW, COLOR_GREEN, producto.getCodigo())
+                  << std::endl;
+        std::cout << std::format("{}Descripcion: {}{}", COLOR_YELLOW, COLOR_GREEN,
+                                 producto.getDescripcion())
+                  << std::endl;
+        std::cout << std::format("{}Precio: {}{:.2f}", COLOR_YELLOW, COLOR_GREEN,
+                                 producto.getPrecio())
+                  << std::endl;
+        std::cout << std::format("{}Stock: {}{}", COLOR_YELLOW, COLOR_GREEN, producto.getStock())
+                  << std::endl;
+        std::cout << std::format("{}Stock minimo: {}{}", COLOR_YELLOW, COLOR_GREEN,
+                                 producto.getStockMinimo())
+                  << std::endl;
+        std::cout << std::format("{}ID Proveedor: {}{}", COLOR_YELLOW, COLOR_GREEN,
+                                 producto.getIdProveedor())
+                  << std::endl;
 
-    const std::string nuevoNombre = readLine("Nuevo nombre (enter para mantener actual): ");
-    if (!nuevoNombre.empty()) {
-        producto.setNombre(nuevoNombre.c_str());
-    }
+        std::cout << COLOR_CYAN << "\nSeleccione una propiedad a actualizar:" << COLOR_RESET
+                  << std::endl;
+        std::cout << COLOR_YELLOW << "1." << COLOR_RESET << " Nombre" << std::endl;
+        std::cout << COLOR_YELLOW << "2." << COLOR_RESET << " Codigo" << std::endl;
+        std::cout << COLOR_YELLOW << "3." << COLOR_RESET << " Descripción" << std::endl;
+        std::cout << COLOR_YELLOW << "4." << COLOR_RESET << " Precio" << std::endl;
+        std::cout << COLOR_YELLOW << "5." << COLOR_RESET << " Stock" << std::endl;
+        std::cout << COLOR_YELLOW << "6." << COLOR_RESET << " Stock minimo" << std::endl;
+        std::cout << COLOR_YELLOW << "7." << COLOR_RESET << " ID proveedor" << std::endl;
+        std::cout << COLOR_RED << "0." << COLOR_RESET << " Salir" << std::endl;
 
-    const std::string nuevoCodigo = readLine("Nuevo codigo (enter para mantener actual): ");
-    if (!nuevoCodigo.empty()) {
-        producto.setCodigo(nuevoCodigo.c_str());
-    }
-
-    const std::string nuevaDescripcion =
-        readLine("Nueva descripcion (enter para mantener actual): ");
-    if (!nuevaDescripcion.empty()) {
-        producto.setDescripcion(nuevaDescripcion.c_str());
-    }
-
-    const std::string nuevoPrecioText = readLine("Nuevo precio (enter para mantener actual): ");
-    float nuevoPrecio = 0.0f;
-    if (!nuevoPrecioText.empty()) {
-        if (!utils.parsePositiveFloat(nuevoPrecioText, nuevoPrecio, false)) {
-            Menu::printError("Precio invalido.");
-            return;
-        }
-        producto.setPrecio(nuevoPrecio);
-    }
-
-    const std::string nuevoStockText = readLine("Nuevo stock (enter para mantener actual): ");
-    int nuevoStock = 0;
-    if (!nuevoStockText.empty()) {
-        if (!utils.parsePositiveInt(nuevoStockText, nuevoStock)) {
-            Menu::printError("Stock invalido.");
-            return;
-        }
-        producto.setStock(nuevoStock);
-    }
-
-    const std::string nuevoStockMinimoText =
-        readLine("Nuevo stock minimo (enter para mantener actual): ");
-    int nuevoStockMinimo = 0;
-    if (!nuevoStockMinimoText.empty()) {
-        if (!utils.parsePositiveInt(nuevoStockMinimoText, nuevoStockMinimo)) {
-            std::cout << "Stock minimo invalido." << std::endl;
-            return;
-        }
-        producto.setStockMinimo(nuevoStockMinimo);
-    }
-
-    const std::string nuevoProveedorText =
-        readLine("Nuevo id de proveedor (enter para mantener actual): ");
-    int nuevoIdProveedor = 0;
-    if (!nuevoProveedorText.empty()) {
-        if (!utils.parsePositiveInt(nuevoProveedorText, nuevoIdProveedor)) {
-            Menu::printError("ID de Proveedor invalido.");
-            return;
+        const std::string opcionText = readLine("Opcion: ");
+        int opcion = -1;
+        if (!utils.parsePositiveInt(opcionText, opcion, false) || opcion > 7) {
+            Menu::printError("Opcion inválida.");
+            continue;
         }
 
-        auto proveedorResult = repositories.proveedores.leerPorId(nuevoIdProveedor);
-        if (std::holds_alternative<std::string>(proveedorResult)) {
-            Menu::printError("Proveedor inválido: " + std::get<std::string>(proveedorResult));
-            return;
+        if (opcion == 0) {
+            Menu::printSuccess("Actualizacion finalizada.");
+            break;
         }
 
-        producto.setIdProveedor(nuevoIdProveedor);
+        switch (opcion) {
+            case 1: {
+                const std::string nuevoNombre =
+                    readLine("Nuevo nombre (q o enter para cancelar): ");
+                if (nuevoNombre == "q" || nuevoNombre == "Q" || nuevoNombre.empty()) {
+                    Menu::printError("Actualizacion cancelada.");
+                    break;
+                }
+
+                std::cout << std::format("Nombre actual: {} | Nuevo nombre: {}",
+                                         producto.getNombre(), nuevoNombre)
+                          << std::endl;
+                if (!confirmAction("Confirma actualizacion de nombre? (s/n): ")) {
+                    Menu::printError("Actualizacion cancelada.");
+                    break;
+                }
+
+                Producto productoActualizado = producto;
+                if (!productoActualizado.setNombre(nuevoNombre.c_str())) {
+                    Menu::printError("Nombre invalido.");
+                    break;
+                }
+
+                productoActualizado.setFechaUltimaModificacion(std::chrono::system_clock::now());
+                auto updateResult = repositories.productos.actualizar(id, productoActualizado);
+                if (std::holds_alternative<std::string>(updateResult)) {
+                    Menu::printError("Error al actualizar nombre: " +
+                                     std::get<std::string>(updateResult));
+                    break;
+                }
+
+                producto = productoActualizado;
+                Menu::printSuccess("Nombre actualizado con éxito.");
+                break;
+            }
+            case 2: {
+                const std::string nuevoCodigo =
+                    readLine("Nuevo codigo (q o enter para cancelar): ");
+                if (nuevoCodigo == "q" || nuevoCodigo == "Q" || nuevoCodigo.empty()) {
+                    Menu::printError("Actualizacion cancelada.");
+                    break;
+                }
+
+                std::cout << std::format("Codigo actual: {} | Nuevo codigo: {}",
+                                         producto.getCodigo(), nuevoCodigo)
+                          << std::endl;
+                if (!confirmAction("Confirma actualizacion de codigo? (s/n): ")) {
+                    Menu::printError("Actualizacion cancelada.");
+                    break;
+                }
+
+                Producto productoActualizado = producto;
+                if (!productoActualizado.setCodigo(nuevoCodigo.c_str())) {
+                    Menu::printError("Codigo invalido.");
+                    break;
+                }
+
+                productoActualizado.setFechaUltimaModificacion(std::chrono::system_clock::now());
+                auto updateResult = repositories.productos.actualizar(id, productoActualizado);
+                if (std::holds_alternative<std::string>(updateResult)) {
+                    Menu::printError("Error al actualizar codigo: " +
+                                     std::get<std::string>(updateResult));
+                    break;
+                }
+
+                producto = productoActualizado;
+                Menu::printSuccess("Codigo actualizado con éxito.");
+                break;
+            }
+            case 3: {
+                const std::string nuevaDescripcion =
+                    readLine("Nueva descripcion (q o enter para cancelar): ");
+                if (nuevaDescripcion == "q" || nuevaDescripcion == "Q" ||
+                    nuevaDescripcion.empty()) {
+                    Menu::printError("Actualizacion cancelada.");
+                    break;
+                }
+
+                std::cout << std::format("Descripcion actual: {} | Nueva descripcion: {}",
+                                         producto.getDescripcion(), nuevaDescripcion)
+                          << std::endl;
+                if (!confirmAction("Confirma actualizacion de descripcion? (s/n): ")) {
+                    Menu::printError("Actualizacion cancelada.");
+                    break;
+                }
+
+                Producto productoActualizado = producto;
+                if (!productoActualizado.setDescripcion(nuevaDescripcion.c_str())) {
+                    Menu::printError("Descripcion invalida.");
+                    break;
+                }
+
+                productoActualizado.setFechaUltimaModificacion(std::chrono::system_clock::now());
+                auto updateResult = repositories.productos.actualizar(id, productoActualizado);
+                if (std::holds_alternative<std::string>(updateResult)) {
+                    Menu::printError("Error al actualizar descripcion: " +
+                                     std::get<std::string>(updateResult));
+                    break;
+                }
+
+                producto = productoActualizado;
+                Menu::printSuccess("Descripcion actualizada con éxito.");
+                break;
+            }
+            case 4: {
+                const std::string nuevoPrecioText =
+                    readLine("Nuevo precio (q o enter para cancelar): ");
+                if (nuevoPrecioText == "q" || nuevoPrecioText == "Q" || nuevoPrecioText.empty()) {
+                    Menu::printError("Actualizacion cancelada.");
+                    break;
+                }
+
+                float nuevoPrecio = 0.0f;
+                if (!utils.parsePositiveFloat(nuevoPrecioText, nuevoPrecio, false)) {
+                    Menu::printError("Precio invalido.");
+                    break;
+                }
+
+                std::cout << std::format("Precio actual: {:.2f} | Nuevo precio: {:.2f}",
+                                         producto.getPrecio(), nuevoPrecio)
+                          << std::endl;
+                if (!confirmAction("Confirma actualizacion de precio? (s/n): ")) {
+                    Menu::printError("Actualizacion cancelada.");
+                    break;
+                }
+
+                Producto productoActualizado = producto;
+                if (!productoActualizado.setPrecio(nuevoPrecio)) {
+                    Menu::printError("Precio invalido.");
+                    break;
+                }
+
+                productoActualizado.setFechaUltimaModificacion(std::chrono::system_clock::now());
+                auto updateResult = repositories.productos.actualizar(id, productoActualizado);
+                if (std::holds_alternative<std::string>(updateResult)) {
+                    Menu::printError("Error al actualizar precio: " +
+                                     std::get<std::string>(updateResult));
+                    break;
+                }
+
+                producto = productoActualizado;
+                Menu::printSuccess("Precio actualizado con éxito.");
+                break;
+            }
+            case 5: {
+                const std::string nuevoStockText =
+                    readLine("Nuevo stock (q o enter para cancelar): ");
+                if (nuevoStockText == "q" || nuevoStockText == "Q" || nuevoStockText.empty()) {
+                    Menu::printError("Actualizacion cancelada.");
+                    break;
+                }
+
+                int nuevoStock = 0;
+                if (!utils.parsePositiveInt(nuevoStockText, nuevoStock)) {
+                    Menu::printError("Stock invalido.");
+                    break;
+                }
+
+                std::cout << std::format("Stock actual: {} | Nuevo stock: {}", producto.getStock(),
+                                         nuevoStock)
+                          << std::endl;
+                if (!confirmAction("Confirma actualizacion de stock? (s/n): ")) {
+                    Menu::printError("Actualizacion cancelada.");
+                    break;
+                }
+
+                Producto productoActualizado = producto;
+                if (!productoActualizado.setStock(nuevoStock)) {
+                    Menu::printError("Stock invalido.");
+                    break;
+                }
+
+                productoActualizado.setFechaUltimaModificacion(std::chrono::system_clock::now());
+                auto updateResult = repositories.productos.actualizar(id, productoActualizado);
+                if (std::holds_alternative<std::string>(updateResult)) {
+                    Menu::printError("Error al actualizar stock: " +
+                                     std::get<std::string>(updateResult));
+                    break;
+                }
+
+                producto = productoActualizado;
+                Menu::printSuccess("Stock actualizado con éxito.");
+                break;
+            }
+            case 6: {
+                const std::string nuevoStockMinimoText =
+                    readLine("Nuevo stock minimo (q o enter para cancelar): ");
+                if (nuevoStockMinimoText == "q" || nuevoStockMinimoText == "Q" ||
+                    nuevoStockMinimoText.empty()) {
+                    Menu::printError("Actualizacion cancelada.");
+                    break;
+                }
+
+                int nuevoStockMinimo = 0;
+                if (!utils.parsePositiveInt(nuevoStockMinimoText, nuevoStockMinimo)) {
+                    Menu::printError("Stock minimo invalido.");
+                    break;
+                }
+
+                std::cout << std::format("Stock minimo actual: {} | Nuevo stock minimo: {}",
+                                         producto.getStockMinimo(), nuevoStockMinimo)
+                          << std::endl;
+                if (!confirmAction("Confirma actualizacion de stock minimo? (s/n): ")) {
+                    Menu::printError("Actualizacion cancelada.");
+                    break;
+                }
+
+                Producto productoActualizado = producto;
+                if (!productoActualizado.setStockMinimo(nuevoStockMinimo)) {
+                    Menu::printError("Stock minimo invalido.");
+                    break;
+                }
+
+                productoActualizado.setFechaUltimaModificacion(std::chrono::system_clock::now());
+                auto updateResult = repositories.productos.actualizar(id, productoActualizado);
+                if (std::holds_alternative<std::string>(updateResult)) {
+                    Menu::printError("Error al actualizar stock minimo: " +
+                                     std::get<std::string>(updateResult));
+                    break;
+                }
+
+                producto = productoActualizado;
+                Menu::printSuccess("Stock minimo actualizado con éxito.");
+                break;
+            }
+            case 7: {
+                const std::string nuevoProveedorText =
+                    readLine("Nuevo id de proveedor (q o enter para cancelar): ");
+                if (nuevoProveedorText == "q" || nuevoProveedorText == "Q" ||
+                    nuevoProveedorText.empty()) {
+                    Menu::printError("Actualizacion cancelada.");
+                    break;
+                }
+
+                int nuevoIdProveedor = 0;
+                if (!utils.parsePositiveInt(nuevoProveedorText, nuevoIdProveedor)) {
+                    Menu::printError("ID de proveedor invalido.");
+                    break;
+                }
+
+                auto proveedorResult = repositories.proveedores.leerPorId(nuevoIdProveedor);
+                if (std::holds_alternative<std::string>(proveedorResult)) {
+                    Menu::printError("Proveedor invalido: " +
+                                     std::get<std::string>(proveedorResult));
+                    break;
+                }
+
+                std::cout << std::format("Proveedor actual: {} | Nuevo proveedor: {}",
+                                         producto.getIdProveedor(), nuevoIdProveedor)
+                          << std::endl;
+                if (!confirmAction("Confirma actualizacion de proveedor? (s/n): ")) {
+                    Menu::printError("Actualizacion cancelada.");
+                    break;
+                }
+
+                Producto productoActualizado = producto;
+                if (!productoActualizado.setIdProveedor(nuevoIdProveedor)) {
+                    Menu::printError("ID de proveedor invalido.");
+                    break;
+                }
+
+                productoActualizado.setFechaUltimaModificacion(std::chrono::system_clock::now());
+                auto updateResult = repositories.productos.actualizar(id, productoActualizado);
+                if (std::holds_alternative<std::string>(updateResult)) {
+                    Menu::printError("Error al actualizar proveedor: " +
+                                     std::get<std::string>(updateResult));
+                    break;
+                }
+
+                producto = productoActualizado;
+                Menu::printSuccess("Proveedor actualizado con éxito.");
+                break;
+            }
+            default:
+                Menu::printError("Opcion invalida.");
+                break;
+        }
     }
-
-    producto.setFechaUltimaModificacion(std::chrono::system_clock::now());
-
-    if (!confirmAction("Confirma actualizacion? (s/n): ")) {
-        Menu::printError("Actualizacion cancelada.");
-        return;
-    }
-
-    auto updateResult = repositories.productos.actualizar(id, producto);
-    if (std::holds_alternative<std::string>(updateResult)) {
-        Menu::printError("Error al actualizar: " + std::get<std::string>(updateResult));
-        return;
-    }
-
-    Menu::printSuccess("Producto actualizado con éxito.");
 }
 
 void MenuProductos::listarProductos()

@@ -29,6 +29,10 @@ class CliUtils
     static void showSearchCriteriaMenu();
     static int esIdValido(int id);
     static void convertirAMinusculas(char* cadena);
+
+    /*
+     * Parse input and assign to outValue
+     */
     static bool parsePositiveInt(const std::string& input, int& outValue,
                                  bool zeroInclusive = true);
     static bool parsePositiveFloat(const std::string& input, float& outValue,
