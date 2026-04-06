@@ -47,6 +47,18 @@ class Cliente : public EntidadBase
 
     bool setFechaRegistro(const char* fechaRegistro);
 
+    float getTotalCompras() const { return this->m_totalCompras; }
+
+    bool setTotalCompras(float totalCompras);
+
+    int getCantidadTransacciones() const { return this->m_cantidadTransacciones; }
+
+    const int* getTransaccionesIds() const { return this->m_transaccionesIds; }
+
+    bool agregarTransaccionId(int idTransaccion);
+
+    bool removerTransaccionId(int idTransaccion);
+
     int getCantidad() const { return this->m_cantidad; };
 
     int* getHistorialIds() { return this->m_historialIds; }

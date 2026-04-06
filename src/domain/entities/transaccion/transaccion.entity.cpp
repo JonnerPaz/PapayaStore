@@ -1,8 +1,7 @@
 #include "transaccion.entity.hpp"
 
 Transaccion::Transaccion()
-    : EntidadBase(0, "", false, std::chrono::system_clock::now(),
-                  std::chrono::system_clock::now())
+    : EntidadBase(0, "", false, std::chrono::system_clock::now(), std::chrono::system_clock::now())
 {
 }
 
@@ -38,7 +37,7 @@ bool Transaccion::setTotal(float nuevoTotal)
     return true;
 }
 
-bool Transaccion::setDescripcion(char* nuevaDescripcion)
+bool Transaccion::setDescripcion(const char* nuevaDescripcion)
 {
     bool copiedString = EntidadBase::copiarCadenaSeguro(
         this->m_descripcion, sizeof(this->m_descripcion), nuevaDescripcion);
@@ -48,17 +47,27 @@ bool Transaccion::setDescripcion(char* nuevaDescripcion)
     return true;
 }
 
+bool Transaccion::getProductoEnIndice(int index, TransaccionDTO& outProducto) const
+{
+    if (index < 0 || index >= this->m_productosTotales) {
+        return false;
+    }
+
+    outProducto = this->m_productos[index];
+    return true;
+}
+
 bool Transaccion::setProducto(TransaccionDTO nuevoProducto)
 {
     auto isDTOValid =
-        nuevoProducto.cantidad >= 0 && nuevoProducto.precio >= 0 && nuevoProducto.productoId >= 0;
+        nuevoProducto.cantidad > 0 && nuevoProducto.precio >= 0 && nuevoProducto.productoId > 0;
 
     if (!isDTOValid) return false;
 
     // if product already exists, sum its quantities
-    for (auto product : this->m_productos) {
-        if (product.productoId == nuevoProducto.productoId) {
-            product.cantidad += nuevoProducto.cantidad;
+    for (int i = 0; i < this->m_productosTotales; ++i) {
+        if (this->m_productos[i].productoId == nuevoProducto.productoId) {
+            this->m_productos[i].cantidad += nuevoProducto.cantidad;
             return true;
         }
     }

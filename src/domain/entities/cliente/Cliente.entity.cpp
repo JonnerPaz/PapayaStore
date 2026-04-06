@@ -146,3 +146,61 @@ bool Cliente::setFechaRegistro(const char* fechaRegistro)
     return EntidadBase::copiarCadenaSeguro(this->m_fechaRegistro, sizeof(this->m_fechaRegistro),
                                            fechaRegistro);
 }
+
+bool Cliente::setTotalCompras(float totalCompras)
+{
+    if (totalCompras < 0) {
+        return false;
+    }
+
+    this->m_totalCompras = totalCompras;
+    return true;
+}
+
+bool Cliente::agregarTransaccionId(int idTransaccion)
+{
+    if (idTransaccion <= 0) {
+        return false;
+    }
+
+    for (int i = 0; i < this->m_cantidadTransacciones; ++i) {
+        if (this->m_transaccionesIds[i] == idTransaccion) {
+            return true;
+        }
+    }
+
+    if (this->m_cantidadTransacciones >= 100) {
+        return false;
+    }
+
+    this->m_transaccionesIds[this->m_cantidadTransacciones] = idTransaccion;
+    this->m_cantidadTransacciones += 1;
+    return true;
+}
+
+bool Cliente::removerTransaccionId(int idTransaccion)
+{
+    if (idTransaccion <= 0 || this->m_cantidadTransacciones <= 0) {
+        return false;
+    }
+
+    int index = -1;
+    for (int i = 0; i < this->m_cantidadTransacciones; ++i) {
+        if (this->m_transaccionesIds[i] == idTransaccion) {
+            index = i;
+            break;
+        }
+    }
+
+    if (index == -1) {
+        return false;
+    }
+
+    for (int i = index; i < this->m_cantidadTransacciones - 1; ++i) {
+        this->m_transaccionesIds[i] = this->m_transaccionesIds[i + 1];
+    }
+
+    this->m_transaccionesIds[this->m_cantidadTransacciones - 1] = 0;
+    this->m_cantidadTransacciones -= 1;
+    return true;
+}

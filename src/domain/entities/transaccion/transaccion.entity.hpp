@@ -7,18 +7,18 @@ enum TipoDeTransaccion { COMPRA, VENTA };
 struct TransaccionDTO {
     int productoId;  // ID del producto
     int cantidad;    // Cantidad de productos
-    int precio;      // Precio unitario
+    float precio;    // Precio unitario
 };
 
 class Transaccion : public EntidadBase
 {
    private:
-    TipoDeTransaccion m_tipo{};       // COMPRA o VENTA
-    int m_idRelacionado{0};           // ID del proveedor (compra) o cliente (venta)
-    float m_total{0};                 // cantidad * precioUnitario
-    char m_descripcion[200]{};        // Notas adicionales (opcional)
+    TipoDeTransaccion m_tipo{};         // COMPRA o VENTA
+    int m_idRelacionado{0};             // ID del proveedor (compra) o cliente (venta)
+    float m_total{0};                   // cantidad * precioUnitario
+    char m_descripcion[200]{};          // Notas adicionales (opcional)
     TransaccionDTO m_productos[100]{};  // Productos de la transaccion (hasta 100)
-    int m_productosTotales{0};        // cuantos productos existen en la transaccion
+    int m_productosTotales{0};          // cuantos productos existen en la transaccion
 
    public:
     Transaccion();
@@ -41,7 +41,11 @@ class Transaccion : public EntidadBase
 
     auto getDescripcion() const { return this->m_descripcion; }
 
-    bool setDescripcion(char* nuevaDescripcion);
+    bool setDescripcion(const char* nuevaDescripcion);
+
+    int getProductosTotales() const { return this->m_productosTotales; }
+
+    bool getProductoEnIndice(int index, TransaccionDTO& outProducto) const;
 
     auto getProducto(int id) const
     {
