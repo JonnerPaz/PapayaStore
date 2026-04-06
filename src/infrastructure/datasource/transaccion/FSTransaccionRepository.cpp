@@ -1,0 +1,34 @@
+#include "FSTransaccionRepository.hpp"
+
+#include "domain/constants.hpp"
+
+FSTransaccionRepository::FSTransaccionRepository()
+    : baseRepository(Constants::PATHS::TRANSACCIONES_PATH)
+{
+}
+
+std::variant<Transaccion, std::string> FSTransaccionRepository::leerPorId(int id)
+{
+    return baseRepository.leerTemplate(id);
+}
+
+std::variant<bool, std::string> FSTransaccionRepository::guardar(const Transaccion& entidad)
+{
+    return baseRepository.guardarTemplate(entidad);
+}
+
+std::variant<bool, std::string> FSTransaccionRepository::actualizar(int id,
+                                                                    const Transaccion& entidad)
+{
+    return baseRepository.actualizarTemplate(id, entidad);
+}
+
+std::variant<bool, std::string> FSTransaccionRepository::eliminarLogicamente(int id)
+{
+    return baseRepository.eliminarLogicamenteTemplate(id);
+}
+
+std::variant<HeaderFile, std::string> FSTransaccionRepository::obtenerEstadisticas()
+{
+    return baseRepository.obtenerEstadisticasTemplate();
+}

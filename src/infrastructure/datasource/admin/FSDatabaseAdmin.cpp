@@ -10,9 +10,7 @@
 
 #include "domain/HeaderFile.hpp"
 #include "domain/constants.hpp"
-#include "domain/entities/cliente/Cliente.entity.hpp"
 #include "domain/entities/producto/producto.entity.hpp"
-#include "domain/entities/proveedor/Proveedor.entity.hpp"
 #include "domain/entities/tienda/tienda.entity.hpp"
 #include "domain/entities/transaccion/transaccion.entity.hpp"
 
