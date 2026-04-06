@@ -1,13 +1,17 @@
 #pragma once
+#include "presentation/CliUtils.hpp"
 #include "presentation/Menu/Menu.hpp"
 
-class MenuProveedores : public Menu {
-  public:
-    explicit MenuProveedores(AppRepositories& repositories) : Menu(repositories) {
-        this->setTitle("Gestión de Proveedores");
-        this->setTexToExit("Salir");
-        this->setNumOptions(5);
-    }
+class MenuProveedores : public Menu
+{
+   private:
+    bool readValidText(const char* prompt, std::string& outValue);
+    bool readValidEmail(const char* prompt, std::string& outValue);
+    bool rifDuplicado(const std::string& rif, int ignoredId = -1);
+
+   public:
+    CliUtils utils;
+    explicit MenuProveedores(AppRepositories& repositories, CliUtils utils = CliUtils{});
 
     void crearProveedor();
     void buscarProveedor();

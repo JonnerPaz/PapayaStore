@@ -3,8 +3,7 @@
 #include <sstream>
 
 Proveedor::Proveedor()
-    : EntidadBase(0, "", false, std::chrono::system_clock::now(),
-                  std::chrono::system_clock::now())
+    : EntidadBase(0, "", false, std::chrono::system_clock::now(), std::chrono::system_clock::now())
 {
 }
 
@@ -87,12 +86,19 @@ bool Proveedor::setTelefono(const char* telefono)
 
 bool Proveedor::setEmail(const char* email)
 {
-    if (!validarEmail(email)) {
-        return 1;
+    if (email == nullptr) {
+        return false;
     }
 
-    EntidadBase::copiarCadenaSeguro(this->m_email, sizeof(this->m_email), email);
-    return 0;
+    if (!validarEmail(email)) {
+        return false;
+    }
+
+    if (!EntidadBase::copiarCadenaSeguro(this->m_email, sizeof(this->m_email), email)) {
+        return false;
+    }
+
+    return true;
 }
 
 bool Proveedor::setRif(const char* rif)
