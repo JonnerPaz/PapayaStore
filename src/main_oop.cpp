@@ -27,7 +27,7 @@ namespace fs = std::filesystem;
 
 namespace Bootstrap {
 
-enum class MainOption {
+enum MainOption {
     Productos = 1,
     Proveedores = 2,
     Clientes = 3,
@@ -56,11 +56,12 @@ struct OopContext {
     MenuTienda menuTienda;
 
     OopContext()
-        : repositories{productos, clientes, proveedores, transacciones, admin},
+        : admin(productos, clientes, proveedores, transacciones),
+          repositories{productos, clientes, proveedores, transacciones, admin},
           menuProductos(repositories, cliUtils),
-          menuProveedores(repositories),
-          menuClientes(repositories),
-          menuTransacciones(repositories),
+          menuProveedores(repositories, cliUtils),
+          menuClientes(repositories, cliUtils),
+          menuTransacciones(repositories, cliUtils),
           menuReportes("Gestion de Reportes y seguridad", "Salir", 5, repositories),
           menuTienda(repositories)
     {

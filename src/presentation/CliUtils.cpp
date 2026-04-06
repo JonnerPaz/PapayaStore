@@ -101,7 +101,7 @@ void CliUtils::asignarPropiedadNum(const char* msg, AsignarNum auto& prop)
     std::cout << std::endl;
 }
 
-bool CliUtils::parsePositiveInt(const std::string& input, int& outValue, bool zeroInclusive = true)
+bool CliUtils::parsePositiveInt(const std::string& input, int& outValue, bool zeroInclusive)
 {
     if (input.empty()) {
         return false;
@@ -120,8 +120,7 @@ bool CliUtils::parsePositiveInt(const std::string& input, int& outValue, bool ze
     }
 }
 
-bool CliUtils::parsePositiveFloat(const std::string& input, float& outValue,
-                                  bool zeroInclusive = true)
+bool CliUtils::parsePositiveFloat(const std::string& input, float& outValue, bool zeroInclusive)
 {
     if (input.empty()) {
         return false;

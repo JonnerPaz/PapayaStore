@@ -16,6 +16,7 @@ add_executable(${PROJECT_NAME}
     src/domain/entities/proveedor/Proveedor.entity.cpp
     src/domain/entities/tienda/tienda.entity.cpp
     src/domain/entities/transaccion/transaccion.entity.cpp
+    src/infrastructure/datasource/FSClienteRepository.cpp
     src/infrastructure/datasource/FSDatabaseAdmin.cpp
     src/presentation/CliUtils.cpp
     src/presentation/Menu/Menu.cpp
