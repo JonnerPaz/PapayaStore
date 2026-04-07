@@ -647,9 +647,8 @@ void MenuProductos::eliminarProducto()
     try {
         repositories.admin.sincronizarContadoresTienda();
     } catch (const std::exception& e) {
-        Menu::printError(
-            "Advertencia: producto eliminado, pero no se pudo sincronizar tienda: " +
-            std::string(e.what()));
+        Menu::printError("Advertencia: producto eliminado, pero no se pudo sincronizar tienda: " +
+                         std::string(e.what()));
     }
 
     Menu::printSuccess("Producto eliminado con éxito.");

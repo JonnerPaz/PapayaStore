@@ -27,10 +27,11 @@ struct OpcionMenu {
 class Menu
 {
    private:
+    static constexpr int MAX_OPTIONS = 10;
     std::string title{};
     int numOptions{};
     std::string texToExit{};
-    OpcionMenu options[5];
+    OpcionMenu options[MAX_OPTIONS];
 
     std::variant<HeaderFile, std::string> leerHeader(const fs::path& path) const;
 

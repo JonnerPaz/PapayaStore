@@ -133,7 +133,7 @@ bool Menu::setNumOptions(int numOptions)
 
 bool Menu::setOption(int index, const char* desc, std::function<void()> act)
 {
-    if (index >= 0 && index < 5) {
+    if (index >= 0 && index < Menu::MAX_OPTIONS) {
         this->options[index].descripcion = desc;
         this->options[index].accion = act;
         return true;

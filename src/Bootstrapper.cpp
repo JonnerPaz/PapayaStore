@@ -1,35 +1,20 @@
 #include "Bootstrapper.hpp"
 
+#include <array>
+#include <fstream>
+#include <iostream>
+
+#include "domain/HeaderFile.hpp"
 #include "domain/constants.hpp"
+#include "domain/entities/tienda/tienda.entity.hpp"
+#include "infrastructure/datasource/EntityTraits.hpp"
 
 using namespace Constants::PATHS;
-
-namespace {
-
-void printMainMenu()
-{
-    std::cout << "\n=== PAPAYA STORE - Menú Principal (Migración) ===\n";
-    std::cout << "1. Gestión de Productos\n";
-    std::cout << "2. Gestión de Proveedores\n";
-    std::cout << "3. Gestión de Clientes\n";
-    std::cout << "4. Gestión de Transacciones\n";
-    std::cout << "5. Gestión de Reportes y seguridad\n";
-    std::cout << "6. Gestión de Tienda\n";
-    std::cout << "0. Salir\n";
-    std::cout << "Seleccione una opcion: ";
-}
-
-}  // namespace
 
 Bootstrapper::Bootstrapper()
     : admin(productos, clientes, proveedores, transacciones),
       repositories{productos, clientes, proveedores, transacciones, admin},
-      menuProductos(repositories, cliUtils),
-      menuProveedores(repositories, cliUtils),
-      menuClientes(repositories, cliUtils),
-      menuTransacciones(repositories, cliUtils),
-      menuReportes("Gestión de Reportes y seguridad", "Salir", 5, repositories),
-      menuTienda(repositories)
+      mainMenu(repositories)
 {
 }
 
@@ -62,22 +47,6 @@ bool Bootstrapper::ensureFileWithHeader(const fs::path& path)
     file.write(reinterpret_cast<const char*>(&header), sizeof(HeaderFile));
     // si la escritura es correcta, la variable file es true
     return static_cast<bool>(file);
-}
-
-MainOption Bootstrapper::readOption()
-{
-    int option = -1;
-    if (!(std::cin >> option)) {
-        std::cin.clear();
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        return MainOption::Invalida;
-    }
-
-    if (option < 0 || option > 6) {
-        return MainOption::Invalida;
-    }
-
-    return static_cast<MainOption>(option);
 }
 
 bool Bootstrapper::bootstrapStorage()
@@ -134,42 +103,6 @@ bool Bootstrapper::ensureTiendaRecord()
     return static_cast<bool>(file);
 }
 
-void Bootstrapper::dispatchOption(MainOption option)
-{
-    switch (option) {
-        case MainOption::Productos:
-            menuProductos.showMenu();
-            break;
-        case MainOption::Proveedores:
-            std::cout << "Abriendo módulo Proveedores\n";
-            menuProveedores.showMenu();
-            break;
-        case MainOption::Clientes:
-            std::cout << "Abriendo módulo Clientes\n";
-            menuClientes.showMenu();
-            break;
-        case MainOption::Transacciones:
-            std::cout << "Abriendo módulo Transacciones\n";
-            menuTransacciones.showMenu();
-            break;
-        case MainOption::Reportes:
-            std::cout << "Abriendo módulo Reportes\n";
-            menuReportes.showMenu();
-            break;
-        case MainOption::Tienda:
-            std::cout << "Abriendo módulo Tienda\n";
-            menuTienda.showMenu();
-            break;
-        case MainOption::Salir:
-            std::cout << "Saliendo del programa...\n";
-            break;
-        case MainOption::Invalida:
-        default:
-            std::cout << "Opción inválida\n";
-            break;
-    }
-}
-
 void Bootstrapper::runMainLoop()
 {
     if (!this->bootstrapStorage()) {
@@ -177,10 +110,5 @@ void Bootstrapper::runMainLoop()
         return;
     }
 
-    MainOption option = MainOption::Invalida;
-    do {
-        printMainMenu();
-        option = this->readOption();
-        this->dispatchOption(option);
-    } while (option != MainOption::Salir);
+    mainMenu.showMenu();
 }
