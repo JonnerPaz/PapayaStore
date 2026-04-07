@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <limits>
 
 #include "domain/HeaderFile.hpp"
 #include "domain/constants.hpp"
@@ -65,7 +66,7 @@ std::variant<HeaderFile, std::string> Menu::leerHeader(const fs::path& path) con
 
 void Menu::drawMenu()
 {
-    int option;
+    int option = -1;
     do {
         std::cout << COLOR_CYAN << "\n=== " << this->title << " ===" << COLOR_RESET << std::endl;
         for (int i = 0; i < numOptions; ++i) {
@@ -75,7 +76,22 @@ void Menu::drawMenu()
         std::cout << COLOR_RED << "0." << COLOR_RESET << " " << this->texToExit << std::endl;
         std::cout << "Seleccione una opción: ";
 
-        if (!(std::cin >> option)) break;
+        if (!(std::cin >> option)) {
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::cout << COLOR_RED << "Entrada inválida. Debe ser numérica." << COLOR_RESET
+                      << std::endl;
+            continue;
+        }
+
+        if (std::cin.peek() != '\n') {
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::cout << COLOR_RED << "Entrada inválida. Use solo números." << COLOR_RESET
+                      << std::endl;
+            continue;
+        }
+
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
         if (option < 0 || option > numOptions) {
             std::cout << COLOR_RED << "Opción inválida" << COLOR_RESET << std::endl;
