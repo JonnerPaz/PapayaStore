@@ -1,5 +1,7 @@
 #include "MainMenu.hpp"
 
+#include <variant>
+
 MainMenu::MainMenu(AppRepositories& repositories)
     : Menu(repositories),
       menuProductos(repositories, cliUtils),
@@ -16,7 +18,22 @@ MainMenu::MainMenu(AppRepositories& repositories)
 
 void MainMenu::showMenu()
 {
-    setOption(0, "Gestión de Productos", [this]() { menuProductos.showMenu(); });
+    setOption(0, "Gestión de Productos", [this]() {
+        // if there are no proveedores, we can't create a producto
+        auto proveedoresHeader = repositories.proveedores.obtenerEstadisticas();
+        if (std::holds_alternative<std::string>(proveedoresHeader)) {
+            Menu::printError("Error: " + std::get<std::string>(proveedoresHeader));
+            return;
+        }
+
+        if (std::get<HeaderFile>(proveedoresHeader).registrosActivos == 0) {
+            Menu::printError("No hay proveedores registrados. Debe crear al menos uno primero.");
+            return;
+        }
+
+        menuProductos.showMenu();
+    });
+
     setOption(1, "Gestión de Proveedores", [this]() { menuProveedores.showMenu(); });
     setOption(2, "Gestión de Clientes", [this]() { menuClientes.showMenu(); });
     setOption(3, "Gestión de Transacciones", [this]() { menuTransacciones.showMenu(); });
