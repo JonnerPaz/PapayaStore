@@ -158,6 +158,13 @@ void MenuProductos::crearProducto()
         return;
     }
 
+    try {
+        repositories.admin.sincronizarContadoresTienda();
+    } catch (const std::exception& e) {
+        Menu::printError("Advertencia: producto creado, pero no se pudo sincronizar tienda: " +
+                         std::string(e.what()));
+    }
+
     Menu::printSuccess("Producto creado con exito.");
 }
 
@@ -635,6 +642,14 @@ void MenuProductos::eliminarProducto()
     if (std::holds_alternative<std::string>(deleteResult)) {
         std::cout << "Error al eliminar: " << std::get<std::string>(deleteResult) << std::endl;
         return;
+    }
+
+    try {
+        repositories.admin.sincronizarContadoresTienda();
+    } catch (const std::exception& e) {
+        Menu::printError(
+            "Advertencia: producto eliminado, pero no se pudo sincronizar tienda: " +
+            std::string(e.what()));
     }
 
     Menu::printSuccess("Producto eliminado con éxito.");

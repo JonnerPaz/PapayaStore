@@ -42,23 +42,6 @@ void MenuTienda::mostrarResumenTienda()
         return;
     }
 
-    float montoTotalVentas = 0.0f;
-    float montoTotalCompras = 0.0f;
-    HeaderFile transStats = std::get<HeaderFile>(transaccionesHeader);
-    for (int id = 1; id < transStats.proximoID; ++id) {
-        auto transaccionResult = repositories.transacciones.leerPorId(id);
-        if (!std::holds_alternative<Transaccion>(transaccionResult)) {
-            continue;
-        }
-
-        const Transaccion& transaccion = std::get<Transaccion>(transaccionResult);
-        if (transaccion.getTipoTransaccion() == VENTA) {
-            montoTotalVentas += transaccion.getTotal();
-        } else if (transaccion.getTipoTransaccion() == COMPRA) {
-            montoTotalCompras += transaccion.getTotal();
-        }
-    }
-
     Tienda tienda;
     bool tiendaCargada = false;
     std::ifstream tiendaFile(Constants::PATHS::TIENDA_PATH, std::ios::binary);
@@ -97,10 +80,10 @@ void MenuTienda::mostrarResumenTienda()
                              std::get<HeaderFile>(transaccionesHeader).registrosActivos)
               << std::endl;
     std::cout << std::format("{}Monto total ventas: {}${:.2f}", COLOR_YELLOW, COLOR_GREEN,
-                             montoTotalVentas)
+                             tienda.getMontoTotalVentas())
               << std::endl;
     std::cout << std::format("{}Monto total compras: {}${:.2f}", COLOR_YELLOW, COLOR_GREEN,
-                             montoTotalCompras)
+                             tienda.getMontoTotalCompras())
               << std::endl;
 }
 

@@ -143,6 +143,13 @@ void MenuProveedores::crearProveedor()
         return;
     }
 
+    try {
+        repositories.admin.sincronizarContadoresTienda();
+    } catch (const std::exception& e) {
+        Menu::printError("Advertencia: proveedor creado, pero no se pudo sincronizar tienda: " +
+                         std::string(e.what()));
+    }
+
     Menu::printSuccess("Proveedor creado con exito.");
 }
 
@@ -510,6 +517,14 @@ void MenuProveedores::eliminarProveedor()
     if (std::holds_alternative<std::string>(deleteResult)) {
         Menu::printError("Error al eliminar: " + std::get<std::string>(deleteResult));
         return;
+    }
+
+    try {
+        repositories.admin.sincronizarContadoresTienda();
+    } catch (const std::exception& e) {
+        Menu::printError(
+            "Advertencia: proveedor eliminado, pero no se pudo sincronizar tienda: " +
+            std::string(e.what()));
     }
 
     Menu::printSuccess("Proveedor eliminado con exito.");

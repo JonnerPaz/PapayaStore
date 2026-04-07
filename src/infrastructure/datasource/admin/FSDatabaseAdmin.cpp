@@ -342,6 +342,8 @@ bool FSDatabaseAdmin::sincronizarContadoresTienda()
 
     HeaderFile tiendaHeader = std::get<HeaderFile>(headerResult);
     Tienda tienda;
+    float montoTotalVentas = 0.0f;
+    float montoTotalCompras = 0.0f;
 
     if (tiendaHeader.cantidadRegistros > 0) {
         auto tiendaResult = leerRegistroTienda();
@@ -362,6 +364,24 @@ bool FSDatabaseAdmin::sincronizarContadoresTienda()
     tienda.setTotalProveedoresActivos(std::get<HeaderFile>(proveedoresHeader).registrosActivos);
     tienda.setTotalClientesActivos(std::get<HeaderFile>(clientesHeader).registrosActivos);
     tienda.setTotalTransaccionesActivas(std::get<HeaderFile>(transaccionesHeader).registrosActivos);
+
+    const HeaderFile transStats = std::get<HeaderFile>(transaccionesHeader);
+    for (int id = 1; id < transStats.proximoID; ++id) {
+        auto transaccionResult = transacciones.leerPorId(id);
+        if (!std::holds_alternative<Transaccion>(transaccionResult)) {
+            continue;
+        }
+
+        const Transaccion& transaccion = std::get<Transaccion>(transaccionResult);
+        if (transaccion.getTipoTransaccion() == VENTA) {
+            montoTotalVentas += transaccion.getTotal();
+        } else if (transaccion.getTipoTransaccion() == COMPRA) {
+            montoTotalCompras += transaccion.getTotal();
+        }
+    }
+
+    tienda.setMontoTotalVentas(montoTotalVentas);
+    tienda.setMontoTotalCompras(montoTotalCompras);
     tienda.setFechaUltimaModificacion(system_clock::now());
 
     auto saveResult = guardarRegistroTienda(tienda, tiendaHeader);
