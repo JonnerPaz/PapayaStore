@@ -27,7 +27,7 @@ El proyecto sigue una arquitectura modular por capas:
 - `src/domain/`: entidades, contratos de repositorio, constantes y modelos comunes.
 - `src/infrastructure/`: datasource de archivos binarios (`.bin`) y administracion de datos.
 - `src/presentation/`: menus, utilidades CLI y flujo de interaccion con usuario.
-- `src/main_oop.cpp`: entrypoint actual del sistema.
+- `src/main.cpp`: entrypoint actual del sistema.
 
 ### Principio clave de persistencia
 
@@ -118,7 +118,7 @@ cmake --build build
 
 ## Estado actual
 
-- Se mantiene `src/main_oop.cpp` como entrypoint.
+- Se mantiene `src/main.cpp` como entrypoint.
 - El proyecto compila correctamente por CMake.
 - La persistencia de la capa OOP se maneja desde datasource sin acoplar entidades a archivos.
 

@@ -39,7 +39,6 @@ bool EntidadBase::setId(int id)
 bool EntidadBase::setNombre(const char* nombre)
 {
     if (nombre == nullptr) {
-        // TODO: probar si esto funciona
         return false;
     }
     this->copiarCadenaSeguro(this->m_nombre, sizeof(this->m_nombre), nombre);

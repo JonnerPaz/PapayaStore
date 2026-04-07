@@ -5,10 +5,10 @@ Objetivo: migrar el flujo legacy de `src/main.cpp` a la arquitectura OOP ya crea
 (`domain` + `infrastructure` + `presentation`) sin romper funcionalidad ni datos.
 
 ## Estado actual (resumen rapido)
-- `src/main_oop.cpp` es ahora el unico entrypoint compilado y contiene el unico `main()`.
-- El `main loop` unico vive en `Bootstrap::runMainLoop()` dentro de `src/main_oop.cpp`.
+- `src/main.cpp` es ahora el unico entrypoint compilado y contiene el unico `main()`.
+- El `main loop` unico vive en `Bootstrap::runMainLoop()` dentro de `src/main.cpp`.
 - `src/main.cpp` se mantiene como legacy temporal, pero ya no forma parte del build OOP.
-- El menu principal de `main_oop` ya enruta Productos, Proveedores, Clientes,
+- El menu principal de `main` ya enruta Productos, Proveedores, Clientes,
   Transacciones, Reportes y Tienda por menus OOP (sin bridge legacy en dispatch).
 - `MenuProductos` ya tiene implementacion funcional base (CRUD principal).
 - `MenuProveedores`, `MenuClientes`, `MenuTransacciones` y `MenuTienda` siguen
@@ -18,7 +18,7 @@ Objetivo: migrar el flujo legacy de `src/main.cpp` a la arquitectura OOP ya crea
 
 ## Objetivo de arquitectura
 - Mantener `src/main.cpp` solo como referencia legacy/deprecada durante la migracion.
-- Mantener `src/main_oop.cpp` como composition root definitivo.
+- Mantener `src/main.cpp` como composition root definitivo.
 - Menus en `presentation` como UI/orquestacion.
 - Reglas de negocio y validaciones en domain/repositories/services.
 - Persistencia en `infrastructure/datasource`.
@@ -42,7 +42,7 @@ Objetivo: migrar el flujo legacy de `src/main.cpp` a la arquitectura OOP ya crea
 Archivos:
 - `src/presentation/Menu/MenuProveedores/MenuProveedores.cpp`
 - `src/presentation/Menu/MenuProveedores/MenuProveedores.hpp` (si hace falta helpers)
-- `src/main_oop.cpp` (ya conectado, no deberia requerir cambios funcionales)
+- `src/main.cpp` (ya conectado, no deberia requerir cambios funcionales)
 
 Objetivo:
 - Completar CRUD funcional por OOP para Proveedores y cerrar restricciones de
@@ -74,7 +74,7 @@ Pendiente de consolidar:
 - Confirmar mensajes UX en espanol y flujo cancelable con `q`.
 
 Estado de routing:
-- `src/main_oop.cpp` ya llama solo a `MenuProductos.showMenu()`.
+- `src/main.cpp` ya llama solo a `MenuProductos.showMenu()`.
 
 Definicion de cierre:
 - Crear, buscar, actualizar, listar y eliminar funcionan solo por OOP.
@@ -82,7 +82,7 @@ Definicion de cierre:
 ### 2) MenuProveedores
 Archivos:
 - `src/presentation/Menu/MenuProveedores/MenuProveedores.cpp`
-- `src/main_oop.cpp`
+- `src/main.cpp`
 
 Tareas:
 - Implementar `crearProveedor`, `buscarProveedor`, `actualizarProveedor`,
@@ -90,7 +90,7 @@ Tareas:
 - Validar restriccion de eliminacion si hay transacciones activas.
 
 Estado de routing:
-- Ya conectado por OOP en `main_oop` (sin bridge legacy).
+- Ya conectado por OOP en `main` (sin bridge legacy).
 
 Definicion de cierre:
 - Opcion Proveedores funcional por OOP y sin handlers en desarrollo.
@@ -98,14 +98,14 @@ Definicion de cierre:
 ### 3) MenuClientes
 Archivos:
 - `src/presentation/Menu/MenuClientes/MenuClientes.cpp`
-- `src/main_oop.cpp`
+- `src/main.cpp`
 
 Tareas:
 - Completar `crearCliente`, `buscarCliente`, `actualizarCliente`, `eliminarCliente`.
 - Mantener/ajustar `listarClientes` para consistencia de salida.
 
 Estado de routing:
-- Ya conectado por OOP en `main_oop` (sin bridge legacy).
+- Ya conectado por OOP en `main` (sin bridge legacy).
 
 Definicion de cierre:
 - Opcion Clientes funcional por OOP y sin handlers en desarrollo.
@@ -113,7 +113,7 @@ Definicion de cierre:
 ### 4) MenuTransacciones
 Archivos:
 - `src/presentation/Menu/MenuTransacciones/MenuTransacciones.cpp`
-- `src/main_oop.cpp`
+- `src/main.cpp`
 
 Tareas:
 - Implementar `registrarCompra`.
@@ -122,7 +122,7 @@ Tareas:
 - Implementar `cancelarTransaccion` con validaciones de reversa.
 
 Estado de routing:
-- Ya conectado por OOP en `main_oop` (sin bridge legacy).
+- Ya conectado por OOP en `main` (sin bridge legacy).
 
 Definicion de cierre:
 - Flujo de transacciones 100% OOP y consistente en inventario.
@@ -131,7 +131,7 @@ Definicion de cierre:
 Archivos:
 - `src/presentation/Menu/MenuReportes/MenuReportes.cpp`
 - `src/infrastructure/datasource/FSDatabaseAdmin.cpp`
-- `src/main_oop.cpp`
+- `src/main.cpp`
 
 Tareas:
 - Completar implementaciones de admin:
@@ -142,7 +142,7 @@ Tareas:
   - `sincronizarContadoresTienda`
 
 Estado de routing:
-- Ya conectado por OOP en `main_oop` (sin bridge legacy).
+- Ya conectado por OOP en `main` (sin bridge legacy).
 
 Definicion de cierre:
 - Opcion Reportes funcional por OOP con operaciones administrativas reales.
@@ -150,13 +150,13 @@ Definicion de cierre:
 ### 6) MenuTienda
 Archivos:
 - `src/presentation/Menu/MenuTienda/MenuTienda.cpp`
-- `src/main_oop.cpp`
+- `src/main.cpp`
 
 Tareas:
 - Implementar resumen real de tienda usando repos/admin.
 
 Estado de routing:
-- Ya conectado por OOP en `main_oop` (sin bridge legacy).
+- Ya conectado por OOP en `main` (sin bridge legacy).
 
 Definicion de cierre:
 - Opcion Tienda funcional por OOP con informacion real.
@@ -164,12 +164,12 @@ Definicion de cierre:
 ## Cierre final de migracion
 Archivos:
 - `src/main.cpp`
-- `src/main_oop.cpp`
+- `src/main.cpp`
 
 Tareas:
 - Cuando todos los menus esten completos en OOP, marcar `main.cpp` como
   deprecated de forma explicita en documentacion/comentario de cabecera.
-- Mantener `main_oop.cpp` como arranque unico del programa.
+- Mantener `main.cpp` como arranque unico del programa.
 
 ## Criterios de calidad por sesion
 - Ejecutar siempre:
