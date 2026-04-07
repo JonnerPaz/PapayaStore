@@ -1,6 +1,8 @@
 #include "Proveedor.entity.hpp"
 
+#include <cctype>
 #include <sstream>
+#include <string>
 
 Proveedor::Proveedor()
     : EntidadBase(0, "", false, std::chrono::system_clock::now(), std::chrono::system_clock::now())
@@ -87,7 +89,41 @@ bool Proveedor::setTelefono(const char* telefono)
         return false;
     }
 
-    if (!EntidadBase::copiarCadenaSeguro(this->m_telefono, sizeof(this->m_telefono), telefono)) {
+    std::string telefonoNormalizado;
+    telefonoNormalizado.reserve(std::strlen(telefono));
+
+    int cantidadDigitos = 0;
+    for (size_t i = 0; telefono[i] != '\0'; ++i) {
+        const unsigned char c = static_cast<unsigned char>(telefono[i]);
+
+        if (std::isdigit(c)) {
+            telefonoNormalizado.push_back(static_cast<char>(c));
+            ++cantidadDigitos;
+            continue;
+        }
+
+        if (telefono[i] == '+' && i == 0) {
+            telefonoNormalizado.push_back('+');
+            continue;
+        }
+
+        if (std::isspace(c) || telefono[i] == '-' || telefono[i] == '(' || telefono[i] == ')') {
+            continue;
+        }
+
+        return false;
+    }
+
+    if (cantidadDigitos < 7 || cantidadDigitos > 15) {
+        return false;
+    }
+
+    if (telefonoNormalizado == "+") {
+        return false;
+    }
+
+    if (!EntidadBase::copiarCadenaSeguro(this->m_telefono, sizeof(this->m_telefono),
+                                         telefonoNormalizado.c_str())) {
         return false;
     }
 
