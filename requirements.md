@@ -9,217 +9,407 @@
 
 ---
 
-# PROYECTO 2: SISTEMA DE GESTIÓN DE INVENTARIO CON PERSISTENCIA Y ACCESO ALEATORIO
-
-## DESCRIPCIÓN GENERAL
-
-Evoluciona tu sistema de gestión de inventario del Proyecto 1 implementando **persistencia de datos mediante archivos binarios** y **acceso aleatorio**. El sistema debe demostrar dominio de operaciones de lectura/escritura binaria, navegación eficiente en archivos usando `seekg()/seekp()`, y gestión de relaciones entre múltiples archivos binarios sin depender de la carga total en memoria (RAM).
-
----
+# PROYECTO 3: POO Y MODULARIZACIÓN DEL SISTEMA DE INVENTARIO
 
 ## OBJETIVOS DE APRENDIZAJE
 
-1. Implementar persistencia de datos con archivos binarios.
-2. Dominar operaciones de lectura/escritura binaria con la librería `<fstream>`.
-3. Aplicar acceso aleatorio y cálculo de offsets usando `seekg()` y `seekp()`.
-4. Comprender el mapeo entre estructuras en memoria y su representación física en disco.
-5. Gestionar índices, posiciones y borrado lógico en archivos binarios.
-6. Implementar integridad referencial entre múltiples archivos mediante IDs.
+- Aplicar principios de Programación Orientada a Objetos (POO) en C++
+- Convertir estructuras (`struct`) a clases (`class`) con encapsulamiento
+- Separar declaraciones (`.hpp`) de implementaciones (`.cpp`)
+- Organizar el proyecto en múltiples archivos por dominio/servicio
+- Dominar constructores, destructores y métodos de acceso
+- Comprender el flujo de compilación multi-archivo
 
 ---
 
-## FILOSOFÍA DE ACCESO ALEATORIO
+## FILOSOFÍA DE ESTA ETAPA
 
-### Concepto Fundamental
+### ¿Qué cambia y qué se mantiene?
 
-Este proyecto **NO carga todos los datos en memoria**. A diferencia del Proyecto 1, donde todo el sistema vivía en la RAM usando arreglos dinámicos, aquí los datos permanecen en disco y **solo se carga un registro a la vez en memoria cuando se necesita procesar**.
+**✅ SE MANTIENE:**
+- Toda la funcionalidad de archivos binarios del Proyecto 2
+- Acceso aleatorio con `seekg()` y `seekp()`
+- Headers en archivos binarios
+- Persistencia de datos y operaciones CRUD completas
 
-### Ciclo de Vida de una Operación
-
-Para cualquier acción que involucre un registro (leer, modificar, eliminar lógicamente), tu programa debe seguir estrictamente este flujo:
-1. Abrir el archivo binario correspondiente.
-2. Calcular la posición exacta en bytes del registro buscado.
-3. Desplazar el puntero de lectura/escritura (`seekg` o `seekp`).
-4. Leer o escribir **únicamente ese registro**.
-5. Cerrar el archivo inmediatamente.
-
-### Ventajas de este enfoque
-
-- **Eficiencia de Memoria:** El uso de RAM es mínimo (apenas unos bytes para las variables temporales) sin importar si gestionas 10 o 100,000 registros.
-- **Persistencia Inmediata:** Si ocurre una falla eléctrica (muy común) o el programa crashea, la información ya procesada está segura en el disco.
+**🔄 EVOLUCIONA:**
+- `struct` → `class` (con encapsulamiento)
+- Código monolítico → Módulos organizados por dominio
+- Funciones sueltas → Métodos de clase
+- Acceso directo a atributos → Getters y Setters
+- Todo en `main.cpp` → Arquitectura modular
 
 ---
 
-## 1. MODELO DE PERSISTENCIA Y ARQUITECTURA
+## 1. ESTRUCTURA DEL PROYECTO
 
-El sistema debe crear **un archivo binario independiente por cada estructura principal**: `tienda.bin`, `productos.bin`, `proveedores.bin`, `clientes.bin` y `transacciones.bin`.
-
-### 1.1 Estructura Interna de los Archivos
-
-Cada archivo binario debe contar con un **Header (Encabezado)** al principio, seguido de los registros de datos:
+### 1.1 Organización por Dominios
 
 ```
-[HEADER: 16 bytes] → Metadata administrativa del archivo
-[REGISTRO 0]
-[REGISTRO 1]
-...
-[REGISTRO N]
+ProyectoTienda_v3/
+│
+├── tienda/
+│   ├── Tienda.hpp
+│   └── Tienda.cpp
+│
+├── productos/
+│   ├── Producto.hpp
+│   ├── Producto.cpp
+│   ├── operacionesProductos.hpp
+│   └── operacionesProductos.cpp
+│
+├── proveedores/
+│   ├── Proveedor.hpp
+│   ├── Proveedor.cpp
+│   ├── operacionesProveedores.hpp
+│   └── operacionesProveedores.cpp
+│
+├── clientes/
+│   ├── Cliente.hpp
+│   ├── Cliente.cpp
+│   ├── operacionesClientes.hpp
+│   └── operacionesClientes.cpp
+│
+├── transacciones/
+│   ├── Transaccion.hpp
+│   ├── Transaccion.cpp
+│   ├── operacionesTransacciones.hpp
+│   └── operacionesTransacciones.cpp
+│
+├── interfaz/
+│   ├── Interfaz.hpp
+│   └── Interfaz.cpp
+│
+├── persistencia/
+│   ├── GestorArchivos.hpp
+│   ├── GestorArchivos.cpp
+│   └── Constantes.hpp
+│
+├── utilidades/
+│   ├── Validaciones.hpp
+│   ├── Validaciones.cpp
+│   ├── Formatos.hpp
+│   └── Formatos.cpp
+│
+├── main.cpp
+├── Makefile
+│
+└── datos/                  # Archivos binarios (generados)
+    ├── tienda.bin
+    ├── productos.bin
+    ├── proveedores.bin
+    ├── clientes.bin
+    └── transacciones.bin
 ```
 
-**Estructura obligatoria del Header:**
+### 1.2 Separación de Responsabilidades
 
+Cada módulo se compone de:
+
+- **Entidad** (`Producto.hpp/cpp`): Representa los datos con getters/setters y validaciones propias.
+- **Operaciones** (`operacionesProductos.hpp/cpp`): Contiene la lógica de negocio y flujos (registrar, buscar, listar, etc.).
+- **Persistencia** (`GestorArchivos`): Centraliza todas las operaciones de archivos binarios.
+- **Interfaz** (`Interfaz`): Encapsula todos los menús y la navegación del sistema.
+- **main.cpp**: Solo inicializa el sistema y llama a `Interfaz::ejecutar()`. Debe ser un archivo mínimo.
+
+---
+
+## 2. CONVERSIÓN DE ESTRUCTURAS A CLASES
+
+### 2.1 Reglas Generales
+
+Cada clase de entidad debe tener:
+
+- **Atributos privados:** Todos los campos del `struct` del Proyecto 2.
+- **Constructores:** Por defecto, con parámetros principales, y de copia.
+- **Destructor.**
+- **Getters (`const`)** y **Setters (con validación)** para cada atributo.
+- **Métodos de validación** propios de la entidad.
+- **Métodos de presentación** (`mostrarInformacionBasica()`, `mostrarInformacionCompleta()`).
+- **Métodos de gestión de relaciones** (ej. `agregarTransaccionID()`, `eliminarProductoID()`).
+- **Método estático** `obtenerTamano()` que retorna `sizeof` de la clase.
+
+**La clase NO debe conocer operaciones de archivos.** Eso es responsabilidad exclusiva de `GestorArchivos`.
+
+Aplica estos principios a todas las entidades: `Producto`, `Proveedor`, `Cliente`, `Transaccion` y `Tienda`.
+
+---
+
+## 3. PRINCIPIOS DE POO A APLICAR
+
+### 3.1 Encapsulamiento
+
+Los datos son privados, solo accesibles mediante métodos públicos.
+
+**Antes (Proyecto 2):**
 ```cpp
-struct ArchivoHeader {
-    int cantidadRegistros;      // Total histórico de registros
-    int proximoID;              // Siguiente ID a asignar (Autoincremental)
-    int registrosActivos;       // Registros que no están marcados como eliminados
-    int version;                // Control de versión del archivo
+Producto p;
+p.precio = -50;  // ❌ Sin validación
+```
+
+**Ahora (Proyecto 3):**
+```cpp
+Producto p;
+p.setPrecio(-50);  // ✅ El setter rechaza valores inválidos
+```
+
+### 3.2 Abstracción
+
+El usuario de la clase llama `producto.agregarTransaccionID(15)` y no necesita saber que internamente se verifica espacio, se valida el ID, se actualiza un contador y se marca la fecha de modificación.
+
+### 3.3 Responsabilidad Única
+
+| Clase | Responsabilidad |
+|-------|----------------|
+| `Producto` | Representar y gestionar datos de un producto |
+| `Proveedor` | Representar y gestionar datos de un proveedor |
+| `Cliente` | Representar y gestionar datos de un cliente |
+| `Transaccion` | Representar y gestionar datos de una transacción |
+| `Tienda` | Información general y contadores del sistema |
+| `GestorArchivos` | Operaciones de persistencia en archivos binarios |
+| `Interfaz` | Menús, navegación y flujo de interacción con el usuario |
+| `Validaciones` | Validar formatos de datos generales |
+
+**⚠️ ANTIPATRÓN — NO HACER:**
+```cpp
+class Producto {
+    void guardarEnArchivo();  // ❌ Responsabilidad de GestorArchivos
+    void mostrarMenu();       // ❌ Responsabilidad de main.cpp
 };
 ```
 
-El Header evita tener que recorrer todo el archivo secuencialmente para saber cuántos elementos existen o cuál es el próximo ID válido.
-
 ---
 
-## 2. ADAPTACIÓN DE ESTRUCTURAS PARA PERSISTENCIA
+## 4. MÓDULO DE PERSISTENCIA
 
-Para guardar estructuras en archivos binarios, estas no pueden contener punteros, arreglos dinámicos, ni strings de C++ (`std::string`). Su tamaño en bytes (`sizeof`) debe ser estático y predecible.
+### 4.1 Clase GestorArchivos
 
-A continuación, se muestra cómo debe evolucionar la estructura Producto de tu Proyecto 1 para soportar la fase 2. Debes aplicar esta misma lógica de transformación para Proveedor, Cliente y Transacción.
+Centraliza **todas** las operaciones de archivos binarios. Mantiene la misma estructura de `ArchivoHeader` del Proyecto 2.
+
+### 4.2 Uso Obligatorio de Templates
+
+Si observas la lógica de `GestorArchivos`, las operaciones CRUD a nivel de archivo son prácticamente idénticas para todas las entidades: abrir archivo, calcular offset, leer/escribir `sizeof(T)` bytes, cerrar archivo. La única diferencia es el **tipo de dato** y la **ruta del archivo**.
+
+En lugar de escribir `guardarProducto()`, `guardarProveedor()`, `guardarCliente()`, `guardarTransaccion()` con código casi idéntico, debes utilizar **templates (plantillas de C++)** para crear métodos genéricos que funcionen con cualquier entidad:
 
 ```cpp
-struct Producto {
-    // 1. Datos básicos (Usar arreglos de char estáticos, NO std::string)
-    int id;
-    char codigo[20];
-    char nombre[100];
-    char descripcion[200];
-    float precio;
-    int stock;
-    
-    // 2. Llaves Foráneas (Relaciones)
-    int idProveedor;                 
-    
-    // 4. Estadísticas del registro
-    int stockMinimo;                 
-    int totalVendido;                
-    
-    // 5. Metadata de Control Obligatoria
-    bool eliminado;                  // Para BORRADO LÓGICO
-    time_t fechaCreacion;
-    time_t fechaUltimaModificacion;
-};
+template <typename T>
+bool guardarRegistro(const char* archivo, T& registro);
+
+template <typename T>
+bool leerRegistroPorIndice(const char* archivo, int indice, T& registro);
+
+template <typename T>
+bool actualizarRegistro(const char* archivo, int indice, T& registro);
 ```
 
-### 2.2 Estructura Transacción con Múltiples Productos (Archivo: transacciones.bin)
-Originalmente en la primera fase del proyecto, una transacción podía unicamente con tener UN SOLO PRODUCTO, pero deben convertirla para que pueda almacenar más de un producto por transacción. (Se debe mantener los mismos patrones de llaves foráneas)
+Con templates, escribes la lógica **una sola vez** y el compilador genera la versión específica para cada tipo cuando la invocas. Esto reduce drásticamente la cantidad de código repetido y facilita el mantenimiento: si corriges un bug en el método genérico, se corrige para todas las entidades.
 
-### 2.2 Principios para adaptar el resto de estructuras
-- **Tienda (`tienda.bin`):** Contendrá un único registro. Elimina todos los punteros a los arreglos de entidades. Solo debe guardar datos de la empresa y contadores estadísticos globales.
-- **Arreglos de Relaciones:** Si un Proveedor tiene múltiples Productos, usa un arreglo fijo de enteros (ej. `int productosIDs[100]`) para guardar los IDs, acompañado de su respectivo contador (`int cantidadProductos`).
-- **Borrado Lógico:** Toda estructura debe tener el flag `bool eliminado`. En un archivo binario, borrar físicamente un registro del medio corrompe las posiciones matemáticas de los demás.
+**Nota:** Los métodos template deben implementarse en el archivo `.hpp` (no en `.cpp`), ya que el compilador necesita ver la implementación completa al momento de instanciar la plantilla.
 
 ---
 
-## 3. LÓGICA DE OPERACIONES CON ARCHIVOS (CRUD)
+## 5. ARCHIVOS DE OPERACIONES
 
-A continuación se detallan los requerimientos lógicos para las operaciones base. Es tu responsabilidad como ingeniero traducir estos algoritmos a código funcional en C++.
+Cada módulo tiene su archivo de operaciones con la lógica de negocio. Estas funciones son las que `main.cpp` invoca.
 
-### 3.1 Inicialización y Gestión de Headers
-Debes implementar funciones aisladas para leer y actualizar el header de cualquier archivo:
+**Ejemplo: `productos/operacionesProductos.hpp`**
 
-- `bool inicializarArchivo(const char* nombreArchivo)`: Crea el archivo si no existe y escribe un `ArchivoHeader` inicializado en 0.
-- `ArchivoHeader leerHeader(const char* nombreArchivo)`: Abre el archivo, lee los primeros bytes correspondientes al header y lo retorna.
-- `bool actualizarHeader(const char* nombreArchivo, ArchivoHeader header)`: Sobrescribe únicamente la sección del header.
+```cpp
+#ifndef OPERACIONES_PRODUCTOS_HPP
+#define OPERACIONES_PRODUCTOS_HPP
 
-### 3.2 Acceso Aleatorio y Cálculo de Offsets
-La clave del proyecto es la función matemática para ubicar un registro sin recorrer el archivo.
+#include "../tienda/Tienda.hpp"
 
-**Fórmula de posición en bytes:**
+void registrarProducto(Tienda& tienda);
+void buscarProducto(Tienda& tienda);
+void actualizarProducto(Tienda& tienda);
+void listarProductos(Tienda& tienda);
+void eliminarProducto(Tienda& tienda);
+void productosStockCritico(Tienda& tienda);
+
+#endif
 ```
-sizeof(ArchivoHeader) + (indice * sizeof(TuEstructura))
+
+Las implementaciones en `operacionesProductos.cpp` contienen toda la lógica: solicitar datos al usuario, validar, llamar a `GestorArchivos` para persistir, y mostrar resultados. Replicar este patrón para proveedores, clientes y transacciones.
+
+---
+
+## 6. MÓDULO DE UTILIDADES
+
+### Clase Validaciones
+
+Funciones **estáticas** para validaciones generales de formato:
+
+- `validarEmail(const char*)` → Contiene '@' y '.' después del @
+- `validarRIF(const char*)` → Formato válido
+- `validarTelefono(const char*)` → Formato válido
+- `validarRango(int valor, int min, int max)` → Dentro de rango
+
+**Diferencia clave:**
+- **Validaciones (clase estática):** Reglas generales de formato. ¿Es un email válido?
+- **Métodos de entidad:** Reglas de negocio específicas. ¿Este producto tiene datos completos?
+
+### Clase Formatos
+
+Funciones **estáticas** para formateo de salida:
+
+- `formatearFecha(time_t)` → "DD/MM/AAAA"
+- `formatearMoneda(float)` → Formato con separador de miles
+- `convertirAMayusculas(char*)`
+- `limpiarBuffer()`
+- `pausar()` → Espera Enter del usuario
+
+---
+
+## 7. CLASE INTERFAZ Y main.cpp
+
+### 7.1 Clase Interfaz
+
+Todos los menús del sistema deben estar encapsulados en una clase `Interfaz` dentro de su propio módulo:
+
+```
+├── interfaz/
+│   ├── Interfaz.hpp
+│   └── Interfaz.cpp
 ```
 
-> Nota: El indice (posición física 0, 1, 2...) no siempre es igual al ID del registro, especialmente si hay borrados lógicos. Debes hacer una función de búsqueda secuencial que reciba un ID y retorne su indice físico.
+Esta clase centraliza la presentación de menús y la lectura de opciones del usuario. Internamente, cada submenú delega la acción correspondiente a las funciones de `operacionesXXX`. De esta forma, ni `main.cpp` ni las clases de entidad conocen la lógica de navegación.
 
-### 3.3 Creación de un Registro (Append)
-Lógica requerida:
+**Responsabilidades de `Interfaz`:**
+- Mostrar el menú principal y los submenús de cada módulo (productos, proveedores, clientes, transacciones, mantenimiento).
+- Leer y validar la opción seleccionada por el usuario.
+- Invocar las funciones de operaciones correspondientes según la selección.
+- Contener el loop principal del programa (`ejecutar()`).
 
-- Leer el header actual para obtener el proximoID.
-- Asignar ese ID a tu nueva estructura y marcarla como `eliminado = false`.
-- Abrir el archivo en modo adición/binario (`ios::app | ios::binary` o usar `seekp(0, ios::end)`).
-- Escribir la estructura.
-- Actualizar los contadores en el header y guardarlo nuevamente.
+### 7.2 main.cpp
 
-### 3.4 Actualización (Update) y Borrado Lógico (Delete)
-Lógica requerida:
+Con la clase `Interfaz`, `main.cpp` queda reducido a su mínima expresión: inicializar el sistema y delegar todo el flujo.
 
-- Buscar el índice del registro mediante su ID.
-- Calcular su posición exacta en bytes.
-- Posicionar el cursor de escritura (`seekp`) en ese byte.
-- Escribir la estructura modificada (o la estructura con `eliminado = true`) sobrescribiendo los datos anteriores.
+```cpp
+#include "persistencia/GestorArchivos.hpp"
+#include "interfaz/Interfaz.hpp"
+#include <iostream>
 
----
+int main() {
+    if (!GestorArchivos::inicializarSistemaArchivos()) {
+        cerr << "Error al inicializar archivos" << endl;
+        return 1;
+    }
 
-## 4. GESTIÓN DE RELACIONES Y TRANSACCIONES
+    Interfaz::ejecutar();
+    return 0;
+}
+```
 
-### 4.1 Registrar una Compra/Venta
-El proceso de registrar una transacción ahora involucra múltiples accesos a disco para mantener la coherencia.
-
-**Pasos algorítmicos obligatorios para una Venta:**
-
-1. Buscar y leer el Producto y el Cliente desde sus respectivos archivos.
-2. Validar reglas de negocio (ej. ¿Hay stock suficiente? ¿El cliente existe?).
-3. Si es válido, instanciar un registro Transaccion.
-4. Guardar la Transaccion al final de `transacciones.bin`.
-5. Modificar el Producto en memoria (restar stock, sumar estadísticas, añadir el ID de la transacción a su arreglo de historial) y actualizar su registro en el archivo binario.
-6. Modificar el Cliente en memoria (sumar gastos, añadir ID de transacción) y actualizar su registro en el archivo binario.
+**`main.cpp` no debe contener lógica de negocio, menús, ni switches.** Todo eso vive en `Interfaz`.
 
 ---
 
-## 5. MANTENIMIENTO E INTEGRIDAD (NUEVAS FUNCIONALIDADES)
+## 8. GUARDAS DE INCLUSIÓN Y COMPILACIÓN
 
-### 5.1 Integridad Referencial
-Debes programar un módulo de diagnóstico `verificarIntegridadReferencial()` que detecte "referencias rotas".
+### 8.1 Guardas de Inclusión (OBLIGATORIO en todo `.hpp`)
 
-¿Qué debe hacer el algoritmo?
+```cpp
+#ifndef PRODUCTO_HPP
+#define PRODUCTO_HPP
+// ... contenido ...
+#endif
+```
 
-- Recorrer `productos.bin`. Por cada producto activo, extraer su `idProveedor`.
-- Buscar en `proveedores.bin` si ese ID existe y no está eliminado. Si no existe, registrar el error.
-- Repetir la lógica cruzada para Transacciones (verificar que el `idProducto` y el `idCliente/Proveedor` aún existan).
-- Imprimir un reporte de salud de la base de datos al finalizar.
+### 8.2 Inclusiones en `.cpp`
 
-### 5.2 Respaldo de Datos (Backup)
-Implementar una función `crearBackup()`:
+Solo incluir lo que realmente se necesita:
 
-- Debe crear una carpeta (o usar un prefijo en el nombre) con la fecha y hora actual.
-- Debe copiar byte a byte los 5 archivos .bin operativos a este nuevo destino seguro.
+```cpp
+// productos/Producto.cpp
+#include "Producto.hpp"     // ✅ Siempre su propio .hpp primero
+#include <iostream>         // ✅ Solo si usas cout/cin
+#include <cstring>          // ✅ Solo si usas strcpy/strlen
+```
 
-### 5.3 Reportes Analíticos (Lectura en Lote)
-Se requiere un submenú para leer datos y generar estadísticas:
+### 8.3 Compilación Multi-Archivo
 
-- **Productos con stock crítico:** Recorrer productos y filtrar los que tengan `stock <= stockMinimo`.
-- **Historial de Cliente:** Dado un ID de cliente, imprimir sus datos básicos, buscar todas las transacciones asociadas a su arreglo `comprasIDs[]` e imprimir el detalle recuperando el nombre del producto involucrado.
+Implementar un `Makefile` que compile todos los módulos y genere el ejecutable final.
 
 ---
 
-## 6. EXPERIENCIA DE USUARIO
+## 9. REQUERIMIENTOS TÉCNICOS
 
-### 6.1. IMPRESIÓN DE DATOS
-- Todos los datos que se muestren en el sistema deben estar correctamente formateados usando tablas, colores, caracteres, etc
+### 9.1 Todos los Módulos Deben Tener
 
-### 6.2. PRACTICIDAD
-- Se debe tomar en cuenta que el sistema busca ser práctico, tal vez opciones de los submenus deberian repensarse para poder brindar la mejor experiencia de usuario. Por ejemplo: Cuando muestras la información de un producto ¿No sería bueno mostrar también la información del proveedor que lo vende, o solamente su id te parece suficiente?
+- Guardas de inclusión en `.hpp`
+- Separación `.hpp` / `.cpp`
+- Atributos privados, métodos públicos
+- Constructores (por defecto + parametrizados) y destructor
+- Getters `const` y Setters con validaciones
+- Comentarios explicativos
 
-## 7. ENTREGABLES
+### 9.2 Convenciones de Nombres
 
-### 7.1 Código Fuente
-- Archivo .cpp principal (o modularizado en .h / .cpp).
-- Uso estricto de nomenclatura y comentarios descriptivos sobre los cálculos lógicos de bytes.
+- **Clases:** PascalCase → `GestorArchivos`, `Producto`
+- **Métodos:** camelCase → `registrarProducto()`, `buscarPorID()`
+- **Atributos privados:** camelCase → `nombreCompleto`, `fechaCreacion`
+- **Constantes:** UPPER_SNAKE_CASE → `MAX_PRODUCTOS`, `RUTA_ARCHIVO`
 
-### 7.2 Archivos de Datos de Prueba
-- Tu entrega debe venir acompañada de los archivos .bin pre-poblados con al menos: 15 productos, 5 proveedores, 8 clientes y 25 transacciones que demuestren el funcionamiento.
+### 9.3 Uso de `const`
 
-### 7.3 Documentación Técnica (`README_V2.md`)
-- Diagrama de las estructuras y sus tamaños en bytes (`sizeof`).
-- Manual de usuario sencillo.
+```cpp
+int getId() const;                              // Getters siempre const
+const char* getNombre() const;                  // Retorno const para char[]
+void setNombre(const char* nombre);             // Parámetros que no se modifican
+bool buscarPorID(int id, Producto& resultado) const;
+```
+
+---
+
+## 10. DIFERENCIAS CLAVE CON PROYECTO 2
+
+| Aspecto | Proyecto 2 | Proyecto 3 |
+|---------|-----------|-----------|
+| **Estructura de datos** | `struct` pública | `class` encapsulada |
+| **Organización** | 1-2 archivos grandes | Módulos por dominio |
+| **Acceso a datos** | `p.precio = 10` | `p.setPrecio(10)` |
+| **Lógica de negocio** | En main o funciones sueltas | En `operacionesXXX.cpp` |
+| **Persistencia** | Funciones sueltas | Clase `GestorArchivos` |
+| **main.cpp** | 500+ líneas | 50-100 líneas |
+| **Validaciones** | Manuales antes de usar | Dentro de setters |
+| **Compilación** | `g++ archivo.cpp` | Multi-archivo con Makefile |
+
+---
+
+## 11. ENTREGABLES
+
+### 11.1 Código Fuente Organizado
+
+Estructura de carpetas completa según la sección 1.1. Todos los módulos completamente implementados. La organización propuesta es una guía; pueden adaptarla a su criterio siempre que mantengan la separación por dominios.
+
+### 11.2 Archivos de Prueba
+
+Incluir en carpeta `datos/` archivos `.bin` con al menos: 15 productos, 5 proveedores, 8 clientes y 25 transacciones.
+
+### 11.3 Documentación
+
+- `Makefile` funcional
+- `README_V3.md` con instrucciones de compilación, estructura del proyecto y manual de usuario
+
+---
+
+## 12. ESTRATEGIA DE IMPLEMENTACIÓN SUGERIDA
+
+1. **Fase 1:** Toma `struct Producto` del Proyecto 2, conviértelo a `class`, crea `operacionesProductos` con `registrarProducto()`, compila y prueba.
+2. **Fase 2:** Implementa `GestorArchivos` con métodos básicos (guardar, leer, listar). Prueba con Producto.
+3. **Fase 3:** Completa el módulo de Productos con todas las operaciones.
+4. **Fase 4:** Replica el patrón para Proveedor, Cliente y Transacción.
+5. **Fase 5:** Crea `main.cpp` limpio con menús, conecta todo.
+6. **Fase 6:** Extrae validaciones y formatos a las clases utilitarias.
+
+---
+
+**IMPORTANTE:** No reinicies desde cero. Evoluciona tu Proyecto 2 aplicando estos conceptos gradualmente.
+
+---
+
+**Ing. Victor Kneider**  
+Profesor de Programación 2  
+Universidad Rafael Urdaneta

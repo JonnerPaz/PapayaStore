@@ -1,26 +1,50 @@
 <div align="center">
-  <h1>🍎 Papaya Store</h1>
-  <p><b>Sistema de Gestión de Inventario con persistencia binaria</b></p>
-  <p><i>Proyecto de Programación II - Universidad Rafael Urdaneta (URU)</i></p>
-  <p>Desarrollado por <b>Jonner Paz</b> y <b>Andrés Martínez</b></p>
+  <h1>Papaya Store</h1>
+  <p><b>Sistema de gestion de inventario en C++ con persistencia binaria</b></p>
+  <p><i>Proyecto de Programacion II - Universidad Rafael Urdaneta (URU)</i></p>
+  <p>Desarrollado por <b>Jonner Paz</b> y <b>Andres Martinez</b></p>
 </div>
 
 ---
 
-Papaya Store es un sistema de consola en C++ enfocado en gestión de inventario con persistencia real en disco. Es un sistema ligero y estable capaz de almacenar una gran cantidad de productos
+## Descripcion general
 
-## Qué hace el sistema
+Papaya Store es una aplicacion de consola para administrar una tienda con modulos de:
 
-- Gestiona **Productos**, **Proveedores**, **Clientes**, **Transacciones** y **Tienda**.
-- Guarda todo en archivos `.bin` independientes dentro de `data/`.
-- Aplica **borrado lógico** (`eliminado = true`) para preservar offsets físicos.
-- Permite registrar **compras y ventas con múltiples productos por transacción**.
-- Mantiene estadísticas por entidad (ej. `totalVendido`, `totalCompras`) y resumen global en `tienda.bin`.
-- Incluye diagnóstico de integridad referencial, backup y reportes analíticos.
+- Productos
+- Proveedores
+- Clientes
+- Transacciones (compras y ventas)
+- Reportes, respaldo e integridad
+- Resumen de tienda
 
-## Estructura de persistencia
+El sistema persiste toda la informacion en archivos binarios dentro de `data/`.
 
-Archivos operativos:
+## Arquitectura actual
+
+El proyecto sigue una arquitectura modular por capas:
+
+- `src/domain/`: entidades, contratos de repositorio, constantes y modelos comunes.
+- `src/infrastructure/`: datasource de archivos binarios (`.bin`) y administracion de datos.
+- `src/presentation/`: menus, utilidades CLI y flujo de interaccion con usuario.
+- `src/main_oop.cpp`: entrypoint actual del sistema.
+
+### Principio clave de persistencia
+
+Las entidades de dominio permanecen agnosticas de la capa de datos.
+
+La serializacion binaria se resuelve en infraestructura mediante `EntityTraits` y `FSBaseRepository`,
+evitando serializacion cruda de clases completas con `reinterpret_cast` sobre objetos OOP.
+
+Esto permite:
+
+- Mantener clases de dominio encapsuladas.
+- Tener offsets binarios estables por registro.
+- Evitar problemas por vtable/padding al guardar clases en disco.
+
+## Entidades y persistencia
+
+Archivos operativos en `data/`:
 
 - `data/productos.bin`
 - `data/proveedores.bin`
@@ -28,39 +52,77 @@ Archivos operativos:
 - `data/transacciones.bin`
 - `data/tienda.bin`
 
-Cada archivo inicia con un `ArchivoHeader` y luego los registros de su estructura correspondiente.
+Cada archivo inicia con `HeaderFile`:
 
-## Funcionalidades destacadas
+```cpp
+struct HeaderFile {
+    int cantidadRegistros;
+    int proximoID;
+    int registrosActivos;
+    int version;
+};
+```
+
+Luego se guardan registros con acceso aleatorio:
+
+`offset = sizeof(HeaderFile) + (indice * recordSize)`
+
+## Funcionalidades principales
+
+### Productos
+
+- Crear, buscar, actualizar, listar y eliminar logicamente.
+- Relacion obligatoria con proveedor.
+- Control de stock, stock minimo y total vendido.
+- Restriccion de borrado si el producto aparece en transacciones activas.
+
+### Proveedores
+
+- CRUD completo.
+- Validacion de email.
+- Restriccion de borrado si tiene transacciones de compra activas.
+
+### Clientes
+
+- CRUD completo.
+- Validacion de email.
+- Restriccion de borrado si tiene transacciones de venta activas.
 
 ### Transacciones
 
-- Registro de compra y venta.
-- Soporte de múltiples productos por transacción.
-- Validación de stock por producto antes de confirmar una venta.
-- Cancelación de transacción con reversión de stock y métricas.
+- Registro de compras y ventas con multiples productos por transaccion.
+- Validacion de stock para ventas.
+- Impacto en estadisticas y sincronizacion de contadores de tienda.
 
-### Integridad y seguridad de datos
+### Reportes y administracion
 
-- Verificación de integridad referencial entre productos, proveedores, clientes y transacciones.
-- Restricción de borrado lógico cuando existen transacciones activas asociadas.
-- Sistema de backup de los 5 archivos binarios con timestamp.
-
-### Reportes
-
-- Productos con stock crítico.
-- Historial de cliente con detalle de transacciones y productos.
-- Resumen general de tienda (contadores globales y montos acumulados).
+- Verificacion de integridad referencial.
+- Reporte de productos con stock critico.
+- Backup de archivos binarios.
+- Resumen general de tienda.
 
 ## Requisitos
 
-- Compilador con soporte para C++23 (o C++20 con soporte suficiente de `std::format` y `<chrono>` moderno).
+- CMake 3.16+
+- Compilador C++20 con soporte de `std::format`
 
-## Compilación y ejecución
+## Compilacion y ejecucion
 
-Desde la raíz del proyecto:
+Desde la raiz del proyecto:
 
 ```bash
 cmake -S . -B build
 cmake --build build
 ./build/PapayaStore
 ```
+
+## Estado actual
+
+- Se mantiene `src/main_oop.cpp` como entrypoint.
+- El proyecto compila correctamente por CMake.
+- La persistencia de la capa OOP se maneja desde datasource sin acoplar entidades a archivos.
+
+## Notas de uso
+
+- Si hay datos antiguos serializados con formato previo, puede ser necesario regenerar `data/*.bin`.
+- El sistema usa borrado logico, por lo que no reescribe historial ni compacta archivos.
