@@ -52,6 +52,12 @@ bool EntidadBase::setEliminado(bool eliminado)
     return true;
 }
 
+bool EntidadBase::setFechaCreacion(time_point<system_clock> fechaCreacion)
+{
+    this->m_fechaCreacion = fechaCreacion;
+    return true;
+}
+
 bool EntidadBase::setFechaUltimaModificacion(time_point<system_clock> fechaUltimaModificacion)
 {
     this->m_fechaUltimaModificacion = fechaUltimaModificacion;

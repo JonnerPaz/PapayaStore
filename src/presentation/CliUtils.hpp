@@ -7,6 +7,7 @@
 
 #include "domain/HeaderFile.hpp"
 #include "domain/constants.hpp"
+#include "infrastructure/datasource/EntityTraits.hpp"
 
 namespace fs = std::filesystem;
 using namespace Constants::ASCII_CODES;
@@ -78,10 +79,26 @@ class CliUtils
         archivo.read(reinterpret_cast<char*>(&header), sizeof(HeaderFile));
         if (!archivo) return false;
 
-        T entidad;
-        while (archivo.read(reinterpret_cast<char*>(&entidad), sizeof(T))) {
+        const HeaderFile stats = header;
+        for (int id = 1; id < stats.proximoID; ++id) {
+            T entidad;
+            std::streampos offset = static_cast<std::streampos>(sizeof(HeaderFile)) +
+                                    static_cast<std::streampos>(id - 1) *
+                                        EntityTraits<T>::recordSize();
+            archivo.seekg(offset, std::ios::beg);
+            if (!archivo) {
+                return false;
+            }
+
+            if (!EntityTraits<T>::readFromStream(archivo, entidad)) {
+                archivo.clear();
+                continue;
+            }
+
             if constexpr (requires(const T& e) { e.getEliminado(); }) {
-                if (entidad.getEliminado()) continue;
+                if (entidad.getEliminado()) {
+                    continue;
+                }
             }
 
             const char* valor = getPropiedad(entidad);
@@ -89,6 +106,7 @@ class CliUtils
                 return true;
             }
         }
+
         return false;
     }
 };

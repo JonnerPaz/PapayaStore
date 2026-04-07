@@ -25,23 +25,45 @@ class Proveedor : public EntidadBase
               int cantidadProductos, const char* telefono, const char* email, const char* direccion,
               int cantidad, int historialIds[]);
 
+    const char* getRif() const { return this->m_rif; }
+
     char* getRif() { return this->m_rif; }
 
     bool setRif(const char* rif);
+
+    const int* getProductosIds() const { return this->m_productosIds; }
+
+    bool setProductoIdEnIndice(int index, int productoId);
+
+    int getCantidadProductos() const { return this->m_cantidadProductos; }
+
+    bool setCantidadProductos(int cantidadProductos);
+
+    const char* getTelefono() const { return this->m_telefono; }
 
     char* getTelefono() { return this->m_telefono; }
 
     bool setTelefono(const char* telefono);
 
+    const char* getEmail() const { return this->m_email; }
+
     char* getEmail() { return this->m_email; }
 
     bool setEmail(const char* email);
+
+    const char* getDireccion() const { return this->m_direccion; }
 
     char* getDireccion() { return this->m_direccion; }
 
     bool setDireccion(const char* direccion);
 
-    int getCantidad() { return this->m_cantidad; };
+    int getCantidad() const { return this->m_cantidad; };
+
+    bool setCantidad(int cantidad);
+
+    const int* getHistorialIds() const { return this->m_historialIds; }
 
     int* getHistorialIds() { return this->m_historialIds; }
+
+    bool setHistorialIdEnIndice(int index, int historialId);
 };

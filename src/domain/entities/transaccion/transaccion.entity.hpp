@@ -45,7 +45,11 @@ class Transaccion : public EntidadBase
 
     int getProductosTotales() const { return this->m_productosTotales; }
 
+    bool setProductosTotales(int productosTotales);
+
     bool getProductoEnIndice(int index, TransaccionDTO& outProducto) const;
+
+    bool setProductoEnIndice(int index, const TransaccionDTO& producto);
 
     auto getProducto(int id) const
     {

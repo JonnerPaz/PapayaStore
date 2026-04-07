@@ -9,12 +9,12 @@ namespace {
 void printMainMenu()
 {
     std::cout << "\n=== PAPAYA STORE - Menú Principal (Migración) ===\n";
-    std::cout << "1. Gestion de Productos\n";
-    std::cout << "2. Gestion de Proveedores\n";
-    std::cout << "3. Gestion de Clientes\n";
-    std::cout << "4. Gestion de Transacciones\n";
-    std::cout << "5. Gestion de Reportes y seguridad\n";
-    std::cout << "6. Gestion de Tienda\n";
+    std::cout << "1. Gestión de Productos\n";
+    std::cout << "2. Gestión de Proveedores\n";
+    std::cout << "3. Gestión de Clientes\n";
+    std::cout << "4. Gestión de Transacciones\n";
+    std::cout << "5. Gestión de Reportes y seguridad\n";
+    std::cout << "6. Gestión de Tienda\n";
     std::cout << "0. Salir\n";
     std::cout << "Seleccione una opcion: ";
 }
@@ -28,7 +28,7 @@ Bootstrapper::Bootstrapper()
       menuProveedores(repositories, cliUtils),
       menuClientes(repositories, cliUtils),
       menuTransacciones(repositories, cliUtils),
-      menuReportes("Gestion de Reportes y seguridad", "Salir", 5, repositories),
+      menuReportes("Gestión de Reportes y seguridad", "Salir", 5, repositories),
       menuTienda(repositories)
 {
 }
@@ -90,41 +90,82 @@ bool Bootstrapper::bootstrapStorage()
     for (const fs::path& path : paths) {
         ok = this->ensureFileWithHeader(path) && ok;
     }
+
+    if (ok) {
+        ok = this->ensureTiendaRecord() && ok;
+    }
+
     return ok;
+}
+
+bool Bootstrapper::ensureTiendaRecord()
+{
+    std::fstream file(TIENDA_PATH, std::ios::binary | std::ios::in | std::ios::out);
+    if (!file.is_open()) {
+        return false;
+    }
+
+    HeaderFile header = {};
+    file.read(reinterpret_cast<char*>(&header), sizeof(HeaderFile));
+    if (!file) {
+        return false;
+    }
+
+    if (header.cantidadRegistros > 0) {
+        return true;
+    }
+
+    Tienda tienda;
+    tienda.setId(1);
+    tienda.setNombre("Papaya Store");
+    tienda.setRif("N/A");
+
+    file.seekp(sizeof(HeaderFile), std::ios::beg);
+    if (!EntityTraits<Tienda>::writeToStream(file, tienda)) {
+        return false;
+    }
+
+    header.cantidadRegistros = 1;
+    header.proximoID = 2;
+    header.registrosActivos = 1;
+    file.seekp(0, std::ios::beg);
+    file.write(reinterpret_cast<const char*>(&header), sizeof(HeaderFile));
+
+    return static_cast<bool>(file);
 }
 
 void Bootstrapper::dispatchOption(MainOption option)
 {
     switch (option) {
         case MainOption::Productos:
-            Bootstrapper().menuProductos.showMenu();
+            menuProductos.showMenu();
             break;
         case MainOption::Proveedores:
-            std::cout << "Abriendo modulo Proveedores\n";
-            Bootstrapper().menuProveedores.showMenu();
+            std::cout << "Abriendo módulo Proveedores\n";
+            menuProveedores.showMenu();
             break;
         case MainOption::Clientes:
-            std::cout << "Abriendo modulo Clientes\n";
-            Bootstrapper().menuClientes.showMenu();
+            std::cout << "Abriendo módulo Clientes\n";
+            menuClientes.showMenu();
             break;
         case MainOption::Transacciones:
-            std::cout << "Abriendo modulo Transacciones\n";
-            Bootstrapper().menuTransacciones.showMenu();
+            std::cout << "Abriendo módulo Transacciones\n";
+            menuTransacciones.showMenu();
             break;
         case MainOption::Reportes:
-            std::cout << "Abriendo modulo Reportes\n";
-            Bootstrapper().menuReportes.showMenu();
+            std::cout << "Abriendo módulo Reportes\n";
+            menuReportes.showMenu();
             break;
         case MainOption::Tienda:
-            std::cout << "Abriendo modulo Tienda\n";
-            Bootstrapper().menuTienda.showMenu();
+            std::cout << "Abriendo módulo Tienda\n";
+            menuTienda.showMenu();
             break;
         case MainOption::Salir:
             std::cout << "Saliendo del programa...\n";
             break;
         case MainOption::Invalida:
         default:
-            std::cout << "Opcion invalida\n";
+            std::cout << "Opción inválida\n";
             break;
     }
 }

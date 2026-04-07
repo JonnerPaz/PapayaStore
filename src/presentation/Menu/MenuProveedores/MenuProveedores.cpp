@@ -220,7 +220,7 @@ void MenuProveedores::actualizarProveedor()
 
         const std::string opcionText = readLine("Opcion: ");
         int opcion = -1;
-        if (!utils.parsePositiveInt(opcionText, opcion, false) || opcion > 5) {
+        if (!utils.parsePositiveInt(opcionText, opcion, true) || opcion > 5) {
             Menu::printError("Opcion invalida.");
             continue;
         }

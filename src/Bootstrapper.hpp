@@ -54,4 +54,5 @@ class Bootstrapper
 
     MainOption readOption();
     bool ensureFileWithHeader(const fs::path& path);
+    bool ensureTiendaRecord();
 };

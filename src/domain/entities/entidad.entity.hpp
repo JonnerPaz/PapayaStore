@@ -33,6 +33,15 @@ class EntidadBase
 
     bool setEliminado(bool eliminado);
 
+    time_point<system_clock> getFechaCreacion() const { return m_fechaCreacion; }
+
+    bool setFechaCreacion(time_point<system_clock> fechaCreacion);
+
+    time_point<system_clock> getFechaUltimaModificacion() const
+    {
+        return m_fechaUltimaModificacion;
+    }
+
     bool setFechaUltimaModificacion(time_point<system_clock> fechaUltimaModificacion);
 
     virtual ~EntidadBase() = 0;

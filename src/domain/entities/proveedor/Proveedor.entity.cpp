@@ -14,10 +14,20 @@ Proveedor::Proveedor(int id, const char* nombre, bool eliminado,
                      const char* email, const char* direccion, int cantidad, int historialIds[])
     : EntidadBase(id, nombre, eliminado, fechaCreacion, fechaUltimaModificacion)
 {
+    this->setCantidadProductos(cantidadProductos);
+    for (int i = 0; i < cantidadProductos && i < 100; ++i) {
+        this->setProductoIdEnIndice(i, productosIds[i]);
+    }
+
     this->setTelefono(telefono);
     this->setEmail(email);
     this->setRif(rif);
     this->setDireccion(direccion);
+
+    this->setCantidad(cantidad);
+    for (int i = 0; i < cantidad && i < 100; ++i) {
+        this->setHistorialIdEnIndice(i, historialIds[i]);
+    }
 }
 
 bool Proveedor::validarEmail(const char* email)
@@ -119,5 +129,45 @@ bool Proveedor::setDireccion(const char* direccion)
     if (!EntidadBase::copiarCadenaSeguro(this->m_direccion, sizeof(this->m_direccion), direccion)) {
         return false;
     }
+    return true;
+}
+
+bool Proveedor::setProductoIdEnIndice(int index, int productoId)
+{
+    if (index < 0 || index >= 100 || productoId < 0) {
+        return false;
+    }
+
+    this->m_productosIds[index] = productoId;
+    return true;
+}
+
+bool Proveedor::setCantidadProductos(int cantidadProductos)
+{
+    if (cantidadProductos < 0 || cantidadProductos > 100) {
+        return false;
+    }
+
+    this->m_cantidadProductos = cantidadProductos;
+    return true;
+}
+
+bool Proveedor::setCantidad(int cantidad)
+{
+    if (cantidad < 0 || cantidad > 100) {
+        return false;
+    }
+
+    this->m_cantidad = cantidad;
+    return true;
+}
+
+bool Proveedor::setHistorialIdEnIndice(int index, int historialId)
+{
+    if (index < 0 || index >= 100 || historialId < 0) {
+        return false;
+    }
+
+    this->m_historialIds[index] = historialId;
     return true;
 }

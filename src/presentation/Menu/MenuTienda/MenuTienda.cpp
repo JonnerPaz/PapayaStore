@@ -7,6 +7,7 @@
 
 #include "domain/constants.hpp"
 #include "domain/entities/tienda/tienda.entity.hpp"
+#include "infrastructure/datasource/EntityTraits.hpp"
 
 MenuTienda::MenuTienda(AppRepositories& repos) : Menu(repos)
 {
@@ -62,9 +63,13 @@ void MenuTienda::mostrarResumenTienda()
     bool tiendaCargada = false;
     std::ifstream tiendaFile(Constants::PATHS::TIENDA_PATH, std::ios::binary);
     if (tiendaFile.is_open()) {
-        tiendaFile.seekg(sizeof(HeaderFile), std::ios::beg);
-        tiendaFile.read(reinterpret_cast<char*>(&tienda), sizeof(Tienda));
-        tiendaCargada = static_cast<bool>(tiendaFile) && !tienda.getEliminado();
+        HeaderFile tiendaHeader = {};
+        tiendaFile.read(reinterpret_cast<char*>(&tiendaHeader), sizeof(HeaderFile));
+        if (tiendaFile && tiendaHeader.cantidadRegistros > 0) {
+            tiendaFile.seekg(sizeof(HeaderFile), std::ios::beg);
+            tiendaCargada = EntityTraits<Tienda>::readFromStream(tiendaFile, tienda) &&
+                            !tienda.getEliminado();
+        }
     }
 
     if (!tiendaCargada) {

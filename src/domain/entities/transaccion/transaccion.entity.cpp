@@ -13,10 +13,10 @@ Transaccion::Transaccion(int id, char* nombre, bool eliminado,
     : EntidadBase(id, nombre, eliminado, fechaCreacion, fechaUltimaModificacion),
       m_tipo(tipo),
       m_idRelacionado(idRelacionado),
-      m_total(total),
-      m_productos(productos)
+      m_total(total)
 {
     EntidadBase::copiarCadenaSeguro(this->m_descripcion, sizeof(this->m_descripcion), descripcion);
+    this->setProducto(productos);
 }
 
 bool Transaccion::setTipoTransaccion(TipoDeTransaccion nuevoTipo)
@@ -54,6 +54,30 @@ bool Transaccion::getProductoEnIndice(int index, TransaccionDTO& outProducto) co
     }
 
     outProducto = this->m_productos[index];
+    return true;
+}
+
+bool Transaccion::setProductosTotales(int productosTotales)
+{
+    if (productosTotales < 0 || productosTotales > 100) {
+        return false;
+    }
+
+    this->m_productosTotales = productosTotales;
+    return true;
+}
+
+bool Transaccion::setProductoEnIndice(int index, const TransaccionDTO& producto)
+{
+    if (index < 0 || index >= 100) {
+        return false;
+    }
+
+    if (producto.productoId <= 0 || producto.cantidad <= 0 || producto.precio < 0) {
+        return false;
+    }
+
+    this->m_productos[index] = producto;
     return true;
 }
 

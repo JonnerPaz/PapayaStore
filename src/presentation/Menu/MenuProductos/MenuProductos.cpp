@@ -83,7 +83,7 @@ void MenuProductos::crearProducto()
 
     float precio = 0.0f;
     readValidFloat("Ingrese el precio del producto: ", precio,
-                   "Precio inválido. Debe ser un numero mayor o igual a 0.", false);
+                   "Precio inválido. Debe ser un numero mayor o igual a 0.", true);
 
     int stock = 0;
     readValidInt("Ingrese el stock del producto: ", stock,
@@ -93,7 +93,22 @@ void MenuProductos::crearProducto()
     readValidInt("Ingrese el stock minimo del producto: ", stockMinimo,
                  "Stock minimo inválido. Debe ser un entero mayor o igual a 0.");
 
-    listarProductos();
+    std::cout << std::format("{}--- Proveedores disponibles ---{}", COLOR_CYAN, COLOR_RESET)
+              << std::endl;
+    for (int proveedorId = 1; proveedorId < std::get<HeaderFile>(proveedoresHeader).proximoID;
+         ++proveedorId) {
+        auto proveedorResult = repositories.proveedores.leerPorId(proveedorId);
+        if (!std::holds_alternative<Proveedor>(proveedorResult)) {
+            continue;
+        }
+
+        const Proveedor& proveedor = std::get<Proveedor>(proveedorResult);
+        std::cout << std::format("{}ID: {}{} {}- {}{}", COLOR_YELLOW, COLOR_GREEN,
+                                 proveedor.getId(), COLOR_YELLOW, COLOR_GREEN,
+                                 proveedor.getNombre())
+                  << COLOR_RESET << std::endl;
+    }
+
     const int idProveedor = utils.validarId("Ingrese el id del proveedor");
     if (idProveedor <= 0) {
         Menu::printError("El Id ingresado no existe. Debe ser mayor a 0.");
@@ -228,7 +243,7 @@ void MenuProductos::actualizarProducto()
 
         const std::string opcionText = readLine("Opcion: ");
         int opcion = -1;
-        if (!utils.parsePositiveInt(opcionText, opcion, false) || opcion > 7) {
+        if (!utils.parsePositiveInt(opcionText, opcion, true) || opcion > 7) {
             Menu::printError("Opcion inválida.");
             continue;
         }
@@ -351,7 +366,7 @@ void MenuProductos::actualizarProducto()
                 }
 
                 float nuevoPrecio = 0.0f;
-                if (!utils.parsePositiveFloat(nuevoPrecioText, nuevoPrecio, false)) {
+                if (!utils.parsePositiveFloat(nuevoPrecioText, nuevoPrecio, true)) {
                     Menu::printError("Precio invalido.");
                     break;
                 }
@@ -569,6 +584,44 @@ void MenuProductos::eliminarProducto()
     }
 
     const Producto& producto = std::get<Producto>(result);
+
+    auto transaccionesHeader = repositories.transacciones.obtenerEstadisticas();
+    if (std::holds_alternative<std::string>(transaccionesHeader)) {
+        Menu::printError("Error: " + std::get<std::string>(transaccionesHeader));
+        return;
+    }
+
+    bool productoEnTransaccionesActivas = false;
+    HeaderFile transStats = std::get<HeaderFile>(transaccionesHeader);
+    for (int transId = 1; transId < transStats.proximoID; ++transId) {
+        auto transResult = repositories.transacciones.leerPorId(transId);
+        if (!std::holds_alternative<Transaccion>(transResult)) {
+            continue;
+        }
+
+        const Transaccion& transaccion = std::get<Transaccion>(transResult);
+        for (int i = 0; i < transaccion.getProductosTotales(); ++i) {
+            TransaccionDTO item = {};
+            if (!transaccion.getProductoEnIndice(i, item)) {
+                continue;
+            }
+
+            if (item.productoId == id) {
+                productoEnTransaccionesActivas = true;
+                break;
+            }
+        }
+
+        if (productoEnTransaccionesActivas) {
+            break;
+        }
+    }
+
+    if (productoEnTransaccionesActivas) {
+        Menu::printError("No se puede eliminar el producto porque tiene transacciones activas.");
+        return;
+    }
+
     std::cout << std::format("Producto a eliminar: {} ({})", producto.getNombre(),
                              producto.getCodigo())
               << std::endl;

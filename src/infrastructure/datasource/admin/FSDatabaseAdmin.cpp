@@ -13,6 +13,7 @@
 #include "domain/entities/producto/producto.entity.hpp"
 #include "domain/entities/tienda/tienda.entity.hpp"
 #include "domain/entities/transaccion/transaccion.entity.hpp"
+#include "infrastructure/datasource/EntityTraits.hpp"
 
 namespace fs = std::filesystem;
 using namespace Constants::PATHS;
@@ -26,6 +27,70 @@ FSDatabaseAdmin::FSDatabaseAdmin(IProductoRepository& productos, IClienteReposit
       proveedores(proveedores),
       transacciones(transacciones)
 {
+}
+
+std::variant<HeaderFile, std::string> FSDatabaseAdmin::leerHeaderTienda()
+{
+    std::ifstream tiendaFile(TIENDA_PATH, std::ios::binary);
+    if (!tiendaFile.is_open()) {
+        return "No se pudo abrir tienda.bin";
+    }
+
+    HeaderFile header = {};
+    tiendaFile.read(reinterpret_cast<char*>(&header), sizeof(HeaderFile));
+    if (!tiendaFile) {
+        return "No se pudo leer header de tienda.bin";
+    }
+
+    return header;
+}
+
+std::variant<Tienda, std::string> FSDatabaseAdmin::leerRegistroTienda()
+{
+    auto headerResult = leerHeaderTienda();
+    if (std::holds_alternative<std::string>(headerResult)) {
+        return std::get<std::string>(headerResult);
+    }
+
+    HeaderFile header = std::get<HeaderFile>(headerResult);
+    if (header.cantidadRegistros <= 0) {
+        return "tienda.bin no tiene registros activos";
+    }
+
+    std::ifstream tiendaFile(TIENDA_PATH, std::ios::binary);
+    if (!tiendaFile.is_open()) {
+        return "No se pudo abrir tienda.bin";
+    }
+
+    tiendaFile.seekg(sizeof(HeaderFile), std::ios::beg);
+    Tienda tienda;
+    if (!EntityTraits<Tienda>::readFromStream(tiendaFile, tienda)) {
+        return "No se pudo leer registro de tienda";
+    }
+
+    return tienda;
+}
+
+std::variant<bool, std::string> FSDatabaseAdmin::guardarRegistroTienda(const Tienda& tienda,
+                                                                       const HeaderFile& header)
+{
+    std::fstream tiendaFile(TIENDA_PATH, std::ios::binary | std::ios::in | std::ios::out);
+    if (!tiendaFile.is_open()) {
+        return "No se pudo abrir tienda.bin";
+    }
+
+    tiendaFile.seekp(0, std::ios::beg);
+    tiendaFile.write(reinterpret_cast<const char*>(&header), sizeof(HeaderFile));
+    if (!tiendaFile) {
+        return "No se pudo escribir header de tienda.bin";
+    }
+
+    tiendaFile.seekp(sizeof(HeaderFile), std::ios::beg);
+    if (!EntityTraits<Tienda>::writeToStream(tiendaFile, tienda)) {
+        return "No se pudo escribir registro de tienda";
+    }
+
+    return true;
 }
 
 void FSDatabaseAdmin::crearBackup()
@@ -65,21 +130,19 @@ std::tuple<int, int, int, int> FSDatabaseAdmin::verificarIntegridadReferencial()
         throw std::runtime_error(std::get<std::string>(productosHeader));
     }
 
-    std::ifstream productosFile(PRODUCTOS_PATH, std::ios::binary);
-    if (productosFile.is_open()) {
-        productosFile.seekg(sizeof(HeaderFile), std::ios::beg);
-        for (int i = 0; i < std::get<HeaderFile>(productosHeader).cantidadRegistros; i++) {
-            Producto producto;
-            productosFile.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
+    const HeaderFile productosStats = std::get<HeaderFile>(productosHeader);
+    for (int id = 1; id < productosStats.proximoID; ++id) {
+        auto productoResult = productos.leerPorId(id);
+        if (!std::holds_alternative<Producto>(productoResult)) {
+            continue;
+        }
 
-            if (producto.getEliminado()) continue;
-
-            const int proveedorId = producto.getIdProveedor();
-            if (proveedorId > 0) {
-                auto proveedorResult = proveedores.leerPorId(proveedorId);
-                if (std::holds_alternative<std::string>(proveedorResult)) {
-                    erroresProductosProveedor++;
-                }
+        const Producto& producto = std::get<Producto>(productoResult);
+        const int proveedorId = producto.getIdProveedor();
+        if (proveedorId > 0) {
+            auto proveedorResult = proveedores.leerPorId(proveedorId);
+            if (std::holds_alternative<std::string>(proveedorResult)) {
+                ++erroresProductosProveedor;
             }
         }
     }
@@ -89,36 +152,45 @@ std::tuple<int, int, int, int> FSDatabaseAdmin::verificarIntegridadReferencial()
         throw std::runtime_error(std::get<std::string>(transactionsHeader));
     }
 
-    std::ifstream transaccionesFile(TRANSACCIONES_PATH, std::ios::binary);
-    if (transaccionesFile.is_open()) {
-        transaccionesFile.seekg(sizeof(HeaderFile), std::ios::beg);
-        for (int i = 0; i < std::get<HeaderFile>(transactionsHeader).cantidadRegistros; ++i) {
-            Transaccion transaccion;
-            transaccionesFile.read(reinterpret_cast<char*>(&transaccion), sizeof(Transaccion));
-            if (transaccion.getEliminado()) {
+    const HeaderFile transaccionesStats = std::get<HeaderFile>(transactionsHeader);
+    for (int id = 1; id < transaccionesStats.proximoID; ++id) {
+        auto transaccionResult = transacciones.leerPorId(id);
+        if (!std::holds_alternative<Transaccion>(transaccionResult)) {
+            continue;
+        }
+
+        const Transaccion& transaccion = std::get<Transaccion>(transaccionResult);
+        const auto tipo = transaccion.getTipoTransaccion();
+        if (tipo != COMPRA && tipo != VENTA) {
+            ++erroresTipoTransaccion;
+            continue;
+        }
+
+        const int relacionadoId = transaccion.getIdRelacionado();
+        if (tipo == COMPRA) {
+            auto proveedorResult = proveedores.leerPorId(relacionadoId);
+            if (std::holds_alternative<std::string>(proveedorResult)) {
+                ++erroresTransaccionRelacionado;
+            }
+        } else {
+            auto clienteResult = clientes.leerPorId(relacionadoId);
+            if (std::holds_alternative<std::string>(clienteResult)) {
+                ++erroresTransaccionRelacionado;
+            }
+        }
+
+        const int productosTotales = transaccion.getProductosTotales();
+        for (int i = 0; i < productosTotales; ++i) {
+            TransaccionDTO productoTransaccion = {};
+            if (!transaccion.getProductoEnIndice(i, productoTransaccion)) {
+                ++erroresTransaccionProducto;
                 continue;
             }
 
-            const auto tipo = transaccion.getTipoTransaccion();
-            if (tipo != COMPRA && tipo != VENTA) {
-                ++erroresTipoTransaccion;
-                continue;
+            auto productoResult = productos.leerPorId(productoTransaccion.productoId);
+            if (std::holds_alternative<std::string>(productoResult)) {
+                ++erroresTransaccionProducto;
             }
-
-            const int relacionadoId = transaccion.getIdRelacionado();
-            if (tipo == COMPRA) {
-                auto proveedorResult = proveedores.leerPorId(relacionadoId);
-                if (std::holds_alternative<std::string>(proveedorResult)) {
-                    ++erroresTransaccionRelacionado;
-                }
-            } else {
-                auto clienteResult = clientes.leerPorId(relacionadoId);
-                if (std::holds_alternative<std::string>(clienteResult)) {
-                    ++erroresTransaccionRelacionado;
-                }
-            }
-
-            (void) erroresTransaccionProducto;
         }
     }
 
@@ -133,24 +205,16 @@ int FSDatabaseAdmin::reporteStockCritico()
         throw std::runtime_error(std::get<std::string>(productosHeader));
     }
 
-    std::ifstream productosFile(PRODUCTOS_PATH, std::ios::binary);
-    if (!productosFile.is_open()) {
-        throw std::runtime_error("No se pudo abrir productos.bin");
-    }
-
-    productosFile.seekg(sizeof(HeaderFile), std::ios::beg);
     int totalCriticos = 0;
 
-    for (int i = 0; i < std::get<HeaderFile>(productosHeader).cantidadRegistros; ++i) {
-        Producto producto;
-        productosFile.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
-        if (!productosFile) {
-            break;
-        }
-
-        if (producto.getEliminado()) {
+    const HeaderFile productosStats = std::get<HeaderFile>(productosHeader);
+    for (int id = 1; id < productosStats.proximoID; ++id) {
+        auto productoResult = productos.leerPorId(id);
+        if (!std::holds_alternative<Producto>(productoResult)) {
             continue;
         }
+
+        const Producto& producto = std::get<Producto>(productoResult);
 
         if (producto.getStock() <= producto.getStockMinimo()) {
             totalCriticos++;
@@ -179,18 +243,27 @@ bool FSDatabaseAdmin::sincronizarContadoresTienda()
         throw std::runtime_error("Error al obtener estadisticas");
     }
 
-    Tienda tienda;
-    std::fstream tiendaFile(TIENDA_PATH, std::ios::binary | std::ios::in | std::ios::out);
-    if (!tiendaFile.is_open()) {
-        throw std::runtime_error("No se pudo abrir tienda.bin");
-        return false;
+    auto headerResult = leerHeaderTienda();
+    if (std::holds_alternative<std::string>(headerResult)) {
+        throw std::runtime_error(std::get<std::string>(headerResult));
     }
 
-    tiendaFile.seekg(sizeof(HeaderFile), std::ios::beg);
-    tiendaFile.read(reinterpret_cast<char*>(&tienda), sizeof(Tienda));
-    if (!tiendaFile) {
-        throw std::runtime_error("No se pudo leer tienda.bin");
-        return false;
+    HeaderFile tiendaHeader = std::get<HeaderFile>(headerResult);
+    Tienda tienda;
+
+    if (tiendaHeader.cantidadRegistros > 0) {
+        auto tiendaResult = leerRegistroTienda();
+        if (std::holds_alternative<std::string>(tiendaResult)) {
+            throw std::runtime_error(std::get<std::string>(tiendaResult));
+        }
+        tienda = std::get<Tienda>(tiendaResult);
+    } else {
+        tienda.setId(1);
+        tienda.setNombre("Papaya Store");
+        tienda.setRif("N/A");
+        tiendaHeader.cantidadRegistros = 1;
+        tiendaHeader.proximoID = 2;
+        tiendaHeader.registrosActivos = 1;
     }
 
     tienda.setTotalProductosActivos(std::get<HeaderFile>(productosHeader).registrosActivos);
@@ -199,11 +272,9 @@ bool FSDatabaseAdmin::sincronizarContadoresTienda()
     tienda.setTotalTransaccionesActivas(std::get<HeaderFile>(transaccionesHeader).registrosActivos);
     tienda.setFechaUltimaModificacion(system_clock::now());
 
-    // save it
-    tiendaFile.seekg(0, std::ios::beg);
-    tiendaFile.write(reinterpret_cast<char*>(&tienda), sizeof(Tienda));
-    if (!tiendaFile) {
-        throw std::runtime_error("No se pudo escribir tienda.bin");
+    auto saveResult = guardarRegistroTienda(tienda, tiendaHeader);
+    if (std::holds_alternative<std::string>(saveResult)) {
+        throw std::runtime_error(std::get<std::string>(saveResult));
     }
 
     return true;

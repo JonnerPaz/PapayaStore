@@ -109,7 +109,7 @@ bool CliUtils::parsePositiveInt(const std::string& input, int& outValue, bool ze
 
     try {
         const int parsed = std::stoi(input);
-        bool cond = zeroInclusive ? parsed <= 0 : parsed < 0;
+        bool cond = zeroInclusive ? parsed < 0 : parsed <= 0;
         if (cond) {
             return false;
         }
@@ -128,7 +128,7 @@ bool CliUtils::parsePositiveFloat(const std::string& input, float& outValue, boo
 
     try {
         const float parsed = std::stof(input);
-        bool cond = zeroInclusive ? parsed <= 0 : parsed < 0;
+        bool cond = zeroInclusive ? parsed < 0 : parsed <= 0;
         if (cond) {
             return false;
         }

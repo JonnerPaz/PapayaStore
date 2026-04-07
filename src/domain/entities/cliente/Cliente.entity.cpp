@@ -1,7 +1,5 @@
 #include "Cliente.entity.hpp"
 
-#include <sstream>
-
 Cliente::Cliente()
     : EntidadBase(0, "", false, system_clock::now(), system_clock::now()),
       m_cantidad(0),
@@ -11,7 +9,6 @@ Cliente::Cliente()
     m_telefono[0] = '\0';
     m_email[0] = '\0';
     m_direccion[0] = '\0';
-    m_fechaRegistro[0] = '\0';
     m_cedula[0] = '\0';
     for (int i = 0; i < 100; ++i) {
         m_historialIds[i] = 0;
@@ -21,7 +18,7 @@ Cliente::Cliente()
 
 Cliente::Cliente(int id, const char* nombre, const char* cedula, const char* telefono,
                  const char* email, const char* direccion, bool eliminado,
-                 const char* fechaRegistro, time_point<system_clock> fechaCreacion,
+                 time_point<system_clock> fechaCreacion,
                  time_point<system_clock> fechaUltimaModificacion)
     : EntidadBase(id, nombre, eliminado, fechaCreacion, fechaUltimaModificacion),
       m_cantidad(0),
@@ -71,32 +68,6 @@ bool Cliente::validarEmail(const char* email)
     return false;
 }
 
-bool Cliente::validarFecha(const char* fecha)
-{
-    if (fecha == nullptr) {
-        return false;
-    }
-
-    // extraemos los datos de YYYY-MM-DD
-    std::stringstream ss(fecha);
-    int y, m, d;
-    char dash1, dash2;
-
-    // verificar si es correcto el formato
-    if (!(ss >> y >> dash1 >> m >> dash2 >> d)) {
-        return false;
-    }
-
-    // para ver que tenga los guiones donde van
-    if (dash1 != '-' || dash2 != '-') {
-        return false;
-    }
-    // year_month_day representa una fecha en el calendario civil
-    std::chrono::year_month_day ymd{std::chrono::year{y}, std::chrono::month{(unsigned) m},
-                                    std::chrono::day{(unsigned) d}};
-    return ymd.ok();
-}
-
 bool Cliente::setCedula(const char* cedula)
 {
     if (cedula == nullptr) {
@@ -135,16 +106,6 @@ bool Cliente::setDireccion(const char* direccion)
     }
 
     return EntidadBase::copiarCadenaSeguro(this->m_direccion, sizeof(this->m_direccion), direccion);
-}
-
-bool Cliente::setFechaRegistro(const char* fechaRegistro)
-{
-    if (fechaRegistro == nullptr || !validarFecha(fechaRegistro)) {
-        return false;
-    }
-
-    return EntidadBase::copiarCadenaSeguro(this->m_fechaRegistro, sizeof(this->m_fechaRegistro),
-                                           fechaRegistro);
 }
 
 bool Cliente::setTotalCompras(float totalCompras)
@@ -202,5 +163,45 @@ bool Cliente::removerTransaccionId(int idTransaccion)
 
     this->m_transaccionesIds[this->m_cantidadTransacciones - 1] = 0;
     this->m_cantidadTransacciones -= 1;
+    return true;
+}
+
+bool Cliente::setCantidad(int cantidad)
+{
+    if (cantidad < 0 || cantidad > 100) {
+        return false;
+    }
+
+    this->m_cantidad = cantidad;
+    return true;
+}
+
+bool Cliente::setHistorialIdEnIndice(int index, int historialId)
+{
+    if (index < 0 || index >= 100 || historialId < 0) {
+        return false;
+    }
+
+    this->m_historialIds[index] = historialId;
+    return true;
+}
+
+bool Cliente::setTransaccionIdEnIndice(int index, int idTransaccion)
+{
+    if (index < 0 || index >= 100 || idTransaccion < 0) {
+        return false;
+    }
+
+    this->m_transaccionesIds[index] = idTransaccion;
+    return true;
+}
+
+bool Cliente::setCantidadTransacciones(int cantidadTransacciones)
+{
+    if (cantidadTransacciones < 0 || cantidadTransacciones > 100) {
+        return false;
+    }
+
+    this->m_cantidadTransacciones = cantidadTransacciones;
     return true;
 }
