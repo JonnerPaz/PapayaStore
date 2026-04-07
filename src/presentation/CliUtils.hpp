@@ -3,7 +3,6 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <limits>
 
 #include "domain/HeaderFile.hpp"
 #include "domain/constants.hpp"
@@ -44,69 +43,4 @@ class CliUtils
     int validarId(const char* msg);
 
     static bool contieneSubstring(const char* cadena, const char* subcadena);
-
-    static void asignarPropiedadNum(const char* msg, AsignarNum auto& prop);
-
-    template <size_t N, typename Setter>
-    static void asignarPropiedadString(const char* msg, Setter setter)
-    {
-        char prop[N];
-
-        std::cout << COLOR_YELLOW << msg << " (q para salir): " << COLOR_RESET;
-        if (std::cin.peek() == '\n') {
-            std::cin.ignore();
-        }
-
-        std::cin.getline(prop, N);
-
-        if (std::cin.fail()) {
-            std::cin.clear();
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        }
-        setter(prop);
-    }
-
-    template <typename T, typename Getter>
-    static bool existeDuplicado(const fs::path& path, const char* valorBusqueda,
-                                Getter getPropiedad)
-    {
-        if (valorBusqueda == nullptr) return false;
-
-        std::ifstream archivo(path, std::ios::binary);
-        if (!archivo.is_open()) return false;
-
-        HeaderFile header;
-        archivo.read(reinterpret_cast<char*>(&header), sizeof(HeaderFile));
-        if (!archivo) return false;
-
-        const HeaderFile stats = header;
-        for (int id = 1; id < stats.proximoID; ++id) {
-            T entidad;
-            std::streampos offset = static_cast<std::streampos>(sizeof(HeaderFile)) +
-                                    static_cast<std::streampos>(id - 1) *
-                                        EntityTraits<T>::recordSize();
-            archivo.seekg(offset, std::ios::beg);
-            if (!archivo) {
-                return false;
-            }
-
-            if (!EntityTraits<T>::readFromStream(archivo, entidad)) {
-                archivo.clear();
-                continue;
-            }
-
-            if constexpr (requires(const T& e) { e.getEliminado(); }) {
-                if (entidad.getEliminado()) {
-                    continue;
-                }
-            }
-
-            const char* valor = getPropiedad(entidad);
-            if (valor != nullptr && std::strcmp(valor, valorBusqueda) == 0) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 };

@@ -75,32 +75,6 @@ bool CliUtils::contieneSubstring(const char* cadena, const char* subcadena)
     return result;
 }
 
-void CliUtils::asignarPropiedadNum(const char* msg, AsignarNum auto& prop)
-{
-    std::cout << COLOR_YELLOW << msg << COLOR_RESET;
-    while (true) {
-        std::cin >> prop;
-        if (std::cin.fail()) {
-            std::cin.clear();
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            std::cout << COLOR_RED
-                      << "El valor debe ser numérico. Intente nuevamente: " << COLOR_RESET
-                      << std::endl;
-            continue;
-        }
-        // Clean buffer no matter if std::cin fail or not
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
-        if (prop >= 0) {
-            break;
-        }
-        std::cout << CLEAR_SCREEN << COLOR_RED
-                  << "El valor debe ser mayor o igual a 0. Intente nuevamente: " << COLOR_RESET
-                  << std::endl;
-    }
-    std::cout << std::endl;
-}
-
 bool CliUtils::parsePositiveInt(const std::string& input, int& outValue, bool zeroInclusive)
 {
     if (input.empty()) {
