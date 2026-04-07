@@ -16,6 +16,7 @@
 #include "infrastructure/datasource/EntityTraits.hpp"
 
 namespace fs = std::filesystem;
+using namespace Constants::ASCII_CODES;
 using namespace Constants::PATHS;
 using namespace std::chrono;
 
@@ -224,9 +225,100 @@ int FSDatabaseAdmin::reporteStockCritico()
     return totalCriticos;
 }
 
-void FSDatabaseAdmin::reporteHistorialCliente()
+void FSDatabaseAdmin::reporteHistorialCliente(int idCliente)
 {
-    std::cout << "Reporte historial cliente: pendiente de parametrizacion por ID de cliente."
+    auto clienteResult = clientes.leerPorId(idCliente);
+    if (std::holds_alternative<std::string>(clienteResult)) {
+        std::cout << "No se pudo generar historial del cliente: "
+                  << std::get<std::string>(clienteResult) << std::endl;
+        return;
+    }
+
+    const Cliente& cliente = std::get<Cliente>(clienteResult);
+
+    std::cout << COLOR_CYAN << "========================================" << COLOR_RESET << std::endl;
+    std::cout << COLOR_CYAN << "      REPORTE: HISTORIAL DE CLIENTE    " << COLOR_RESET << std::endl;
+    std::cout << COLOR_CYAN << "========================================" << COLOR_RESET << std::endl;
+    std::cout << std::format("{}ID Cliente: {}{}", COLOR_YELLOW, COLOR_GREEN, cliente.getId())
+              << COLOR_RESET << std::endl;
+    std::cout << std::format("{}Nombre: {}{}", COLOR_YELLOW, COLOR_GREEN, cliente.getNombre())
+              << COLOR_RESET << std::endl;
+    std::cout << std::format("{}Cedula: {}{}", COLOR_YELLOW, COLOR_GREEN, cliente.getCedula())
+              << COLOR_RESET << std::endl;
+    std::cout << std::format("{}Total compras acumuladas: {}${:.2f}", COLOR_YELLOW, COLOR_GREEN,
+                             cliente.getTotalCompras())
+              << COLOR_RESET << std::endl;
+
+    auto transaccionesHeader = transacciones.obtenerEstadisticas();
+    if (std::holds_alternative<std::string>(transaccionesHeader)) {
+        std::cout << "No se pudo leer transacciones: " << std::get<std::string>(transaccionesHeader)
+                  << std::endl;
+        return;
+    }
+
+    const HeaderFile transStats = std::get<HeaderFile>(transaccionesHeader);
+    int transaccionesMostradas = 0;
+
+    for (int idTransaccion = 1; idTransaccion < transStats.proximoID; ++idTransaccion) {
+        auto transaccionResult = transacciones.leerPorId(idTransaccion);
+        if (!std::holds_alternative<Transaccion>(transaccionResult)) {
+            continue;
+        }
+
+        const Transaccion& transaccion = std::get<Transaccion>(transaccionResult);
+        if (transaccion.getTipoTransaccion() != VENTA ||
+            transaccion.getIdRelacionado() != cliente.getId()) {
+            continue;
+        }
+
+        ++transaccionesMostradas;
+        std::cout << "\n" << COLOR_YELLOW << "Transaccion #" << COLOR_GREEN << transaccion.getId()
+                  << COLOR_RESET << std::endl;
+        std::cout << std::format("{}Tipo: {}VENTA", COLOR_YELLOW, COLOR_GREEN) << COLOR_RESET
+                  << std::endl;
+        std::cout << std::format("{}Total: {}${:.2f}", COLOR_YELLOW, COLOR_GREEN,
+                                 transaccion.getTotal())
+                  << COLOR_RESET << std::endl;
+        std::cout << std::format("{}Descripcion: {}{}", COLOR_YELLOW, COLOR_GREEN,
+                                 transaccion.getDescripcion())
+                  << COLOR_RESET << std::endl;
+
+        std::cout << std::format("{:<10} | {:<24} | {:<10} | {:<12} | {:<12}", "Prod ID",
+                                 "Producto", "Cantidad", "Precio U.", "Subtotal")
+                  << std::endl;
+        std::cout << "-----------------------------------------------------------------------"
+                  << std::endl;
+
+        for (int i = 0; i < transaccion.getProductosTotales(); ++i) {
+            TransaccionDTO item = {};
+            if (!transaccion.getProductoEnIndice(i, item)) {
+                std::cout << std::format("[Aviso] No se pudo leer item {} de la transaccion {}.",
+                                         i + 1, transaccion.getId())
+                          << std::endl;
+                continue;
+            }
+
+            std::string nombreProducto = "(No encontrado)";
+            auto productoResult = productos.leerPorId(item.productoId);
+            if (std::holds_alternative<Producto>(productoResult)) {
+                nombreProducto = std::get<Producto>(productoResult).getNombre();
+            }
+
+            const float subtotal = static_cast<float>(item.cantidad) * item.precio;
+            std::cout << std::format("{:<10} | {:<24} | {:<10} | ${:<11.2f} | ${:<11.2f}",
+                                     item.productoId, nombreProducto, item.cantidad, item.precio,
+                                     subtotal)
+                      << std::endl;
+        }
+    }
+
+    if (transaccionesMostradas == 0) {
+        std::cout << COLOR_GREEN << "Este cliente no tiene ventas asociadas." << COLOR_RESET
+                  << std::endl;
+        return;
+    }
+
+    std::cout << "\n" << std::format("Transacciones validas mostradas: {}", transaccionesMostradas)
               << std::endl;
 }
 

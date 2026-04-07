@@ -44,7 +44,26 @@ void MenuReportes::reporteStockCritico() {
 }
 
 void MenuReportes::reporteHistorialCliente() {
-    this->repositories.admin.reporteHistorialCliente();
+    const std::string idText = readLine("Ingrese el id del cliente (q para cancelar): ");
+    if (idText == "q" || idText == "Q" || idText.empty()) {
+        printError("Operacion cancelada.");
+        return;
+    }
+
+    int idCliente = 0;
+    try {
+        idCliente = std::stoi(idText);
+    } catch (...) {
+        printError("ID invalido. Debe ser numerico.");
+        return;
+    }
+
+    if (idCliente <= 0) {
+        printError("ID invalido. Debe ser mayor a 0.");
+        return;
+    }
+
+    this->repositories.admin.reporteHistorialCliente(idCliente);
 }
 
 void MenuReportes::mostrarResumenTienda() {

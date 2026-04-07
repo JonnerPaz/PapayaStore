@@ -34,6 +34,6 @@ class FSDatabaseAdmin : public IDatabaseAdmin
     void crearBackup() override;
     std::tuple<int, int, int, int> verificarIntegridadReferencial() override;
     int reporteStockCritico() override;
-    void reporteHistorialCliente() override;
+    void reporteHistorialCliente(int idCliente) override;
     bool sincronizarContadoresTienda() override;
 };
