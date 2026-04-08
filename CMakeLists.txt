@@ -29,7 +29,6 @@ add_executable(${PROJECT_NAME}
     src/presentation/Menu/MainMenu/MainMenu.cpp
     src/presentation/Menu/MenuProductos/MenuProductos.cpp
     src/presentation/Menu/MenuProveedores/MenuProveedores.cpp
-    src/presentation/Menu/MenuTienda/MenuTienda.cpp
     src/presentation/Menu/MenuTransacciones/MenuTransacciones.cpp
     src/presentation/Menu/MenuReportes/MenuReportes.cpp
 )

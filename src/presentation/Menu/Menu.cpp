@@ -74,7 +74,7 @@ void Menu::drawMenu()
                       << this->options[i].descripcion << std::endl;
         }
         std::cout << COLOR_RED << "0." << COLOR_RESET << " " << this->texToExit << std::endl;
-        std::cout << "Seleccione una opción: ";
+        std::cout << COLOR_YELLOW << "Seleccione una opción: ";
 
         if (!(std::cin >> option) || std::cin.peek() != '\n') {
             std::cin.clear();

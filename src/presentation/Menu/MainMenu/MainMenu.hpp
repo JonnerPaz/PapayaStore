@@ -6,7 +6,6 @@
 #include "presentation/Menu/MenuProductos/MenuProductos.hpp"
 #include "presentation/Menu/MenuProveedores/MenuProveedores.hpp"
 #include "presentation/Menu/MenuReportes/MenuReportes.hpp"
-#include "presentation/Menu/MenuTienda/MenuTienda.hpp"
 #include "presentation/Menu/MenuTransacciones/MenuTransacciones.hpp"
 
 class MainMenu : public Menu
@@ -18,7 +17,6 @@ class MainMenu : public Menu
     MenuClientes menuClientes;
     MenuTransacciones menuTransacciones;
     MenuReportes menuReportes;
-    MenuTienda menuTienda;
 
    public:
     explicit MainMenu(AppRepositories& repositories);
