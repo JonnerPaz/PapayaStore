@@ -1,12 +1,18 @@
 #include "entidad.entity.hpp"
 
+#include <string>
+
+#include "domain/utils/utils.hpp"
+
 // Clase abstracta
 EntidadBase::EntidadBase(int id, const char* nombre, bool eliminado,
                          time_point<system_clock> fechaCreacion,
                          time_point<system_clock> fechaUltimaModificacion)
 {
     this->m_id = id;
-    this->copiarCadenaSeguro(this->m_nombre, sizeof(this->m_nombre), nombre);
+    if (!this->setNombre(nombre)) {
+        this->m_nombre[0] = '\0';
+    }
     this->m_eliminado = eliminado;
     this->m_fechaCreacion = fechaCreacion;
     this->m_fechaUltimaModificacion = fechaUltimaModificacion;
@@ -41,7 +47,13 @@ bool EntidadBase::setNombre(const char* nombre)
     if (nombre == nullptr) {
         return false;
     }
-    this->copiarCadenaSeguro(this->m_nombre, sizeof(this->m_nombre), nombre);
+
+    const std::string sanitizedName = DomainUtils::sanitizeName(nombre);
+    if (sanitizedName.empty()) {
+        return false;
+    }
+
+    this->copiarCadenaSeguro(this->m_nombre, sizeof(this->m_nombre), sanitizedName.c_str());
     return true;
 }
 
