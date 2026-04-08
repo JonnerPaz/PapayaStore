@@ -7,6 +7,8 @@ class MenuProductos : public Menu
 {
    private:
     bool readValidText(const char* prompt, std::string& outValue);
+    bool nombreDuplicado(const std::string& nombre, int ignoredId = -1);
+    bool codigoDuplicado(const std::string& codigo, int ignoredId = -1);
     void readValidFloat(const char* prompt, float& outValue, const char* errorMsg,
                         bool zeroInclusive = true);
     void readValidInt(const char* prompt, int& outValue, const char* errorMsg,

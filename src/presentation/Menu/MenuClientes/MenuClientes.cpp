@@ -45,6 +45,37 @@ bool MenuClientes::readValidEmail(const char* prompt, std::string& outValue)
     }
 }
 
+bool MenuClientes::readValidPhone(const char* prompt, std::string& outValue)
+{
+    while (true) {
+        outValue = Menu::readLine(prompt);
+        if (outValue == "q" || outValue == "Q" || outValue.empty()) {
+            return false;
+        }
+
+        Cliente cliente;
+        if (cliente.setTelefono(outValue.c_str())) {
+            outValue = cliente.getTelefono();
+            return true;
+        }
+
+        Menu::printError(
+            "Telefono invalido. Use entre 7 y 15 digitos; puede incluir + al inicio,"
+            " espacios, guiones o parentesis.");
+    }
+}
+
+bool MenuClientes::nombreDuplicado(const std::string& nombre, int ignoredId)
+{
+    auto result = repositories.clientes.leerPorNombre(nombre);
+    if (std::holds_alternative<std::string>(result)) {
+        return false;
+    }
+
+    const Cliente& cliente = std::get<Cliente>(result);
+    return cliente.getId() != ignoredId;
+}
+
 bool MenuClientes::cedulaDuplicada(const std::string& cedula, int ignoredId)
 {
     const auto clientesHeader = repositories.clientes.obtenerEstadisticas();
@@ -81,8 +112,17 @@ void MenuClientes::crearCliente()
     }
 
     std::string nombre;
-    if (!readValidText("Ingrese el nombre del cliente (q para cancelar): ", nombre)) {
-        return;
+    while (true) {
+        if (!readValidText("Ingrese el nombre del cliente (q para cancelar): ", nombre)) {
+            return;
+        }
+
+        if (nombreDuplicado(nombre)) {
+            Menu::printError("Ya existe un cliente con el nombre ingresado.");
+            continue;
+        }
+
+        break;
     }
 
     std::string cedula;
@@ -102,7 +142,8 @@ void MenuClientes::crearCliente()
     }
 
     std::string telefono;
-    if (!readValidText("Ingrese el telefono del cliente (q para cancelar): ", telefono)) {
+    if (!readValidPhone("Ingrese el telefono del cliente (q para cancelar): ", telefono)) {
+        Menu::printError("Creacion cancelada.");
         return;
     }
 
@@ -244,6 +285,11 @@ void MenuClientes::actualizarCliente()
                     break;
                 }
 
+                if (nombreDuplicado(nuevoNombre, id)) {
+                    Menu::printError("Ya existe un cliente con el nombre ingresado.");
+                    break;
+                }
+
                 std::cout << std::format("Nombre actual: {} | Nuevo nombre: {}",
                                          cliente.getNombre(), nuevoNombre)
                           << std::endl;
@@ -310,9 +356,8 @@ void MenuClientes::actualizarCliente()
                 break;
             }
             case 3: {
-                const std::string nuevoTelefono =
-                    readLine("Nuevo telefono (q o enter para cancelar): ");
-                if (nuevoTelefono == "q" || nuevoTelefono == "Q" || nuevoTelefono.empty()) {
+                std::string nuevoTelefono;
+                if (!readValidPhone("Nuevo telefono (q o enter para cancelar): ", nuevoTelefono)) {
                     Menu::printError("Actualizacion cancelada.");
                     break;
                 }

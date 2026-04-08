@@ -27,6 +27,44 @@ bool MenuProductos::readValidText(const char* prompt, std::string& outValue)
     return true;
 }
 
+bool MenuProductos::nombreDuplicado(const std::string& nombre, int ignoredId)
+{
+    auto result = repositories.productos.leerPorNombre(nombre);
+    if (std::holds_alternative<std::string>(result)) {
+        return false;
+    }
+
+    const Producto& producto = std::get<Producto>(result);
+    return producto.getId() != ignoredId;
+}
+
+bool MenuProductos::codigoDuplicado(const std::string& codigo, int ignoredId)
+{
+    auto productosHeader = repositories.productos.obtenerEstadisticas();
+    if (std::holds_alternative<std::string>(productosHeader)) {
+        return false;
+    }
+
+    const HeaderFile stats = std::get<HeaderFile>(productosHeader);
+    for (int id = 1; id < stats.proximoID; ++id) {
+        auto productoResult = repositories.productos.leerPorId(id);
+        if (!std::holds_alternative<Producto>(productoResult)) {
+            continue;
+        }
+
+        const Producto& producto = std::get<Producto>(productoResult);
+        if (producto.getId() == ignoredId) {
+            continue;
+        }
+
+        if (codigo == producto.getCodigo()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void MenuProductos::readValidFloat(const char* prompt, float& outValue, const char* errorMsg,
                                    bool zeroInclusive)
 {
@@ -67,13 +105,31 @@ void MenuProductos::crearProducto()
     }
 
     std::string nombre;
-    if (!readValidText("Ingrese el nombre del producto (q para cancelar): ", nombre)) {
-        return;
+    while (true) {
+        if (!readValidText("Ingrese el nombre del producto (q para cancelar): ", nombre)) {
+            return;
+        }
+
+        if (nombreDuplicado(nombre)) {
+            Menu::printError("Ya existe un producto con el nombre ingresado.");
+            continue;
+        }
+
+        break;
     }
 
     std::string codigo;
-    if (!readValidText("Ingrese el codigo del producto (q para cancelar): ", codigo)) {
-        return;
+    while (true) {
+        if (!readValidText("Ingrese el codigo del producto (q para cancelar): ", codigo)) {
+            return;
+        }
+
+        if (codigoDuplicado(codigo)) {
+            Menu::printError("Ya existe un producto con el codigo ingresado.");
+            continue;
+        }
+
+        break;
     }
 
     std::string descripcion;
@@ -269,6 +325,11 @@ void MenuProductos::actualizarProducto()
                     break;
                 }
 
+                if (nombreDuplicado(nuevoNombre, id)) {
+                    Menu::printError("Ya existe un producto con el nombre ingresado.");
+                    break;
+                }
+
                 std::cout << std::format("Nombre actual: {} | Nuevo nombre: {}",
                                          producto.getNombre(), nuevoNombre)
                           << std::endl;
@@ -300,6 +361,11 @@ void MenuProductos::actualizarProducto()
                     readLine("Nuevo codigo (q o enter para cancelar): ");
                 if (nuevoCodigo == "q" || nuevoCodigo == "Q" || nuevoCodigo.empty()) {
                     Menu::printError("Actualizacion cancelada.");
+                    break;
+                }
+
+                if (codigoDuplicado(nuevoCodigo, id)) {
+                    Menu::printError("Ya existe un producto con el codigo ingresado.");
                     break;
                 }
 

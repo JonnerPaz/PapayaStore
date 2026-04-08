@@ -45,6 +45,37 @@ bool MenuProveedores::readValidEmail(const char* prompt, std::string& outValue)
     }
 }
 
+bool MenuProveedores::readValidPhone(const char* prompt, std::string& outValue)
+{
+    while (true) {
+        outValue = Menu::readLine(prompt);
+        if (outValue == "q" || outValue == "Q" || outValue.empty()) {
+            return false;
+        }
+
+        Proveedor proveedor;
+        if (proveedor.setTelefono(outValue.c_str())) {
+            outValue = proveedor.getTelefono();
+            return true;
+        }
+
+        Menu::printError(
+            "Telefono invalido. Use entre 7 y 15 digitos; puede incluir + al inicio,"
+            " espacios, guiones o parentesis.");
+    }
+}
+
+bool MenuProveedores::nombreDuplicado(const std::string& nombre, int ignoredId)
+{
+    auto result = repositories.proveedores.leerPorNombre(nombre);
+    if (std::holds_alternative<std::string>(result)) {
+        return false;
+    }
+
+    const Proveedor& proveedor = std::get<Proveedor>(result);
+    return proveedor.getId() != ignoredId;
+}
+
 bool MenuProveedores::rifDuplicado(const std::string& rif, int ignoredId)
 {
     const auto proveedoresHeader = repositories.proveedores.obtenerEstadisticas();
@@ -81,8 +112,17 @@ void MenuProveedores::crearProveedor()
     }
 
     std::string nombre;
-    if (!readValidText("Ingrese el nombre del proveedor (q para cancelar): ", nombre)) {
-        return;
+    while (true) {
+        if (!readValidText("Ingrese el nombre del proveedor (q para cancelar): ", nombre)) {
+            return;
+        }
+
+        if (nombreDuplicado(nombre)) {
+            Menu::printError("Ya existe un proveedor con el nombre ingresado.");
+            continue;
+        }
+
+        break;
     }
 
     std::string rif;
@@ -102,7 +142,8 @@ void MenuProveedores::crearProveedor()
     }
 
     std::string telefono;
-    if (!readValidText("Ingrese el telefono del proveedor (q para cancelar): ", telefono)) {
+    if (!readValidPhone("Ingrese el telefono del proveedor (q para cancelar): ", telefono)) {
+        Menu::printError("Creacion cancelada.");
         return;
     }
 
@@ -246,6 +287,11 @@ void MenuProveedores::actualizarProveedor()
                     break;
                 }
 
+                if (nombreDuplicado(nuevoNombre, id)) {
+                    Menu::printError("Ya existe un proveedor con el nombre ingresado.");
+                    break;
+                }
+
                 std::cout << std::format("Nombre actual: {} | Nuevo nombre: {}",
                                          proveedor.getNombre(), nuevoNombre)
                           << std::endl;
@@ -311,9 +357,8 @@ void MenuProveedores::actualizarProveedor()
                 break;
             }
             case 3: {
-                const std::string nuevoTelefono =
-                    readLine("Nuevo telefono (q o enter para cancelar): ");
-                if (nuevoTelefono == "q" || nuevoTelefono == "Q" || nuevoTelefono.empty()) {
+                std::string nuevoTelefono;
+                if (!readValidPhone("Nuevo telefono (q o enter para cancelar): ", nuevoTelefono)) {
                     Menu::printError("Actualizacion cancelada.");
                     break;
                 }
@@ -522,9 +567,8 @@ void MenuProveedores::eliminarProveedor()
     try {
         repositories.admin.sincronizarContadoresTienda();
     } catch (const std::exception& e) {
-        Menu::printError(
-            "Advertencia: proveedor eliminado, pero no se pudo sincronizar tienda: " +
-            std::string(e.what()));
+        Menu::printError("Advertencia: proveedor eliminado, pero no se pudo sincronizar tienda: " +
+                         std::string(e.what()));
     }
 
     Menu::printSuccess("Proveedor eliminado con exito.");

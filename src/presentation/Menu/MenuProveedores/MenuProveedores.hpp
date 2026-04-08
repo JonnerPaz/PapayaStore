@@ -7,6 +7,8 @@ class MenuProveedores : public Menu
    private:
     bool readValidText(const char* prompt, std::string& outValue);
     bool readValidEmail(const char* prompt, std::string& outValue);
+    bool readValidPhone(const char* prompt, std::string& outValue);
+    bool nombreDuplicado(const std::string& nombre, int ignoredId = -1);
     bool rifDuplicado(const std::string& rif, int ignoredId = -1);
 
    public:
