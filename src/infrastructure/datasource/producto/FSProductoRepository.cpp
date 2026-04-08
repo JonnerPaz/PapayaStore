@@ -9,6 +9,11 @@ std::variant<Producto, std::string> FSProductoRepository::leerPorId(int id)
     return baseRepository.leerTemplate(id);
 }
 
+std::variant<Producto, std::string> FSProductoRepository::leerPorNombre(const std::string& nombre)
+{
+    return baseRepository.leerPorNombreTemplate(nombre);
+}
+
 std::variant<bool, std::string> FSProductoRepository::guardar(const Producto& entidad)
 {
     return baseRepository.guardarTemplate(entidad);

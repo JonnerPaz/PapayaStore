@@ -11,6 +11,11 @@ std::variant<Proveedor, std::string> FSProveedorRepository::leerPorId(int id)
     return baseRepository.leerTemplate(id);
 }
 
+std::variant<Proveedor, std::string> FSProveedorRepository::leerPorNombre(const std::string& nombre)
+{
+    return baseRepository.leerPorNombreTemplate(nombre);
+}
+
 std::variant<bool, std::string> FSProveedorRepository::guardar(const Proveedor& entidad)
 {
     return baseRepository.guardarTemplate(entidad);

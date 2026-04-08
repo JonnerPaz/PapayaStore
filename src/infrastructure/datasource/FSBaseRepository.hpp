@@ -6,6 +6,7 @@
 #include <variant>
 
 #include "domain/HeaderFile.hpp"
+#include "domain/utils/utils.hpp"
 #include "infrastructure/datasource/EntityTraits.hpp"
 
 namespace fs = std::filesystem;
@@ -100,6 +101,51 @@ class FSBaseRepository
         }
 
         return registro;
+    }
+
+    std::variant<T, std::string> leerPorNombreTemplate(const std::string& nombreBuscado)
+    {
+        const std::string nombreNormalizadoBuscado = DomainUtils::normalizeName(nombreBuscado);
+        if (nombreNormalizadoBuscado.empty()) {
+            return "El nombre de búsqueda no puede estar vacío";
+        }
+
+        std::fstream file(filePath, std::ios::in | std::ios::binary);
+        if (!file.is_open()) {
+            return "Error abriendo archivo para lectura: " + filePath.string();
+        }
+
+        auto headerResult = readHeader(file);
+        if (std::holds_alternative<std::string>(headerResult)) {
+            return std::get<std::string>(headerResult);
+        }
+
+        const HeaderFile header = std::get<HeaderFile>(headerResult);
+        for (int id = 1; id < header.proximoID; ++id) {
+            file.seekg(getRecordOffset(id), std::ios::beg);
+            if (!file) {
+                return "Error moviendo el puntero de lectura";
+            }
+
+            T registro;
+            if (!EntityTraits<T>::readFromStream(file, registro)) {
+                file.clear();
+                continue;
+            }
+
+            if (EntityTraits<T>::isDeleted(registro)) {
+                continue;
+            }
+
+            const char* nombreRegistro = registro.getNombre();
+            const std::string nombreNormalizadoRegistro =
+                DomainUtils::normalizeName(nombreRegistro != nullptr ? nombreRegistro : "");
+            if (nombreNormalizadoRegistro == nombreNormalizadoBuscado) {
+                return registro;
+            }
+        }
+
+        return "No existe registro con el nombre solicitado";
     }
 
     /// Sobrescribe un registro existente por ID usando serializacion deterministica.

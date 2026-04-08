@@ -12,6 +12,12 @@ std::variant<Transaccion, std::string> FSTransaccionRepository::leerPorId(int id
     return baseRepository.leerTemplate(id);
 }
 
+std::variant<Transaccion, std::string> FSTransaccionRepository::leerPorNombre(
+    const std::string& nombre)
+{
+    return baseRepository.leerPorNombreTemplate(nombre);
+}
+
 std::variant<bool, std::string> FSTransaccionRepository::guardar(const Transaccion& entidad)
 {
     return baseRepository.guardarTemplate(entidad);

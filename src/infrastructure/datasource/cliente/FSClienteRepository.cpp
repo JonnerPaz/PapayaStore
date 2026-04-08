@@ -9,6 +9,11 @@ std::variant<Cliente, std::string> FSClienteRepository::leerPorId(int id)
     return m_baseRepository.leerTemplate(id);
 }
 
+std::variant<Cliente, std::string> FSClienteRepository::leerPorNombre(const std::string& nombre)
+{
+    return m_baseRepository.leerPorNombreTemplate(nombre);
+}
+
 std::variant<bool, std::string> FSClienteRepository::guardar(const Cliente& entidad)
 {
     return m_baseRepository.guardarTemplate(entidad);

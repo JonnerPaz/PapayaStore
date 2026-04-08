@@ -12,12 +12,9 @@ class FSProveedorRepository : public IProveedorRepository
     FSProveedorRepository();
 
     std::variant<Proveedor, std::string> leerPorId(int id) override;
-
+    std::variant<Proveedor, std::string> leerPorNombre(const std::string& nombre) override;
     std::variant<bool, std::string> guardar(const Proveedor& entidad) override;
-
     std::variant<bool, std::string> actualizar(int id, const Proveedor& entidad) override;
-
     std::variant<bool, std::string> eliminarLogicamente(int id) override;
-
     std::variant<HeaderFile, std::string> obtenerEstadisticas() override;
 };

@@ -9,6 +9,7 @@ class IClienteRepository
 {
    public:
     virtual std::variant<Cliente, std::string> leerPorId(int id) = 0;
+    virtual std::variant<Cliente, std::string> leerPorNombre(const std::string& nombre) = 0;
     virtual std::variant<bool, std::string> guardar(const Cliente& entidad) = 0;
     virtual std::variant<bool, std::string> actualizar(int id, const Cliente& entidad) = 0;
     virtual std::variant<bool, std::string> eliminarLogicamente(int id) = 0;

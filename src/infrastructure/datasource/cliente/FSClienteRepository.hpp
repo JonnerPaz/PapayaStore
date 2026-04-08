@@ -12,6 +12,7 @@ class FSClienteRepository : public IClienteRepository
     FSClienteRepository();
 
     std::variant<Cliente, std::string> leerPorId(int id) override;
+    std::variant<Cliente, std::string> leerPorNombre(const std::string& nombre) override;
 
     std::variant<bool, std::string> guardar(const Cliente& entidad) override;
 

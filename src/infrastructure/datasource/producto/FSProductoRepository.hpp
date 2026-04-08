@@ -12,6 +12,7 @@ class FSProductoRepository : public IProductoRepository
     FSProductoRepository();
 
     std::variant<Producto, std::string> leerPorId(int id) override;
+    std::variant<Producto, std::string> leerPorNombre(const std::string& nombre) override;
     std::variant<bool, std::string> guardar(const Producto& entidad) override;
     std::variant<bool, std::string> actualizar(int id, const Producto& entidad) override;
     std::variant<bool, std::string> eliminarLogicamente(int id) override;
