@@ -53,7 +53,7 @@ bool Producto::setStock(int nuevoStock)
 
 bool Producto::setIdProveedor(int nuevoIdProveedor)
 {
-    if (nuevoIdProveedor < 0) {
+    if (nuevoIdProveedor <= 0) {
         return false;
     }
     m_idProveedor = nuevoIdProveedor;
