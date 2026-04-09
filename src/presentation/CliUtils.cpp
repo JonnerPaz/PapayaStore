@@ -5,11 +5,27 @@
 
 #include "domain/constants.hpp"
 
-using namespace Constants::ASCII_CODES;
-using namespace Constants::PATHS;
 using std::string;
 
-void CliUtils::convertirAMinusculas(char* cadena)
+std::string CliUtils::readLine(const char* prompt)
+{
+    std::cout << COLOR_YELLOW << prompt << COLOR_RESET;
+    std::string value;
+    std::getline(std::cin >> std::ws, value);
+    return value;
+}
+
+bool CliUtils::readValidText(const char* prompt, std::string& outValue)
+{
+    outValue = CliUtils::readLine(prompt);
+    if (outValue == "q" || outValue == "Q" || outValue.empty()) {
+        return false;
+    }
+
+    return true;
+}
+
+void CliUtils::toLowerCase(char* cadena)
 {
     if (cadena == nullptr) return;
 
@@ -20,7 +36,7 @@ void CliUtils::convertirAMinusculas(char* cadena)
     }
 }
 
-int CliUtils::validarId(const char* msg)
+int CliUtils::readValidId(const char* msg)
 {
     while (true) {
         std::cout << COLOR_YELLOW << msg << " (q para salir): " << COLOR_RESET;
@@ -54,61 +70,5 @@ int CliUtils::validarId(const char* msg)
                       << COLOR_RESET << std::endl;
             continue;
         }
-    }
-}
-
-bool CliUtils::contieneSubstring(const char* cadena, const char* subcadena)
-{
-    char* copyCadena = new char[strlen(cadena) + 1];
-    strcpy(copyCadena, cadena);
-    convertirAMinusculas(copyCadena);
-
-    char* copySubcadena = new char[strlen(subcadena) + 1];
-    strcpy(copySubcadena, subcadena);
-    convertirAMinusculas(copySubcadena);
-
-    bool result = (strstr(copyCadena, copySubcadena) != nullptr);
-
-    delete[] copyCadena;
-    delete[] copySubcadena;
-
-    return result;
-}
-
-bool CliUtils::parsePositiveInt(const std::string& input, int& outValue, bool zeroInclusive)
-{
-    if (input.empty()) {
-        return false;
-    }
-
-    try {
-        const int parsed = std::stoi(input);
-        bool cond = zeroInclusive ? parsed < 0 : parsed <= 0;
-        if (cond) {
-            return false;
-        }
-        outValue = parsed;
-        return true;
-    } catch (...) {
-        return false;
-    }
-}
-
-bool CliUtils::parsePositiveFloat(const std::string& input, float& outValue, bool zeroInclusive)
-{
-    if (input.empty()) {
-        return false;
-    }
-
-    try {
-        const float parsed = std::stof(input);
-        bool cond = zeroInclusive ? parsed < 0 : parsed <= 0;
-        if (cond) {
-            return false;
-        }
-        outValue = parsed;
-        return true;
-    } catch (...) {
-        return false;
     }
 }
