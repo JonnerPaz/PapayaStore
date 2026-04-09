@@ -160,8 +160,13 @@ float MenuTransacciones::calcularTotalTransaccion(const std::vector<TransaccionD
 
 void MenuTransacciones::imprimirDetalleTransaccion(const Transaccion& transaccion)
 {
-    const std::string tipoStr = (transaccion.getTipoTransaccion() == COMPRA) ? "COMPRA" : "VENTA";
-    if (tipoStr != "VENTA" || tipoStr != "COMPRA") {
+    const auto tipo = transaccion.getTipoTransaccion();
+    std::string tipoStr;
+    if (tipo == COMPRA) {
+        tipoStr = "COMPRA";
+    } else if (tipo == VENTA) {
+        tipoStr = "VENTA";
+    } else {
         Menu::printError("Tipo de transaccion inválido.");
         return;
     }
@@ -586,8 +591,13 @@ void MenuTransacciones::listarTransacciones()
         }
 
         const Transaccion& transaccion = std::get<Transaccion>(result);
-        const std::string tipoStr =
-            (transaccion.getTipoTransaccion() == COMPRA) ? "COMPRA" : "VENTA";
+        const auto tipo = transaccion.getTipoTransaccion();
+        std::string tipoStr = "INVALIDO";
+        if (tipo == COMPRA) {
+            tipoStr = "COMPRA";
+        } else if (tipo == VENTA) {
+            tipoStr = "VENTA";
+        }
 
         std::cout << std::format("{}{:<5} | {:<8} | {:<8} | ${:<9.2f} | {:<10}", COLOR_GREEN,
                                  transaccion.getId(), tipoStr, transaccion.getProductosTotales(),

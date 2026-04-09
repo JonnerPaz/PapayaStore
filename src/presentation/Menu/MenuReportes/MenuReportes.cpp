@@ -1,5 +1,6 @@
 #include "MenuReportes.hpp"
 
+#include <cctype>
 #include <format>
 #include <fstream>
 #include <iostream>
@@ -86,7 +87,14 @@ void MenuReportes::reporteHistorialCliente()
 
     int idCliente = 0;
     try {
-        idCliente = std::stoi(idText);
+        std::size_t pos = 0;
+        idCliente = std::stoi(idText, &pos, 10);
+        for (std::size_t i = pos; i < idText.size(); ++i) {
+            if (!std::isspace(static_cast<unsigned char>(idText[i]))) {
+                printError("ID invalido. Debe ser numerico.");
+                return;
+            }
+        }
     } catch (...) {
         printError("ID invalido. Debe ser numerico.");
         return;

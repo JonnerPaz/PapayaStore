@@ -527,7 +527,14 @@ void MenuClientes::eliminarCliente()
         }
 
         const Transaccion& transaccion = std::get<Transaccion>(transResult);
-        if (transaccion.getTipoTransaccion() == VENTA && transaccion.getIdRelacionado() == id) {
+        const auto tipo = transaccion.getTipoTransaccion();
+        if (tipo != COMPRA && tipo != VENTA) {
+            Menu::printError(
+                "No se puede eliminar el cliente: existe una transaccion con tipo invalido.");
+            return;
+        }
+
+        if (tipo == VENTA && transaccion.getIdRelacionado() == id) {
             tieneTransaccionesActivas = true;
             break;
         }

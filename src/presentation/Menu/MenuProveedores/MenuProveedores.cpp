@@ -528,7 +528,14 @@ void MenuProveedores::eliminarProveedor()
         }
 
         const Transaccion& transaccion = std::get<Transaccion>(transResult);
-        if (transaccion.getTipoTransaccion() == COMPRA && transaccion.getIdRelacionado() == id) {
+        const auto tipo = transaccion.getTipoTransaccion();
+        if (tipo != COMPRA && tipo != VENTA) {
+            Menu::printError(
+                "No se puede eliminar el proveedor: existe una transaccion con tipo invalido.");
+            return;
+        }
+
+        if (tipo == COMPRA && transaccion.getIdRelacionado() == id) {
             tieneTransaccionesActivas = true;
             break;
         }
