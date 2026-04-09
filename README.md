@@ -1,6 +1,6 @@
 <div align="center">
   <h1>Papaya Store</h1>
-  <p><b>Sistema de gestion de inventario en C++ con persistencia binaria</b></p>
+  <p><b>Sistema CLI de gestion de tienda en C++20 con persistencia binaria</b></p>
   <p><i>Proyecto de Programacion II - Universidad Rafael Urdaneta (URU)</i></p>
   <p>Desarrollado por <b>Jonner Paz</b> y <b>Andres Martinez</b></p>
 </div>
@@ -15,36 +15,103 @@ Papaya Store es una aplicacion de consola para administrar una tienda con modulo
 - Proveedores
 - Clientes
 - Transacciones (compras y ventas)
-- Reportes, respaldo e integridad
-- Resumen de tienda
+- Reportes operativos y de seguridad
+- Resumen global de tienda
 
-El sistema persiste toda la informacion en archivos binarios dentro de `data/`.
+Toda la informacion se persiste en archivos binarios dentro de `data/`, con acceso aleatorio por offset.
 
-## Arquitectura actual
+## Funcionalidades principales
 
-El proyecto sigue una arquitectura modular por capas:
+### Productos
 
-- `src/domain/`: entidades, contratos de repositorio, constantes y modelos comunes.
-- `src/infrastructure/`: datasource de archivos binarios (`.bin`) y administracion de datos.
-- `src/presentation/`: menus, utilidades CLI y flujo de interaccion con usuario.
-- `src/main.cpp`: entrypoint actual del sistema.
+- CRUD completo con borrado logico.
+- Relacion obligatoria con proveedor.
+- Control de stock, stock minimo y total vendido.
+- Restriccion de eliminacion cuando existe en transacciones activas.
 
-### Principio clave de persistencia
+### Proveedores
 
-Las entidades de dominio permanecen agnosticas de la capa de datos.
+- CRUD completo con validaciones de formato.
+- Relacion con productos y transacciones de compra.
+- Restriccion de eliminacion con integridad referencial.
 
-La serializacion binaria se resuelve en infraestructura mediante `EntityTraits` y `FSBaseRepository`,
-evitando serializacion cruda de clases completas con `reinterpret_cast` sobre objetos OOP.
+### Clientes
 
-Esto permite:
+- CRUD completo con validaciones de formato.
+- Historial de transacciones de venta.
+- Restriccion de eliminacion con integridad referencial.
 
-- Mantener clases de dominio encapsuladas.
-- Tener offsets binarios estables por registro.
-- Evitar problemas por vtable/padding al guardar clases en disco.
+### Transacciones
 
-## Entidades y persistencia
+- Registro de compras y ventas con multiples productos por movimiento.
+- Validacion de stock para ventas.
+- Impacto directo en estadisticas de tienda.
 
-Archivos operativos en `data/`:
+### Reportes y administracion
+
+- Verificacion de integridad referencial.
+- Reporte de stock critico.
+- Backup de archivos `.bin`.
+- Sincronizacion y resumen de contadores globales en `tienda.bin`.
+
+---
+
+## Arquitectura detallada
+
+El proyecto usa una arquitectura por capas con responsabilidades claras y bajo acoplamiento.
+
+### 1) Como esta constituida
+
+- `src/domain/`: entidades (`Producto`, `Proveedor`, `Cliente`, `Transaccion`, `Tienda`), `HeaderFile`, constantes y contratos (`I*Repository`, `IDatabaseAdmin`).
+- `src/infrastructure/`: implementaciones concretas de repositorios en filesystem (`FS*Repository`), repositorio generico (`FSBaseRepository`) y mapeo binario (`EntityTraits`).
+- `src/presentation/`: menus y utilidades CLI para la interaccion del usuario.
+- `src/Bootstrapper.*`: composicion de dependencias, inicializacion de almacenamiento y lanzamiento de la app.
+- `src/main.cpp`: entrypoint minimo que delega la ejecucion a `Bootstrapper`.
+
+### 2) Como se conectan los modulos
+
+- `main.cpp` crea `Bootstrapper`.
+- `Bootstrapper` instancia repositorios concretos (`FSProductoRepository`, etc.) y `FSDatabaseAdmin`.
+- `Bootstrapper` agrupa dependencias en `AppRepositories` (inyeccion por referencias a interfaces).
+- `MainMenu` y submenus consumen `AppRepositories` para ejecutar casos de uso.
+- Cada `FS*Repository` delega CRUD comun en `FSBaseRepository<T>`.
+- `FSBaseRepository<T>` delega serializacion/deserializacion en `EntityTraits<T>`.
+- `EntityTraits<T>` define layout binario estable para cada entidad en sus archivos `.bin`.
+
+### 4) Por que se usan `EntityTraits`
+
+`EntityTraits` es la pieza clave para desacoplar dominio y persistencia binaria.
+
+Cada especializacion (`EntityTraits<Producto>`, `EntityTraits<Cliente>`, etc.) define:
+
+- `recordSize()`: tamano fijo y determinista del registro en disco.
+- `writeToStream(...)`: como se serializa la entidad en orden fijo de campos.
+- `readFromStream(...)`: como se reconstruye la entidad desde bytes.
+- `getId(...)`, `isDeleted(...)`, `setDeleted(...)`: metadatos comunes para CRUD generico.
+
+Beneficios concretos:
+
+- Permite que `FSBaseRepository<T>` sea reutilizable para multiples entidades sin duplicar logica.
+- Evita persistir objetos OOP completos de forma cruda, reduciendo riesgo por padding/layout interno.
+- Conserva encapsulamiento: la entidad se reconstruye por setters, no por acceso directo a memoria.
+- Facilita evolucionar cada entidad sin romper el contrato generico del repositorio base.
+
+Entonces: `FSBaseRepository` sabe *cuándo* y *dónde* leer/escribir; `EntityTraits` sabe *cómo* traducir cada entidad.
+
+### 5) Flujo de una operacion (ejemplo: crear producto)
+
+1. `MenuProductos` valida entrada del usuario.
+2. Solicita estadisticas al repositorio para calcular `proximoID`.
+3. Construye `Producto` y llama `repositories.productos.guardar(...)`.
+4. `FSProductoRepository` delega en `FSBaseRepository<Producto>::guardarTemplate(...)`.
+5. `FSBaseRepository` usa `EntityTraits<Producto>::writeToStream(...)` y actualiza `HeaderFile`.
+6. Se sincronizan contadores globales con `repositories.admin.sincronizarContadoresTienda()`.
+
+---
+
+## Persistencia binaria
+
+Archivos operativos:
 
 - `data/productos.bin`
 - `data/proveedores.bin`
@@ -52,7 +119,7 @@ Archivos operativos en `data/`:
 - `data/transacciones.bin`
 - `data/tienda.bin`
 
-Cada archivo inicia con `HeaderFile`:
+Todos los archivos binarios arrancan con `HeaderFile`:
 
 ```cpp
 struct HeaderFile {
@@ -63,48 +130,75 @@ struct HeaderFile {
 };
 ```
 
-Luego se guardan registros con acceso aleatorio:
+Acceso aleatorio:
 
-`offset = sizeof(HeaderFile) + (indice * recordSize)`
+```cpp
+offset = sizeof(HeaderFile) + (id - 1) * EntityTraits<T>::recordSize();
+```
 
-## Funcionalidades principales
+---
 
-### Productos
+## Estructura del proyecto (diagrama tipo arbol)
 
-- Crear, buscar, actualizar, listar y eliminar logicamente.
-- Relacion obligatoria con proveedor.
-- Control de stock, stock minimo y total vendido.
-- Restriccion de borrado si el producto aparece en transacciones activas.
+```text
+papaya/
+├── CMakeLists.txt
+├── README.md
+├── requirements.md
+├── data/
+├── build/
+└── src/
+    ├── main.cpp
+    ├── Bootstrapper.hpp
+    ├── Bootstrapper.cpp
+    ├── domain/
+    │   ├── HeaderFile.hpp
+    │   ├── constants.hpp
+    │   ├── utils/
+    │   ├── entities/
+    │   │   ├── entidad.entity.hpp
+    │   │   ├── entidad.entity.cpp
+    │   │   ├── producto/
+    │   │   ├── proveedor/
+    │   │   ├── cliente/
+    │   │   ├── transaccion/
+    │   │   └── tienda/
+    │   └── repositories/
+    │       ├── AppRepositories.hpp
+    │       ├── IProductoRepository.hpp
+    │       ├── IProveedorRepository.hpp
+    │       ├── IClienteRepository.hpp
+    │       ├── ITransaccionRepository.hpp
+    │       └── IDatabaseAdmin.hpp
+    ├── infrastructure/
+    │   └── datasource/
+    │       ├── EntityTraits.hpp
+    │       ├── FSBaseRepository.hpp
+    │       ├── producto/
+    │       ├── proveedor/
+    │       ├── cliente/
+    │       ├── transaccion/
+    │       └── admin/
+    └── presentation/
+        ├── CliUtils.hpp
+        ├── CliUtils.cpp
+        └── Menu/
+            ├── Menu.hpp
+            ├── Menu.cpp
+            ├── MainMenu/
+            ├── MenuProductos/
+            ├── MenuProveedores/
+            ├── MenuClientes/
+            ├── MenuTransacciones/
+            └── MenuReportes/
+```
 
-### Proveedores
-
-- CRUD completo.
-- Validacion de email.
-- Restriccion de borrado si tiene transacciones de compra activas.
-
-### Clientes
-
-- CRUD completo.
-- Validacion de email.
-- Restriccion de borrado si tiene transacciones de venta activas.
-
-### Transacciones
-
-- Registro de compras y ventas con multiples productos por transaccion.
-- Validacion de stock para ventas.
-- Impacto en estadisticas y sincronizacion de contadores de tienda.
-
-### Reportes y administracion
-
-- Verificacion de integridad referencial.
-- Reporte de productos con stock critico.
-- Backup de archivos binarios.
-- Resumen general de tienda.
+---
 
 ## Requisitos
 
 - CMake 3.16+
-- Compilador C++20 con soporte de `std::format`
+- Compilador compatible con C++20
 
 ## Compilacion y ejecucion
 
@@ -116,13 +210,8 @@ cmake --build build
 ./build/PapayaStore
 ```
 
-## Estado actual
-
-- Se mantiene `src/main.cpp` como entrypoint.
-- El proyecto compila correctamente por CMake.
-- La persistencia de la capa OOP se maneja desde datasource sin acoplar entidades a archivos.
-
 ## Notas de uso
 
-- Si hay datos antiguos serializados con formato previo, puede ser necesario regenerar `data/*.bin`.
-- El sistema usa borrado logico, por lo que no reescribe historial ni compacta archivos.
+- El sistema usa borrado logico (`eliminado`) y mantiene historial de registros.
+- Si cambia el layout binario de una entidad, se recomienda regenerar los `.bin` de entorno de desarrollo.
+- Los backups se guardan en `backup/` con nombre basado en fecha y hora.
