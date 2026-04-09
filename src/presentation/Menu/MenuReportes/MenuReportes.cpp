@@ -20,8 +20,19 @@ MenuReportes::MenuReportes(string title, string texToExit, int numOptions, AppRe
 
 void MenuReportes::verificarIntegridadReferencial()
 {
-    auto [erroresProductosProveedor, erroresTransaccionRelacionado, erroresTransaccionProducto,
-          erroresTipoTransaccion] = this->repositories.admin.verificarIntegridadReferencial();
+    int erroresProductosProveedor = 0;
+    int erroresTransaccionRelacionado = 0;
+    int erroresTransaccionProducto = 0;
+    int erroresTipoTransaccion = 0;
+
+    try {
+        std::tie(erroresProductosProveedor, erroresTransaccionRelacionado,
+                 erroresTransaccionProducto, erroresTipoTransaccion) =
+            this->repositories.admin.verificarIntegridadReferencial();
+    } catch (const std::exception& e) {
+        Menu::printError("Error al verificar integridad referencial: " + std::string(e.what()));
+        return;
+    }
 
     std::cout << COLOR_CYAN << "Resultado de integridad referencial" << COLOR_RESET << std::endl;
     std::cout << std::format("{}Productos sin proveedor valido: {}{}", COLOR_YELLOW, COLOR_GREEN,
@@ -40,13 +51,26 @@ void MenuReportes::verificarIntegridadReferencial()
 
 void MenuReportes::crearBackup()
 {
-    this->repositories.admin.crearBackup();
+    try {
+        this->repositories.admin.crearBackup();
+    } catch (const std::exception& e) {
+        Menu::printError("Error al crear backup: " + std::string(e.what()));
+        return;
+    }
+
     std::cout << COLOR_GREEN << "Backup creado correctamente." << COLOR_RESET << std::endl;
 }
 
 void MenuReportes::reporteStockCritico()
 {
-    const int totalCriticos = this->repositories.admin.reporteStockCritico();
+    int totalCriticos = 0;
+    try {
+        totalCriticos = this->repositories.admin.reporteStockCritico();
+    } catch (const std::exception& e) {
+        Menu::printError("Error al generar reporte de stock critico: " + std::string(e.what()));
+        return;
+    }
+
     std::cout << std::format("{}Productos con stock critico: {}{}", COLOR_YELLOW, COLOR_GREEN,
                              totalCriticos)
               << COLOR_RESET << std::endl;
@@ -73,7 +97,12 @@ void MenuReportes::reporteHistorialCliente()
         return;
     }
 
-    this->repositories.admin.reporteHistorialCliente(idCliente);
+    try {
+        this->repositories.admin.reporteHistorialCliente(idCliente);
+    } catch (const std::exception& e) {
+        Menu::printError("Error al generar historial del cliente: " + std::string(e.what()));
+        return;
+    }
 }
 
 void MenuReportes::mostrarResumenTienda()

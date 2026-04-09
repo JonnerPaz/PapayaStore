@@ -305,7 +305,13 @@ void MenuTransacciones::registrarCompra()
         return;
     }
 
-    repositories.admin.sincronizarContadoresTienda();
+    try {
+        repositories.admin.sincronizarContadoresTienda();
+    } catch (const std::exception& e) {
+        Menu::printError("Advertencia: compra registrada, pero no se pudo sincronizar tienda: " +
+                         std::string(e.what()));
+    }
+
     Menu::printSuccess("Compra registrada con exito.");
 }
 
@@ -519,7 +525,13 @@ void MenuTransacciones::registrarVenta()
         return;
     }
 
-    repositories.admin.sincronizarContadoresTienda();
+    try {
+        repositories.admin.sincronizarContadoresTienda();
+    } catch (const std::exception& e) {
+        Menu::printError("Advertencia: venta registrada, pero no se pudo sincronizar tienda: " +
+                         std::string(e.what()));
+    }
+
     Menu::printSuccess("Venta registrada con exito.");
 }
 
@@ -704,7 +716,14 @@ void MenuTransacciones::cancelarTransaccion()
         return;
     }
 
-    repositories.admin.sincronizarContadoresTienda();
+    try {
+        repositories.admin.sincronizarContadoresTienda();
+    } catch (const std::exception& e) {
+        Menu::printError(
+            "Advertencia: transaccion cancelada, pero no se pudo sincronizar tienda: " +
+            std::string(e.what()));
+    }
+
     Menu::printSuccess("Transaccion cancelada con exito.");
 }
 
