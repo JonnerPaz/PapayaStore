@@ -21,8 +21,7 @@ Tienda::Tienda(int id, const char* nombre, const char* rif, int totalProductosAc
 
 bool Tienda::setRif(const char* rif)
 {
-    EntidadBase::copiarCadenaSeguro(this->m_rif, sizeof(this->m_rif), rif);
-    return true;
+    return EntidadBase::copiarCadenaSeguro(this->m_rif, sizeof(this->m_rif), rif);
 }
 
 bool Tienda::setTotalProductosActivos(int totalProductosActivos)

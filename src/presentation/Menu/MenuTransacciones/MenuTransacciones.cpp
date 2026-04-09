@@ -25,7 +25,7 @@ bool MenuTransacciones::readValidCantidad(const char* prompt, int& outCantidad)
             return false;
         }
 
-        if (CliUtils::parsePositiveNumber(input, outCantidad, true)) {
+        if (CliUtils::parsePositiveNumber(input, outCantidad, false)) {
             return true;
         }
 
@@ -160,7 +160,12 @@ float MenuTransacciones::calcularTotalTransaccion(const std::vector<TransaccionD
 
 void MenuTransacciones::imprimirDetalleTransaccion(const Transaccion& transaccion)
 {
-    const char* tipoStr = (transaccion.getTipoTransaccion() == COMPRA) ? "COMPRA" : "VENTA";
+    const std::string tipoStr = (transaccion.getTipoTransaccion() == COMPRA) ? "COMPRA" : "VENTA";
+    if (tipoStr != "VENTA" || tipoStr != "COMPRA") {
+        Menu::printError("Tipo de transaccion inválido.");
+        return;
+    }
+
     Menu::printSuccess("Transaccion encontrada:");
     std::cout << std::format("{}ID: {}{}", COLOR_YELLOW, COLOR_GREEN, transaccion.getId())
               << std::endl;
@@ -581,7 +586,8 @@ void MenuTransacciones::listarTransacciones()
         }
 
         const Transaccion& transaccion = std::get<Transaccion>(result);
-        const char* tipoStr = (transaccion.getTipoTransaccion() == COMPRA) ? "COMPRA" : "VENTA";
+        const std::string tipoStr =
+            (transaccion.getTipoTransaccion() == COMPRA) ? "COMPRA" : "VENTA";
 
         std::cout << std::format("{}{:<5} | {:<8} | {:<8} | ${:<9.2f} | {:<10}", COLOR_GREEN,
                                  transaccion.getId(), tipoStr, transaccion.getProductosTotales(),
@@ -605,6 +611,11 @@ void MenuTransacciones::cancelarTransaccion()
     }
 
     Transaccion transaccion = std::get<Transaccion>(transResult);
+    const auto tipo = transaccion.getTipoTransaccion();
+    if (tipo != COMPRA && tipo != VENTA) {
+        Menu::printError("No se puede cancelar: la transaccion tiene un tipo invalido.");
+        return;
+    }
 
     std::vector<TransaccionDTO> items;
     std::string itemsError;
@@ -613,7 +624,7 @@ void MenuTransacciones::cancelarTransaccion()
         return;
     }
 
-    const char* tipoStr = (transaccion.getTipoTransaccion() == COMPRA) ? "COMPRA" : "VENTA";
+    const char* tipoStr = (tipo == COMPRA) ? "COMPRA" : "VENTA";
     std::cout << std::format("Se cancelara la transaccion {} de tipo {} por total ${:.2f}",
                              transaccion.getId(), tipoStr, transaccion.getTotal())
               << std::endl;
@@ -622,7 +633,7 @@ void MenuTransacciones::cancelarTransaccion()
         return;
     }
 
-    if (transaccion.getTipoTransaccion() == COMPRA) {
+    if (tipo == COMPRA) {
         for (const auto& item : items) {
             auto productoResult = repositories.productos.leerPorId(item.productoId);
             if (std::holds_alternative<std::string>(productoResult)) {
@@ -642,8 +653,8 @@ void MenuTransacciones::cancelarTransaccion()
 
     std::vector<Producto> productosOriginales;
     std::string stockError;
-    const bool incrementarStock = transaccion.getTipoTransaccion() == VENTA;
-    const bool ajustarTotalVendido = transaccion.getTipoTransaccion() == VENTA;
+    const bool incrementarStock = tipo == VENTA;
+    const bool ajustarTotalVendido = tipo == VENTA;
     if (!aplicarCambiosStock(items, incrementarStock, ajustarTotalVendido, productosOriginales,
                              stockError)) {
         rollbackStock(productosOriginales);
@@ -653,7 +664,7 @@ void MenuTransacciones::cancelarTransaccion()
 
     Cliente clienteOriginal;
     bool clienteActualizado = false;
-    if (transaccion.getTipoTransaccion() == VENTA) {
+    if (tipo == VENTA) {
         auto clienteResult = repositories.clientes.leerPorId(transaccion.getIdRelacionado());
         if (std::holds_alternative<std::string>(clienteResult)) {
             rollbackStock(productosOriginales);

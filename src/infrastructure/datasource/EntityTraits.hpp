@@ -483,11 +483,7 @@ struct EntityTraits<Transaccion> {
             std::chrono::system_clock::time_point(std::chrono::seconds(fechaCreacion)));
         loaded.setFechaUltimaModificacion(
             std::chrono::system_clock::time_point(std::chrono::seconds(fechaModificacion)));
-        if (tipo == COMPRA || tipo == VENTA) {
-            loaded.setTipoTransaccion(static_cast<TipoDeTransaccion>(tipo));
-        } else {
-            loaded.setTipoTransaccion(COMPRA);
-        }
+        loaded.setTipoTransaccion(static_cast<TipoDeTransaccion>(tipo));
         loaded.setIdRelacionado(idRelacionado);
         loaded.setTotal(total);
         loaded.setDescripcion(descripcion);
