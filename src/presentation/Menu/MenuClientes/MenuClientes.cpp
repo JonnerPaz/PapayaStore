@@ -101,7 +101,7 @@ void MenuClientes::crearCliente()
     }
 
     std::string nombre;
-    auto genericErrMsg = "Eliminación cancelada";
+    const char* genericErrMsg = "Creacion cancelada.";
     while (true) {
         if (!CliUtils::readValidText("Ingrese el nombre del cliente (q para cancelar): ", nombre)) {
             Menu::printError(genericErrMsg);
@@ -120,6 +120,7 @@ void MenuClientes::crearCliente()
     while (true) {
         if (!CliUtils::readValidText("Ingrese la cédula del cliente (q para cancelar): ", cedula)) {
             Menu::printError(genericErrMsg);
+            return;
         }
 
         if (cedulaDuplicada(cedula)) {
