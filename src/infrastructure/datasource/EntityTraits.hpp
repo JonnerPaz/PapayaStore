@@ -146,7 +146,7 @@ struct EntityTraits<Cliente> {
     static std::streamoff recordSize()
     {
         return sizeof(int) + 100 + sizeof(std::int8_t) + sizeof(std::int64_t) +
-               sizeof(std::int64_t) + 20 + 100 + 200 + sizeof(int) + (sizeof(int) * 100) +
+               sizeof(std::int64_t) + 20 + 20 + 100 + 200 + sizeof(int) + (sizeof(int) * 100) +
                sizeof(float) + (sizeof(int) * 100) + sizeof(int);
     }
 
