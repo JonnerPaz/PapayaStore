@@ -19,7 +19,6 @@ class MenuTransacciones : public Menu
     void imprimirDetalleTransaccion(const Transaccion& transaccion);
 
    public:
-    CliUtils utils;
     explicit MenuTransacciones(AppRepositories& repositories, CliUtils utils = CliUtils());
 
     void registrarCompra();

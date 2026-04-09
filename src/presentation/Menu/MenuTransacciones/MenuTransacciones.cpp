@@ -2,12 +2,15 @@
 
 #include <chrono>
 #include <format>
+#include <iostream>
 #include <string>
 #include <variant>
 #include <vector>
 
+#include "presentation/CliUtils.hpp"
+
 MenuTransacciones::MenuTransacciones(AppRepositories& repositories, CliUtils utils)
-    : Menu(repositories), utils(utils)
+    : Menu(repositories)
 {
     this->setTitle("Gestion de Transacciones");
     this->setTexToExit("Salir");
@@ -22,7 +25,7 @@ bool MenuTransacciones::readValidCantidad(const char* prompt, int& outCantidad)
             return false;
         }
 
-        if (utils.parsePositiveInt(input, outCantidad)) {
+        if (CliUtils::parsePositiveNumber(input, outCantidad, true)) {
             return true;
         }
 
@@ -194,7 +197,7 @@ void MenuTransacciones::imprimirDetalleTransaccion(const Transaccion& transaccio
 
 void MenuTransacciones::registrarCompra()
 {
-    const int idProveedor = utils.validarId("Ingrese el id del proveedor para la compra");
+    const int idProveedor = CliUtils::readValidId("Ingrese el id del proveedor para la compra");
     if (idProveedor <= 0) {
         Menu::printError("Operacion cancelada.");
         return;
@@ -212,7 +215,7 @@ void MenuTransacciones::registrarCompra()
     transaccion.setDescripcion("Compra registrada desde menu");
 
     while (true) {
-        const int idProducto = utils.validarId("Ingrese id de producto (q para finalizar)");
+        const int idProducto = CliUtils::readValidId("Ingrese id de producto (q para finalizar)");
         if (idProducto <= 0) {
             if (transaccion.getProductosTotales() == 0) {
                 Menu::printError("Operacion cancelada.");
@@ -308,7 +311,7 @@ void MenuTransacciones::registrarCompra()
 
 void MenuTransacciones::registrarVenta()
 {
-    const int idCliente = utils.validarId("Ingrese el id del cliente para la venta");
+    const int idCliente = CliUtils::readValidId("Ingrese el id del cliente para la venta");
     if (idCliente <= 0) {
         Menu::printError("Operacion cancelada.");
         return;
@@ -326,7 +329,7 @@ void MenuTransacciones::registrarVenta()
     transaccion.setDescripcion("Venta registrada desde menu");
 
     while (true) {
-        const int idProducto = utils.validarId("Ingrese id de producto (q para finalizar)");
+        const int idProducto = CliUtils::readValidId("Ingrese id de producto (q para finalizar)");
         if (idProducto <= 0) {
             if (transaccion.getProductosTotales() == 0) {
                 Menu::printError("Operacion cancelada.");
@@ -522,7 +525,7 @@ void MenuTransacciones::registrarVenta()
 
 void MenuTransacciones::buscarTransacciones()
 {
-    const int id = utils.validarId("Ingrese el id de la transaccion a buscar");
+    const int id = CliUtils::readValidId("Ingrese el id de la transaccion a buscar");
     if (id <= 0) {
         Menu::printError("Busqueda cancelada.");
         return;
@@ -577,7 +580,7 @@ void MenuTransacciones::listarTransacciones()
 
 void MenuTransacciones::cancelarTransaccion()
 {
-    const int id = utils.validarId("Ingrese el id de la transaccion a cancelar");
+    const int id = CliUtils::readValidId("Ingrese el id de la transaccion a cancelar");
     if (id <= 0) {
         Menu::printError("Operacion cancelada.");
         return;

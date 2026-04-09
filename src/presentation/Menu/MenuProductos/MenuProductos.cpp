@@ -7,24 +7,13 @@
 #include <variant>
 
 #include "domain/constants.hpp"
+#include "presentation/CliUtils.hpp"
 
-MenuProductos::MenuProductos(AppRepositories& repository, CliUtils utils)
-    : Menu(repository), utils(utils)
+MenuProductos::MenuProductos(AppRepositories& repository, CliUtils utils) : Menu(repository)
 {
     Menu::setTitle("Gestion de Productos");
     Menu::setTexToExit("Salir");
     Menu::setNumOptions(5);
-}
-
-bool MenuProductos::readValidText(const char* prompt, std::string& outValue)
-{
-    outValue = Menu::readLine(prompt);
-    if (outValue == "q" || outValue == "Q" || outValue.empty()) {
-        Menu::printError("Creacion cancelada.");
-        return false;
-    }
-
-    return true;
 }
 
 bool MenuProductos::nombreDuplicado(const std::string& nombre, int ignoredId)
@@ -70,7 +59,7 @@ void MenuProductos::readValidFloat(const char* prompt, float& outValue, const ch
 {
     while (true) {
         const std::string input = Menu::readLine(prompt);
-        if (utils.parsePositiveFloat(input, outValue, zeroInclusive)) {
+        if (CliUtils::parsePositiveNumber(input, outValue, zeroInclusive)) {
             return;
         }
 
@@ -83,7 +72,7 @@ void MenuProductos::readValidInt(const char* prompt, int& outValue, const char* 
 {
     while (true) {
         const std::string input = Menu::readLine(prompt);
-        if (utils.parsePositiveInt(input, outValue, zeroInclusive)) {
+        if (CliUtils::parsePositiveNumber(input, outValue, zeroInclusive)) {
             return;
         }
 
@@ -106,7 +95,8 @@ void MenuProductos::crearProducto()
 
     std::string nombre;
     while (true) {
-        if (!readValidText("Ingrese el nombre del producto (q para cancelar): ", nombre)) {
+        if (!CliUtils::readValidText("Ingrese el nombre del producto (q para cancelar): ",
+                                     nombre)) {
             return;
         }
 
@@ -120,7 +110,8 @@ void MenuProductos::crearProducto()
 
     std::string codigo;
     while (true) {
-        if (!readValidText("Ingrese el codigo del producto (q para cancelar): ", codigo)) {
+        if (!CliUtils::readValidText("Ingrese el codigo del producto (q para cancelar): ",
+                                     codigo)) {
             return;
         }
 
@@ -133,7 +124,8 @@ void MenuProductos::crearProducto()
     }
 
     std::string descripcion;
-    if (!readValidText("Ingrese la descripcion del producto (q para cancelar): ", descripcion)) {
+    if (!CliUtils::readValidText("Ingrese la descripcion del producto (q para cancelar): ",
+                                 descripcion)) {
         return;
     }
 
@@ -165,7 +157,7 @@ void MenuProductos::crearProducto()
                   << COLOR_RESET << std::endl;
     }
 
-    const int idProveedor = utils.validarId("Ingrese el id del proveedor");
+    const int idProveedor = CliUtils::readValidId("Ingrese el id del proveedor");
     if (idProveedor <= 0) {
         Menu::printError("El Id ingresado no existe. Debe ser mayor a 0.");
         return;
@@ -226,7 +218,7 @@ void MenuProductos::crearProducto()
 
 void MenuProductos::buscarProducto()
 {
-    const int id = utils.validarId("Ingrese el id del producto a buscar");
+    const int id = CliUtils::readValidId("Ingrese el id del producto a buscar");
     if (id <= 0) {
         Menu::printError("El Id ingresado no existe. Búsqueda cancelada.");
         return;
@@ -257,7 +249,7 @@ void MenuProductos::buscarProducto()
 
 void MenuProductos::actualizarProducto()
 {
-    const int id = utils.validarId("Ingrese el id del producto a actualizar");
+    const int id = CliUtils::readValidId("Ingrese el id del producto a actualizar");
     if (id <= 0) {
         Menu::printError("El Id ingresado no existe. Actualizacion cancelada.");
         return;
@@ -306,7 +298,7 @@ void MenuProductos::actualizarProducto()
 
         const std::string opcionText = readLine("Opcion: ");
         int opcion = -1;
-        if (!utils.parsePositiveInt(opcionText, opcion, true) || opcion > 7) {
+        if (!CliUtils::parsePositiveNumber(opcionText, opcion, true) || opcion > 7) {
             Menu::printError("Opcion inválida.");
             continue;
         }
@@ -439,7 +431,7 @@ void MenuProductos::actualizarProducto()
                 }
 
                 float nuevoPrecio = 0.0f;
-                if (!utils.parsePositiveFloat(nuevoPrecioText, nuevoPrecio, true)) {
+                if (!CliUtils::parsePositiveNumber(nuevoPrecioText, nuevoPrecio, true)) {
                     Menu::printError("Precio invalido.");
                     break;
                 }
@@ -479,7 +471,7 @@ void MenuProductos::actualizarProducto()
                 }
 
                 int nuevoStock = 0;
-                if (!utils.parsePositiveInt(nuevoStockText, nuevoStock)) {
+                if (!CliUtils::parsePositiveNumber(nuevoStockText, nuevoStock)) {
                     Menu::printError("Stock invalido.");
                     break;
                 }
@@ -520,7 +512,7 @@ void MenuProductos::actualizarProducto()
                 }
 
                 int nuevoStockMinimo = 0;
-                if (!utils.parsePositiveInt(nuevoStockMinimoText, nuevoStockMinimo)) {
+                if (!CliUtils::parsePositiveNumber(nuevoStockMinimoText, nuevoStockMinimo)) {
                     Menu::printError("Stock minimo invalido.");
                     break;
                 }
@@ -561,7 +553,7 @@ void MenuProductos::actualizarProducto()
                 }
 
                 int nuevoIdProveedor = 0;
-                if (!utils.parsePositiveInt(nuevoProveedorText, nuevoIdProveedor)) {
+                if (!CliUtils::parsePositiveNumber(nuevoProveedorText, nuevoIdProveedor)) {
                     Menu::printError("ID de proveedor invalido.");
                     break;
                 }
@@ -644,7 +636,7 @@ void MenuProductos::listarProductos()
 
 void MenuProductos::eliminarProducto()
 {
-    const int id = utils.validarId("Ingrese el id del producto a eliminar");
+    const int id = CliUtils::readValidId("Ingrese el id del producto a eliminar");
     if (id <= 0) {
         Menu::printError("Eliminación cancelada.");
         return;

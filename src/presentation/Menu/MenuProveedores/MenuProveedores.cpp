@@ -7,24 +7,13 @@
 #include <variant>
 
 #include "domain/constants.hpp"
+#include "presentation/CliUtils.hpp"
 
-MenuProveedores::MenuProveedores(AppRepositories& repositories, CliUtils utils)
-    : Menu(repositories), utils(utils)
+MenuProveedores::MenuProveedores(AppRepositories& repositories, CliUtils utils) : Menu(repositories)
 {
     this->setTitle("Gestion de Proveedores");
     this->setTexToExit("Salir");
     this->setNumOptions(5);
-}
-
-bool MenuProveedores::readValidText(const char* prompt, std::string& outValue)
-{
-    outValue = Menu::readLine(prompt);
-    if (outValue == "q" || outValue == "Q" || outValue.empty()) {
-        Menu::printError("Creacion cancelada.");
-        return false;
-    }
-
-    return true;
 }
 
 bool MenuProveedores::readValidEmail(const char* prompt, std::string& outValue)
@@ -113,7 +102,8 @@ void MenuProveedores::crearProveedor()
 
     std::string nombre;
     while (true) {
-        if (!readValidText("Ingrese el nombre del proveedor (q para cancelar): ", nombre)) {
+        if (!CliUtils::readValidText("Ingrese el nombre del proveedor (q para cancelar): ",
+                                     nombre)) {
             return;
         }
 
@@ -153,7 +143,8 @@ void MenuProveedores::crearProveedor()
     }
 
     std::string direccion;
-    if (!readValidText("Ingrese la direccion del proveedor (q para cancelar): ", direccion)) {
+    if (!CliUtils::readValidText("Ingrese la direccion del proveedor (q para cancelar): ",
+                                 direccion)) {
         return;
     }
 
@@ -196,7 +187,7 @@ void MenuProveedores::crearProveedor()
 
 void MenuProveedores::buscarProveedor()
 {
-    const int id = utils.validarId("Ingrese el id del proveedor a buscar");
+    const int id = CliUtils::readValidId("Ingrese el id del proveedor a buscar");
     if (id <= 0) {
         Menu::printError("El Id ingresado no existe. Busqueda cancelada.");
         return;
@@ -227,7 +218,7 @@ void MenuProveedores::buscarProveedor()
 
 void MenuProveedores::actualizarProveedor()
 {
-    const int id = utils.validarId("Ingrese el id del proveedor a actualizar");
+    const int id = CliUtils::readValidId("Ingrese el id del proveedor a actualizar");
     if (id <= 0) {
         Menu::printError("El Id ingresado no existe. Actualizacion cancelada.");
         return;
@@ -268,7 +259,7 @@ void MenuProveedores::actualizarProveedor()
 
         const std::string opcionText = readLine("Opcion: ");
         int opcion = -1;
-        if (!utils.parsePositiveInt(opcionText, opcion, true) || opcion > 5) {
+        if (!CliUtils::parsePositiveNumber(opcionText, opcion, true) || opcion > 5) {
             Menu::printError("Opcion invalida.");
             continue;
         }
@@ -510,7 +501,7 @@ void MenuProveedores::listarProveedores()
 
 void MenuProveedores::eliminarProveedor()
 {
-    const int id = utils.validarId("Ingrese el id del proveedor a eliminar");
+    const int id = CliUtils::readValidId("Ingrese el id del proveedor a eliminar");
     if (id <= 0) {
         Menu::printError("Eliminacion cancelada.");
         return;

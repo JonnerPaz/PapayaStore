@@ -7,24 +7,13 @@
 #include <variant>
 
 #include "domain/constants.hpp"
+#include "presentation/CliUtils.hpp"
 
-MenuClientes::MenuClientes(AppRepositories& repositorios, CliUtils utils)
-    : Menu(repositorios), utils(utils)
+MenuClientes::MenuClientes(AppRepositories& repositorios, CliUtils utils) : Menu(repositorios)
 {
     setTitle("Gestion de Clientes");
     setTexToExit("Salir");
     setNumOptions(5);
-}
-
-bool MenuClientes::readValidText(const char* prompt, std::string& outValue)
-{
-    outValue = Menu::readLine(prompt);
-    if (outValue == "q" || outValue == "Q" || outValue.empty()) {
-        Menu::printError("Creacion cancelada.");
-        return false;
-    }
-
-    return true;
 }
 
 bool MenuClientes::readValidEmail(const char* prompt, std::string& outValue)
@@ -112,8 +101,10 @@ void MenuClientes::crearCliente()
     }
 
     std::string nombre;
+    auto genericErrMsg = "Eliminación cancelada";
     while (true) {
-        if (!readValidText("Ingrese el nombre del cliente (q para cancelar): ", nombre)) {
+        if (!CliUtils::readValidText("Ingrese el nombre del cliente (q para cancelar): ", nombre)) {
+            Menu::printError(genericErrMsg);
             return;
         }
 
@@ -127,10 +118,8 @@ void MenuClientes::crearCliente()
 
     std::string cedula;
     while (true) {
-        cedula = readLine("Ingrese la cedula del cliente (q para cancelar): ");
-        if (cedula == "q" || cedula == "Q" || cedula.empty()) {
-            Menu::printError("Creacion cancelada.");
-            return;
+        if (!CliUtils::readValidText("Ingrese la cédula del cliente (q para cancelar): ", cedula)) {
+            Menu::printError(genericErrMsg);
         }
 
         if (cedulaDuplicada(cedula)) {
@@ -153,7 +142,8 @@ void MenuClientes::crearCliente()
     }
 
     std::string direccion;
-    if (!readValidText("Ingrese la direccion del cliente (q para cancelar): ", direccion)) {
+    if (!CliUtils::readValidText("Ingrese la direccion del cliente (q para cancelar): ",
+                                 direccion)) {
         return;
     }
 
@@ -196,7 +186,7 @@ void MenuClientes::crearCliente()
 
 void MenuClientes::buscarCliente()
 {
-    const int id = utils.validarId("Ingrese el id del cliente a buscar");
+    const int id = CliUtils::readValidId("Ingrese el id del cliente a buscar");
     if (id <= 0) {
         Menu::printError("El Id ingresado no existe. Busqueda cancelada.");
         return;
@@ -225,7 +215,7 @@ void MenuClientes::buscarCliente()
 
 void MenuClientes::actualizarCliente()
 {
-    const int id = utils.validarId("Ingrese el id del cliente a actualizar");
+    const int id = CliUtils::readValidId("Ingrese el id del cliente a actualizar");
     if (id <= 0) {
         Menu::printError("El Id ingresado no existe. Actualizacion cancelada.");
         return;
@@ -266,7 +256,7 @@ void MenuClientes::actualizarCliente()
 
         const std::string opcionText = readLine("Opcion: ");
         int opcion = -1;
-        if (!utils.parsePositiveInt(opcionText, opcion, true) || opcion > 5) {
+        if (!CliUtils::parsePositiveNumber(opcionText, opcion, true) || opcion > 5) {
             Menu::printError("Opcion invalida.");
             continue;
         }
@@ -509,7 +499,7 @@ void MenuClientes::listarClientes()
 
 void MenuClientes::eliminarCliente()
 {
-    const int id = utils.validarId("Ingrese el id del cliente a eliminar");
+    const int id = CliUtils::readValidId("Ingrese el id del cliente a eliminar");
     if (id <= 0) {
         Menu::printError("Eliminacion cancelada.");
         return;
