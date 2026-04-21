@@ -199,15 +199,72 @@ papaya/
 
 - CMake 3.16+
 - Compilador compatible con C++20
+- Python 3.12+ (gestionado con `uv`)
+- `uv` instalado
 
-## Compilacion y ejecucion
+## Dependencias Python (uv)
 
 Desde la raiz del proyecto:
 
 ```bash
-cmake -S . -B build
-cmake --build build
+uv sync
+```
+
+Si necesitas agregar paquetes manualmente:
+
+```bash
+uv add pybind11 flet
+```
+
+## Compilacion (CLI + modulo Python)
+
+Compila el core, el ejecutable CLI y el modulo Python:
+
+```bash
+cmake --fresh -S . -B build
+cmake --build build -j4
+```
+
+Esto genera:
+
+- `build/PapayaStore` (app CLI)
+- `build/papaya_backend*.so` (modulo Python compilado con Pybind11)
+
+## Ejecucion
+
+### 1) Ejecutar la app CLI
+
+```bash
 ./build/PapayaStore
+```
+
+### 2) Probar el backend desde Python
+
+Desde la raiz del proyecto:
+
+```bash
+uv run python test_backend.py
+```
+
+## Uso rapido del modulo desde Python
+
+```python
+import sys
+sys.path.append("build")
+
+import papaya_backend
+
+ok = papaya_backend.init_database()
+print("DB inicializada:", ok)
+```
+
+## Nota sobre CMake y Python
+
+Si cambias la version de Python del entorno `uv` o aparece un sufijo de modulo incorrecto (`cpython-3xx`), recompila con configuracion limpia:
+
+```bash
+cmake --fresh -S . -B build
+cmake --build build -j4
 ```
 
 ## Notas de uso
