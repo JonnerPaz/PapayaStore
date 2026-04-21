@@ -1,0 +1,11 @@
+{
+  "stubPath": "typings",
+  "venvPath": ".",
+  "venv": ".venv",
+  "executionEnvironments": [
+    {
+      "root": ".",
+      "extraPaths": ["build"]
+    }
+  ]
+}

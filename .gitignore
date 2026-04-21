@@ -42,3 +42,5 @@ vgcore.*
 webhook/.netlify
 webhook/.env
 node_modules
+data/
+compile_commands.json
