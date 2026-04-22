@@ -125,7 +125,10 @@ PYBIND11_MODULE(papaya_backend, m)
              [](Producto& p, const std::string& codigo) { p.setCodigo(codigo.c_str()); })
         .def("get_descripcion", [](const Producto& p) { return std::string(p.getDescripcion()); })
         .def("set_descripcion",
-             [](Producto& p, const std::string& desc) { p.setDescripcion(desc.c_str()); });
+             [](Producto& p, const std::string& desc) { p.setDescripcion(desc.c_str()); })
+        .def("__repr__", [](const Producto& p) {
+            return std::format("Producto({}, {})", p.getNombre(), p.getId());
+        });
 
     // Exponer FSProductoRepository
     py::class_<FSProductoRepository>(m, "ProductoRepository")
