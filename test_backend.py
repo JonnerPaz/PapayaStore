@@ -42,6 +42,8 @@ def run_tests():
     nuevo_producto.set_stock_minimo(10)
     nuevo_producto.set_id_proveedor(1)
 
+    print(f"Producto creado: {nuevo_producto}")
+
     resultado = repo_productos.guardar(nuevo_producto)
     if isinstance(resultado, str):
         print("Error guardando producto:", resultado)

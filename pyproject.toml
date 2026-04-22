@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "flet>=0.84.0",
+    "flet[all]>=0.84.0",
     "pybind11>=3.0.4",
 ]
 
@@ -23,6 +23,7 @@ module-name = "scripts"
 
 [dependency-groups]
 dev = [
+    "flet-cli>=0.84.0",
     "pybind11-stubgen>=2.5.5",
     "pyright>=1.1.408",
 ]
