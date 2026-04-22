@@ -7,7 +7,7 @@
 #include <variant>
 #include <vector>
 
-#include "presentation/CliUtils.hpp"
+#include "presentation/cli/CliUtils.hpp"
 
 MenuTransacciones::MenuTransacciones(AppRepositories& repositories, CliUtils utils)
     : Menu(repositories)

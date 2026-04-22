@@ -31,14 +31,14 @@ target_include_directories(papaya_core PUBLIC ${CMAKE_SOURCE_DIR}/src)
 add_executable(${PROJECT_NAME}
     src/Bootstrapper.cpp
     src/main.cpp
-    src/presentation/CliUtils.cpp
-    src/presentation/Menu/Menu.cpp
-    src/presentation/Menu/MenuClientes/MenuClientes.cpp
-    src/presentation/Menu/MainMenu/MainMenu.cpp
-    src/presentation/Menu/MenuProductos/MenuProductos.cpp
-    src/presentation/Menu/MenuProveedores/MenuProveedores.cpp
-    src/presentation/Menu/MenuTransacciones/MenuTransacciones.cpp
-    src/presentation/Menu/MenuReportes/MenuReportes.cpp
+    src/presentation/cli/CliUtils.cpp
+    src/presentation/cli/Menu/Menu.cpp
+    src/presentation/cli/Menu/MenuClientes/MenuClientes.cpp
+    src/presentation/cli/Menu/MainMenu/MainMenu.cpp
+    src/presentation/cli/Menu/MenuProductos/MenuProductos.cpp
+    src/presentation/cli/Menu/MenuProveedores/MenuProveedores.cpp
+    src/presentation/cli/Menu/MenuTransacciones/MenuTransacciones.cpp
+    src/presentation/cli/Menu/MenuReportes/MenuReportes.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE papaya_core)

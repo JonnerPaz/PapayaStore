@@ -1,4 +1,4 @@
-#include "MenuProveedores.hpp"
+#include "MenuClientes.hpp"
 
 #include <chrono>
 #include <format>
@@ -7,16 +7,16 @@
 #include <variant>
 
 #include "domain/constants.hpp"
-#include "presentation/CliUtils.hpp"
+#include "presentation/cli/CliUtils.hpp"
 
-MenuProveedores::MenuProveedores(AppRepositories& repositories, CliUtils utils) : Menu(repositories)
+MenuClientes::MenuClientes(AppRepositories& repositorios, CliUtils utils) : Menu(repositorios)
 {
-    this->setTitle("Gestion de Proveedores");
-    this->setTexToExit("Salir");
-    this->setNumOptions(5);
+    setTitle("Gestion de Clientes");
+    setTexToExit("Salir");
+    setNumOptions(5);
 }
 
-bool MenuProveedores::readValidEmail(const char* prompt, std::string& outValue)
+bool MenuClientes::readValidEmail(const char* prompt, std::string& outValue)
 {
     while (true) {
         outValue = Menu::readLine(prompt);
@@ -25,8 +25,8 @@ bool MenuProveedores::readValidEmail(const char* prompt, std::string& outValue)
             return false;
         }
 
-        Proveedor proveedor;
-        if (proveedor.setEmail(outValue.c_str())) {
+        Cliente cliente;
+        if (cliente.setEmail(outValue.c_str())) {
             return true;
         }
 
@@ -34,7 +34,7 @@ bool MenuProveedores::readValidEmail(const char* prompt, std::string& outValue)
     }
 }
 
-bool MenuProveedores::readValidPhone(const char* prompt, std::string& outValue)
+bool MenuClientes::readValidPhone(const char* prompt, std::string& outValue)
 {
     while (true) {
         outValue = Menu::readLine(prompt);
@@ -42,9 +42,9 @@ bool MenuProveedores::readValidPhone(const char* prompt, std::string& outValue)
             return false;
         }
 
-        Proveedor proveedor;
-        if (proveedor.setTelefono(outValue.c_str())) {
-            outValue = proveedor.getTelefono();
+        Cliente cliente;
+        if (cliente.setTelefono(outValue.c_str())) {
+            outValue = cliente.getTelefono();
             return true;
         }
 
@@ -54,37 +54,37 @@ bool MenuProveedores::readValidPhone(const char* prompt, std::string& outValue)
     }
 }
 
-bool MenuProveedores::nombreDuplicado(const std::string& nombre, int ignoredId)
+bool MenuClientes::nombreDuplicado(const std::string& nombre, int ignoredId)
 {
-    auto result = repositories.proveedores.leerPorNombre(nombre);
+    auto result = repositories.clientes.leerPorNombre(nombre);
     if (std::holds_alternative<std::string>(result)) {
         return false;
     }
 
-    const Proveedor& proveedor = std::get<Proveedor>(result);
-    return proveedor.getId() != ignoredId;
+    const Cliente& cliente = std::get<Cliente>(result);
+    return cliente.getId() != ignoredId;
 }
 
-bool MenuProveedores::rifDuplicado(const std::string& rif, int ignoredId)
+bool MenuClientes::cedulaDuplicada(const std::string& cedula, int ignoredId)
 {
-    const auto proveedoresHeader = repositories.proveedores.obtenerEstadisticas();
-    if (std::holds_alternative<std::string>(proveedoresHeader)) {
+    const auto clientesHeader = repositories.clientes.obtenerEstadisticas();
+    if (std::holds_alternative<std::string>(clientesHeader)) {
         return false;
     }
 
-    const HeaderFile stats = std::get<HeaderFile>(proveedoresHeader);
-    for (int id = 1; id < stats.proximoID; id++) {
-        auto proveedorResult = repositories.proveedores.leerPorId(id);
-        if (!std::holds_alternative<Proveedor>(proveedorResult)) {
+    const HeaderFile stats = std::get<HeaderFile>(clientesHeader);
+    for (int id = 1; id < stats.proximoID; ++id) {
+        auto clienteResult = repositories.clientes.leerPorId(id);
+        if (!std::holds_alternative<Cliente>(clienteResult)) {
             continue;
         }
 
-        Proveedor proveedor = std::get<Proveedor>(proveedorResult);
-        if (proveedor.getId() == ignoredId) {
+        Cliente cliente = std::get<Cliente>(clienteResult);
+        if (cliente.getId() == ignoredId) {
             continue;
         }
 
-        if (rif == proveedor.getRif()) {
+        if (cedula == cliente.getCedula()) {
             return true;
         }
     }
@@ -92,39 +92,39 @@ bool MenuProveedores::rifDuplicado(const std::string& rif, int ignoredId)
     return false;
 }
 
-void MenuProveedores::crearProveedor()
+void MenuClientes::crearCliente()
 {
-    auto proveedoresHeader = repositories.proveedores.obtenerEstadisticas();
-    if (std::holds_alternative<std::string>(proveedoresHeader)) {
-        Menu::printError("Error: " + std::get<std::string>(proveedoresHeader));
+    auto clientesHeader = repositories.clientes.obtenerEstadisticas();
+    if (std::holds_alternative<std::string>(clientesHeader)) {
+        Menu::printError("Error: " + std::get<std::string>(clientesHeader));
         return;
     }
 
     std::string nombre;
+    const char* genericErrMsg = "Creacion cancelada.";
     while (true) {
-        if (!CliUtils::readValidText("Ingrese el nombre del proveedor (q para cancelar): ",
-                                     nombre)) {
+        if (!CliUtils::readValidText("Ingrese el nombre del cliente (q para cancelar): ", nombre)) {
+            Menu::printError(genericErrMsg);
             return;
         }
 
         if (nombreDuplicado(nombre)) {
-            Menu::printError("Ya existe un proveedor con el nombre ingresado.");
+            Menu::printError("Ya existe un cliente con el nombre ingresado.");
             continue;
         }
 
         break;
     }
 
-    std::string rif;
+    std::string cedula;
     while (true) {
-        rif = readLine("Ingrese el RIF del proveedor (q para cancelar): ");
-        if (rif == "q" || rif == "Q" || rif.empty()) {
-            Menu::printError("Creacion cancelada.");
+        if (!CliUtils::readValidText("Ingrese la cédula del cliente (q para cancelar): ", cedula)) {
+            Menu::printError(genericErrMsg);
             return;
         }
 
-        if (rifDuplicado(rif)) {
-            Menu::printError("Ya existe un proveedor con el RIF ingresado.");
+        if (cedulaDuplicada(cedula)) {
+            Menu::printError("Ya existe un cliente con la cedula ingresada.");
             continue;
         }
 
@@ -132,36 +132,36 @@ void MenuProveedores::crearProveedor()
     }
 
     std::string telefono;
-    if (!readValidPhone("Ingrese el telefono del proveedor (q para cancelar): ", telefono)) {
+    if (!readValidPhone("Ingrese el telefono del cliente (q para cancelar): ", telefono)) {
         Menu::printError("Creacion cancelada.");
         return;
     }
 
     std::string email;
-    if (!readValidEmail("Ingrese el email del proveedor (q para cancelar): ", email)) {
+    if (!readValidEmail("Ingrese el email del cliente (q para cancelar): ", email)) {
         return;
     }
 
     std::string direccion;
-    if (!CliUtils::readValidText("Ingrese la direccion del proveedor (q para cancelar): ",
+    if (!CliUtils::readValidText("Ingrese la direccion del cliente (q para cancelar): ",
                                  direccion)) {
         return;
     }
 
-    const HeaderFile proveedorStats = std::get<HeaderFile>(proveedoresHeader);
-    const int nuevoId = proveedorStats.proximoID;
+    const HeaderFile clienteStats = std::get<HeaderFile>(clientesHeader);
+    const int nuevoId = clienteStats.proximoID;
 
-    Proveedor proveedor{};
-    if (!proveedor.setId(nuevoId) || !proveedor.setNombre(nombre.c_str()) ||
-        !proveedor.setRif(rif.c_str()) || !proveedor.setTelefono(telefono.c_str()) ||
-        !proveedor.setEmail(email.c_str()) || !proveedor.setDireccion(direccion.c_str())) {
-        Menu::printError("Error al crear proveedor. Datos invalidos.");
+    Cliente cliente{};
+    if (!cliente.setId(nuevoId) || !cliente.setNombre(nombre.c_str()) ||
+        !cliente.setCedula(cedula.c_str()) || !cliente.setTelefono(telefono.c_str()) ||
+        !cliente.setEmail(email.c_str()) || !cliente.setDireccion(direccion.c_str())) {
+        Menu::printError("Error al crear cliente. Datos invalidos.");
         return;
     }
 
     std::cout << COLOR_YELLOW
-              << std::format("Se creara el proveedor: {}{} {}({}{}{})", COLOR_GREEN,
-                             proveedor.getNombre(), COLOR_YELLOW, COLOR_GREEN, proveedor.getRif(),
+              << std::format("Se creara el cliente: {}{} {}({}{}{})", COLOR_GREEN,
+                             cliente.getNombre(), COLOR_YELLOW, COLOR_GREEN, cliente.getCedula(),
                              COLOR_YELLOW)
               << COLOR_RESET << std::endl;
     if (!Menu::confirmAction("¿Estás seguro? (s/n): ")) {
@@ -169,7 +169,7 @@ void MenuProveedores::crearProveedor()
         return;
     }
 
-    auto saveResult = repositories.proveedores.guardar(proveedor);
+    auto saveResult = repositories.clientes.guardar(cliente);
     if (std::holds_alternative<std::string>(saveResult)) {
         Menu::printError("Error al guardar: " + std::get<std::string>(saveResult));
         return;
@@ -178,80 +178,78 @@ void MenuProveedores::crearProveedor()
     try {
         repositories.admin.sincronizarContadoresTienda();
     } catch (const std::exception& e) {
-        Menu::printError("Advertencia: proveedor creado, pero no se pudo sincronizar tienda: " +
+        Menu::printError("Advertencia: cliente creado, pero no se pudo sincronizar tienda: " +
                          std::string(e.what()));
     }
 
-    Menu::printSuccess("Proveedor creado con exito.");
+    Menu::printSuccess("Cliente creado con exito.");
 }
 
-void MenuProveedores::buscarProveedor()
+void MenuClientes::buscarCliente()
 {
-    const int id = CliUtils::readValidId("Ingrese el id del proveedor a buscar");
+    const int id = CliUtils::readValidId("Ingrese el id del cliente a buscar");
     if (id <= 0) {
         Menu::printError("El Id ingresado no existe. Busqueda cancelada.");
         return;
     }
 
-    auto result = repositories.proveedores.leerPorId(id);
+    auto result = repositories.clientes.leerPorId(id);
     if (std::holds_alternative<std::string>(result)) {
         Menu::printError("Error: " + std::get<std::string>(result));
         return;
     }
 
-    Proveedor proveedor = std::get<Proveedor>(result);
-    Menu::printSuccess("Proveedor encontrado:");
-    std::cout << std::format("{}ID: {}{}", COLOR_YELLOW, COLOR_GREEN, proveedor.getId())
+    Cliente cliente = std::get<Cliente>(result);
+    Menu::printSuccess("Cliente encontrado:");
+    std::cout << std::format("{}ID: {}{}", COLOR_YELLOW, COLOR_GREEN, cliente.getId()) << std::endl;
+    std::cout << std::format("{}Nombre: {}{}", COLOR_YELLOW, COLOR_GREEN, cliente.getNombre())
               << std::endl;
-    std::cout << std::format("{}Nombre: {}{}", COLOR_YELLOW, COLOR_GREEN, proveedor.getNombre())
+    std::cout << std::format("{}Cedula: {}{}", COLOR_YELLOW, COLOR_GREEN, cliente.getCedula())
               << std::endl;
-    std::cout << std::format("{}RIF: {}{}", COLOR_YELLOW, COLOR_GREEN, proveedor.getRif())
+    std::cout << std::format("{}Telefono: {}{}", COLOR_YELLOW, COLOR_GREEN, cliente.getTelefono())
               << std::endl;
-    std::cout << std::format("{}Telefono: {}{}", COLOR_YELLOW, COLOR_GREEN, proveedor.getTelefono())
+    std::cout << std::format("{}Email: {}{}", COLOR_YELLOW, COLOR_GREEN, cliente.getEmail())
               << std::endl;
-    std::cout << std::format("{}Email: {}{}", COLOR_YELLOW, COLOR_GREEN, proveedor.getEmail())
-              << std::endl;
-    std::cout << std::format("{}Direccion: {}{}", COLOR_YELLOW, COLOR_GREEN,
-                             proveedor.getDireccion())
+    std::cout << std::format("{}Direccion: {}{}", COLOR_YELLOW, COLOR_GREEN, cliente.getDireccion())
               << std::endl;
 }
 
-void MenuProveedores::actualizarProveedor()
+void MenuClientes::actualizarCliente()
 {
-    const int id = CliUtils::readValidId("Ingrese el id del proveedor a actualizar");
+    const int id = CliUtils::readValidId("Ingrese el id del cliente a actualizar");
     if (id <= 0) {
         Menu::printError("El Id ingresado no existe. Actualizacion cancelada.");
         return;
     }
 
-    auto result = repositories.proveedores.leerPorId(id);
+    auto result = repositories.clientes.leerPorId(id);
     if (std::holds_alternative<std::string>(result)) {
         Menu::printError("Error: " + std::get<std::string>(result));
         return;
     }
 
-    Proveedor proveedor = std::get<Proveedor>(result);
+    Cliente cliente = std::get<Cliente>(result);
     while (true) {
-        std::cout << COLOR_CYAN << "\n--- Proveedor actual ---" << COLOR_RESET << std::endl;
-        std::cout << std::format("{}ID: {}{}", COLOR_YELLOW, COLOR_GREEN, proveedor.getId())
+        std::cout << COLOR_CYAN << "\n--- Cliente actual ---" << COLOR_RESET << std::endl;
+        std::cout << std::format("{}ID: {}{}", COLOR_YELLOW, COLOR_GREEN, cliente.getId())
                   << std::endl;
-        std::cout << std::format("{}Nombre: {}{}", COLOR_YELLOW, COLOR_GREEN, proveedor.getNombre())
+        std::cout << std::format("{}Nombre: {}{}", COLOR_YELLOW, COLOR_GREEN, cliente.getNombre())
                   << std::endl;
-        std::cout << std::format("{}RIF: {}{}", COLOR_YELLOW, COLOR_GREEN, proveedor.getRif())
+        std::cout << std::format("{}Cedula: {}{}", COLOR_YELLOW, COLOR_GREEN, cliente.getCedula())
                   << std::endl;
         std::cout << std::format("{}Telefono: {}{}", COLOR_YELLOW, COLOR_GREEN,
-                                 proveedor.getTelefono())
+                                 cliente.getTelefono())
                   << std::endl;
-        std::cout << std::format("{}Email: {}{}", COLOR_YELLOW, COLOR_GREEN, proveedor.getEmail())
+        std::cout << std::format("{}Email: {}{}", COLOR_YELLOW, COLOR_GREEN, cliente.getEmail())
                   << std::endl;
         std::cout << std::format("{}Direccion: {}{}", COLOR_YELLOW, COLOR_GREEN,
-                                 proveedor.getDireccion())
+                                 cliente.getDireccion())
                   << std::endl;
 
         std::cout << COLOR_CYAN << "\nSeleccione una propiedad a actualizar:" << COLOR_RESET
                   << std::endl;
         std::cout << COLOR_YELLOW << "1." << COLOR_RESET << " Nombre" << std::endl;
-        std::cout << COLOR_YELLOW << "2." << COLOR_RESET << " RIF" << std::endl;
+        std::cout << COLOR_YELLOW << "2." << COLOR_RESET << " Cedula" << std::endl;
         std::cout << COLOR_YELLOW << "3." << COLOR_RESET << " Telefono" << std::endl;
         std::cout << COLOR_YELLOW << "4." << COLOR_RESET << " Email" << std::endl;
         std::cout << COLOR_YELLOW << "5." << COLOR_RESET << " Direccion" << std::endl;
@@ -279,72 +277,73 @@ void MenuProveedores::actualizarProveedor()
                 }
 
                 if (nombreDuplicado(nuevoNombre, id)) {
-                    Menu::printError("Ya existe un proveedor con el nombre ingresado.");
+                    Menu::printError("Ya existe un cliente con el nombre ingresado.");
                     break;
                 }
 
                 std::cout << std::format("Nombre actual: {} | Nuevo nombre: {}",
-                                         proveedor.getNombre(), nuevoNombre)
+                                         cliente.getNombre(), nuevoNombre)
                           << std::endl;
                 if (!confirmAction("Confirma actualizacion de nombre? (s/n): ")) {
                     Menu::printError("Actualizacion cancelada.");
                     break;
                 }
 
-                Proveedor proveedorActualizado = proveedor;
-                if (!proveedorActualizado.setNombre(nuevoNombre.c_str())) {
+                Cliente clienteActualizado = cliente;
+                if (!clienteActualizado.setNombre(nuevoNombre.c_str())) {
                     Menu::printError("Nombre invalido.");
                     break;
                 }
 
-                proveedorActualizado.setFechaUltimaModificacion(std::chrono::system_clock::now());
-                auto updateResult = repositories.proveedores.actualizar(id, proveedorActualizado);
+                clienteActualizado.setFechaUltimaModificacion(std::chrono::system_clock::now());
+                auto updateResult = repositories.clientes.actualizar(id, clienteActualizado);
                 if (std::holds_alternative<std::string>(updateResult)) {
                     Menu::printError("Error al actualizar nombre: " +
                                      std::get<std::string>(updateResult));
                     break;
                 }
 
-                proveedor = proveedorActualizado;
+                cliente = clienteActualizado;
                 Menu::printSuccess("Nombre actualizado con exito.");
                 break;
             }
             case 2: {
-                const std::string nuevoRif = readLine("Nuevo RIF (q o enter para cancelar): ");
-                if (nuevoRif == "q" || nuevoRif == "Q" || nuevoRif.empty()) {
+                const std::string nuevaCedula =
+                    readLine("Nueva cedula (q o enter para cancelar): ");
+                if (nuevaCedula == "q" || nuevaCedula == "Q" || nuevaCedula.empty()) {
                     Menu::printError("Actualizacion cancelada.");
                     break;
                 }
 
-                if (rifDuplicado(nuevoRif, id)) {
-                    Menu::printError("Ya existe un proveedor con el RIF ingresado.");
+                if (cedulaDuplicada(nuevaCedula, id)) {
+                    Menu::printError("Ya existe un cliente con la cedula ingresada.");
                     break;
                 }
 
-                std::cout << std::format("RIF actual: {} | Nuevo RIF: {}", proveedor.getRif(),
-                                         nuevoRif)
+                std::cout << std::format("Cedula actual: {} | Nueva cedula: {}",
+                                         cliente.getCedula(), nuevaCedula)
                           << std::endl;
-                if (!confirmAction("Confirma actualizacion de RIF? (s/n): ")) {
+                if (!confirmAction("Confirma actualizacion de cedula? (s/n): ")) {
                     Menu::printError("Actualizacion cancelada.");
                     break;
                 }
 
-                Proveedor proveedorActualizado = proveedor;
-                if (!proveedorActualizado.setRif(nuevoRif.c_str())) {
-                    Menu::printError("RIF invalido.");
+                Cliente clienteActualizado = cliente;
+                if (!clienteActualizado.setCedula(nuevaCedula.c_str())) {
+                    Menu::printError("Cedula invalida.");
                     break;
                 }
 
-                proveedorActualizado.setFechaUltimaModificacion(std::chrono::system_clock::now());
-                auto updateResult = repositories.proveedores.actualizar(id, proveedorActualizado);
+                clienteActualizado.setFechaUltimaModificacion(std::chrono::system_clock::now());
+                auto updateResult = repositories.clientes.actualizar(id, clienteActualizado);
                 if (std::holds_alternative<std::string>(updateResult)) {
-                    Menu::printError("Error al actualizar RIF: " +
+                    Menu::printError("Error al actualizar cedula: " +
                                      std::get<std::string>(updateResult));
                     break;
                 }
 
-                proveedor = proveedorActualizado;
-                Menu::printSuccess("RIF actualizado con exito.");
+                cliente = clienteActualizado;
+                Menu::printSuccess("Cedula actualizada con exito.");
                 break;
             }
             case 3: {
@@ -355,28 +354,28 @@ void MenuProveedores::actualizarProveedor()
                 }
 
                 std::cout << std::format("Telefono actual: {} | Nuevo telefono: {}",
-                                         proveedor.getTelefono(), nuevoTelefono)
+                                         cliente.getTelefono(), nuevoTelefono)
                           << std::endl;
                 if (!confirmAction("Confirma actualizacion de telefono? (s/n): ")) {
                     Menu::printError("Actualizacion cancelada.");
                     break;
                 }
 
-                Proveedor proveedorActualizado = proveedor;
-                if (!proveedorActualizado.setTelefono(nuevoTelefono.c_str())) {
+                Cliente clienteActualizado = cliente;
+                if (!clienteActualizado.setTelefono(nuevoTelefono.c_str())) {
                     Menu::printError("Telefono invalido.");
                     break;
                 }
 
-                proveedorActualizado.setFechaUltimaModificacion(std::chrono::system_clock::now());
-                auto updateResult = repositories.proveedores.actualizar(id, proveedorActualizado);
+                clienteActualizado.setFechaUltimaModificacion(std::chrono::system_clock::now());
+                auto updateResult = repositories.clientes.actualizar(id, clienteActualizado);
                 if (std::holds_alternative<std::string>(updateResult)) {
                     Menu::printError("Error al actualizar telefono: " +
                                      std::get<std::string>(updateResult));
                     break;
                 }
 
-                proveedor = proveedorActualizado;
+                cliente = clienteActualizado;
                 Menu::printSuccess("Telefono actualizado con exito.");
                 break;
             }
@@ -387,13 +386,13 @@ void MenuProveedores::actualizarProveedor()
                     break;
                 }
 
-                Proveedor validadorEmail;
+                Cliente validadorEmail;
                 if (!validadorEmail.setEmail(nuevoEmail.c_str())) {
                     Menu::printError("Email invalido.");
                     break;
                 }
 
-                std::cout << std::format("Email actual: {} | Nuevo email: {}", proveedor.getEmail(),
+                std::cout << std::format("Email actual: {} | Nuevo email: {}", cliente.getEmail(),
                                          nuevoEmail)
                           << std::endl;
                 if (!confirmAction("Confirma actualizacion de email? (s/n): ")) {
@@ -401,21 +400,21 @@ void MenuProveedores::actualizarProveedor()
                     break;
                 }
 
-                Proveedor proveedorActualizado = proveedor;
-                if (!proveedorActualizado.setEmail(nuevoEmail.c_str())) {
+                Cliente clienteActualizado = cliente;
+                if (!clienteActualizado.setEmail(nuevoEmail.c_str())) {
                     Menu::printError("Email invalido.");
                     break;
                 }
 
-                proveedorActualizado.setFechaUltimaModificacion(std::chrono::system_clock::now());
-                auto updateResult = repositories.proveedores.actualizar(id, proveedorActualizado);
+                clienteActualizado.setFechaUltimaModificacion(std::chrono::system_clock::now());
+                auto updateResult = repositories.clientes.actualizar(id, clienteActualizado);
                 if (std::holds_alternative<std::string>(updateResult)) {
                     Menu::printError("Error al actualizar email: " +
                                      std::get<std::string>(updateResult));
                     break;
                 }
 
-                proveedor = proveedorActualizado;
+                cliente = clienteActualizado;
                 Menu::printSuccess("Email actualizado con exito.");
                 break;
             }
@@ -428,88 +427,88 @@ void MenuProveedores::actualizarProveedor()
                 }
 
                 std::cout << std::format("Direccion actual: {} | Nueva direccion: {}",
-                                         proveedor.getDireccion(), nuevaDireccion)
+                                         cliente.getDireccion(), nuevaDireccion)
                           << std::endl;
                 if (!confirmAction("Confirma actualizacion de direccion? (s/n): ")) {
                     Menu::printError("Actualizacion cancelada.");
                     break;
                 }
 
-                Proveedor proveedorActualizado = proveedor;
-                if (!proveedorActualizado.setDireccion(nuevaDireccion.c_str())) {
+                Cliente clienteActualizado = cliente;
+                if (!clienteActualizado.setDireccion(nuevaDireccion.c_str())) {
                     Menu::printError("Direccion invalida.");
                     break;
                 }
 
-                proveedorActualizado.setFechaUltimaModificacion(std::chrono::system_clock::now());
-                auto updateResult = repositories.proveedores.actualizar(id, proveedorActualizado);
+                clienteActualizado.setFechaUltimaModificacion(std::chrono::system_clock::now());
+                auto updateResult = repositories.clientes.actualizar(id, clienteActualizado);
                 if (std::holds_alternative<std::string>(updateResult)) {
                     Menu::printError("Error al actualizar direccion: " +
                                      std::get<std::string>(updateResult));
                     break;
                 }
 
-                proveedor = proveedorActualizado;
+                cliente = clienteActualizado;
                 Menu::printSuccess("Direccion actualizada con exito.");
                 break;
             }
             default:
-                Menu::printError("Opcion invalida.");
+                Menu::printError("Opcion inválida.");
                 break;
         }
     }
 }
 
-void MenuProveedores::listarProveedores()
+void MenuClientes::listarClientes()
 {
-    auto proveedoresHeader = repositories.proveedores.obtenerEstadisticas();
-    if (std::holds_alternative<std::string>(proveedoresHeader)) {
-        Menu::printError("Error: " + std::get<std::string>(proveedoresHeader));
+    auto clientesHeader = repositories.clientes.obtenerEstadisticas();
+    if (std::holds_alternative<std::string>(clientesHeader)) {
+        Menu::printError("Error: " + std::get<std::string>(clientesHeader));
         return;
     }
 
-    HeaderFile stats = std::get<HeaderFile>(proveedoresHeader);
+    HeaderFile stats = std::get<HeaderFile>(clientesHeader);
     if (stats.registrosActivos == 0) {
-        Menu::printError("No hay proveedores registrados.");
+        Menu::printError("No hay clientes registrados.");
         return;
     }
 
-    std::cout << std::format("{}--- Lista de Proveedores ({}{}{}) ---", COLOR_CYAN, COLOR_GREEN,
+    std::cout << std::format("{}--- Lista de Clientes ({}{}{}) ---", COLOR_CYAN, COLOR_GREEN,
                              COLOR_YELLOW, stats.registrosActivos)
               << std::endl;
     std::cout << std::format("{}{:<5} | {:<20} | {:<15} | {:<15} | {:<25} | {:<20}", COLOR_YELLOW,
-                             "ID", "Nombre", "RIF", "Telefono", "Email", "Direccion")
+                             "ID", "Nombre", "Cedula", "Telefono", "Email", "Direccion")
               << std::endl;
     std::cout << "---------------------------------------------------------------------------------"
                  "----------------------------"
               << std::endl;
 
     for (int id = 1; id < stats.proximoID; ++id) {
-        auto result = repositories.proveedores.leerPorId(id);
-        if (!std::holds_alternative<Proveedor>(result)) {
+        auto result = repositories.clientes.leerPorId(id);
+        if (!std::holds_alternative<Cliente>(result)) {
             continue;
         }
 
-        Proveedor proveedor = std::get<Proveedor>(result);
+        Cliente cliente = std::get<Cliente>(result);
         std::cout << std::format("{}{:<5} | {:<20} | {:<15} | {:<15} | {:<25} | {:<20}",
-                                 COLOR_GREEN, proveedor.getId(), proveedor.getNombre(),
-                                 proveedor.getRif(), proveedor.getTelefono(), proveedor.getEmail(),
-                                 proveedor.getDireccion())
+                                 COLOR_GREEN, cliente.getId(), cliente.getNombre(),
+                                 cliente.getCedula(), cliente.getTelefono(), cliente.getEmail(),
+                                 cliente.getDireccion())
                   << std::endl;
     }
 }
 
-void MenuProveedores::eliminarProveedor()
+void MenuClientes::eliminarCliente()
 {
-    const int id = CliUtils::readValidId("Ingrese el id del proveedor a eliminar");
+    const int id = CliUtils::readValidId("Ingrese el id del cliente a eliminar");
     if (id <= 0) {
         Menu::printError("Eliminacion cancelada.");
         return;
     }
 
-    auto proveedorResult = repositories.proveedores.leerPorId(id);
-    if (std::holds_alternative<std::string>(proveedorResult)) {
-        Menu::printError("Error: " + std::get<std::string>(proveedorResult));
+    auto clienteResult = repositories.clientes.leerPorId(id);
+    if (std::holds_alternative<std::string>(clienteResult)) {
+        Menu::printError("Error: " + std::get<std::string>(clienteResult));
         return;
     }
 
@@ -531,24 +530,24 @@ void MenuProveedores::eliminarProveedor()
         const auto tipo = transaccion.getTipoTransaccion();
         if (tipo != COMPRA && tipo != VENTA) {
             Menu::printError(
-                "No se puede eliminar el proveedor: existe una transaccion con tipo invalido.");
+                "No se puede eliminar el cliente: existe una transaccion con tipo invalido.");
             return;
         }
 
-        if (tipo == COMPRA && transaccion.getIdRelacionado() == id) {
+        if (tipo == VENTA && transaccion.getIdRelacionado() == id) {
             tieneTransaccionesActivas = true;
             break;
         }
     }
 
     if (tieneTransaccionesActivas) {
-        Menu::printError("No se puede eliminar el proveedor porque tiene transacciones activas.");
+        Menu::printError("No se puede eliminar el cliente porque tiene transacciones activas.");
         return;
     }
 
-    Proveedor proveedor = std::get<Proveedor>(proveedorResult);
-    std::cout << std::format("Proveedor a eliminar: {} ({})", proveedor.getNombre(),
-                             proveedor.getRif())
+    Cliente cliente = std::get<Cliente>(clienteResult);
+    std::cout << std::format("Cliente a eliminar: {} ({})", cliente.getNombre(),
+                             cliente.getCedula())
               << std::endl;
 
     if (!confirmAction("Confirma eliminacion? (s/n): ")) {
@@ -556,7 +555,7 @@ void MenuProveedores::eliminarProveedor()
         return;
     }
 
-    auto deleteResult = repositories.proveedores.eliminarLogicamente(id);
+    auto deleteResult = repositories.clientes.eliminarLogicamente(id);
     if (std::holds_alternative<std::string>(deleteResult)) {
         Menu::printError("Error al eliminar: " + std::get<std::string>(deleteResult));
         return;
@@ -565,19 +564,20 @@ void MenuProveedores::eliminarProveedor()
     try {
         repositories.admin.sincronizarContadoresTienda();
     } catch (const std::exception& e) {
-        Menu::printError("Advertencia: proveedor eliminado, pero no se pudo sincronizar tienda: " +
+        Menu::printError("Advertencia: cliente eliminado, pero no se pudo sincronizar tienda: " +
                          std::string(e.what()));
     }
 
-    Menu::printSuccess("Proveedor eliminado con exito.");
+    Menu::printSuccess("Cliente eliminado con exito.");
 }
 
-void MenuProveedores::showMenu()
+void MenuClientes::showMenu()
 {
-    setOption(0, "Crear Proveedor", [this]() { crearProveedor(); });
-    setOption(1, "Buscar Proveedor", [this]() { buscarProveedor(); });
-    setOption(2, "Actualizar Proveedor", [this]() { actualizarProveedor(); });
-    setOption(3, "Listar Proveedores", [this]() { listarProveedores(); });
-    setOption(4, "Eliminar Proveedor", [this]() { eliminarProveedor(); });
+    setOption(0, "Crear Cliente", [this]() { crearCliente(); });
+    setOption(1, "Buscar Cliente", [this]() { buscarCliente(); });
+    setOption(2, "Actualizar Cliente", [this]() { actualizarCliente(); });
+    setOption(3, "Listar Clientes", [this]() { listarClientes(); });
+    setOption(4, "Eliminar Cliente", [this]() { eliminarCliente(); });
+
     drawMenu();
 }

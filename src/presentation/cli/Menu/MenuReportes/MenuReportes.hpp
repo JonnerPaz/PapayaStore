@@ -2,7 +2,7 @@
 #include <string>
 
 #include "domain/repositories/AppRepositories.hpp"
-#include "presentation/Menu/Menu.hpp"
+#include "presentation/cli/Menu/Menu.hpp"
 
 class MenuReportes : public Menu
 {

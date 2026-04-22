@@ -7,7 +7,7 @@
 #include <variant>
 
 #include "domain/constants.hpp"
-#include "presentation/CliUtils.hpp"
+#include "presentation/cli/CliUtils.hpp"
 
 MenuProductos::MenuProductos(AppRepositories& repository, CliUtils utils) : Menu(repository)
 {

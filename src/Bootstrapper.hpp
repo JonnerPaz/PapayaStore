@@ -6,7 +6,7 @@
 #include "infrastructure/datasource/producto/FSProductoRepository.hpp"
 #include "infrastructure/datasource/proveedor/FSProveedorRepository.hpp"
 #include "infrastructure/datasource/transaccion/FSTransaccionRepository.hpp"
-#include "presentation/Menu/MainMenu/MainMenu.hpp"
+#include "presentation/cli/Menu/MainMenu/MainMenu.hpp"
 
 namespace fs = std::filesystem;
 

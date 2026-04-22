@@ -1,6 +1,6 @@
 #pragma once
-#include "presentation/CliUtils.hpp"
-#include "presentation/Menu/Menu.hpp"
+#include "presentation/cli/CliUtils.hpp"
+#include "presentation/cli/Menu/Menu.hpp"
 
 class MenuClientes : public Menu
 {
