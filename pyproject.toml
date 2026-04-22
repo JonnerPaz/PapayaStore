@@ -27,3 +27,13 @@ dev = [
     "pybind11-stubgen>=2.5.5",
     "pyright>=1.1.408",
 ]
+
+[tool.pyright]
+stubPath = "typings"
+venvPath = "."
+venv = ".venv"
+
+[[tool.pyright.executionEnvironments]]
+root = "."
+extraPaths = ["build", "src/presentation/web"]
+
