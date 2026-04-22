@@ -44,3 +44,8 @@ webhook/.env
 node_modules
 data/
 compile_commands.json
+
+
+# python
+
+__pycache__
