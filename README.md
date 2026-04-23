@@ -252,11 +252,25 @@ uv run python test_backend.py
 import sys
 sys.path.append("build")
 
-import papaya_backend
+import papaya_backend as pb
 
-ok = papaya_backend.init_database()
+ctx = pb.PapayaContext()
+
+ok = ctx.init_database()
 print("DB inicializada:", ok)
+
+# Repositorios desde el contexto
+repo_productos = ctx.productos
+estadisticas = repo_productos.obtener_estadisticas()
+print("Estadisticas:", estadisticas)
+
+# Tareas administrativas
+integridad = ctx.admin.verificar_integridad_referencial()
+print("Integridad:", integridad)
 ```
+
+- `PapayaContext` es la forma recomendada de usar el backend desde Python, porque centraliza repositorios (`productos`, `proveedores`, `clientes`, `transacciones`) y administracion (`admin`) en un unico punto.
+- Los repositorios directos (`ProductoRepository()`, etc.) siguen disponibles para compatibilidad.
 
 ## Nota sobre CMake y Python
 
