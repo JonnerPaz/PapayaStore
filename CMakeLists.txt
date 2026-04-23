@@ -74,5 +74,21 @@ list(APPEND CMAKE_PREFIX_PATH "${PYBIND11_CMAKE_DIR}")
 set(PYBIND11_FINDPYTHON ON)
 find_package(pybind11 CONFIG REQUIRED)
 
-pybind11_add_module(papaya_backend src/bindings/python_bindings.cpp)
+set(PAPAYA_BINDINGS_SOURCES
+    src/bindings/module.cpp
+    src/bindings/database/init_database_binding.cpp
+    src/bindings/common/header_file_binding.cpp
+    src/bindings/common/entidad_base_binding.cpp
+    src/bindings/entities/producto_binding.cpp
+    src/bindings/entities/proveedor_binding.cpp
+    src/bindings/entities/cliente_binding.cpp
+    src/bindings/entities/transaccion_binding.cpp
+    src/bindings/entities/tienda_binding.cpp
+    src/bindings/repositories/producto_repository_binding.cpp
+    src/bindings/repositories/proveedor_repository_binding.cpp
+    src/bindings/repositories/cliente_repository_binding.cpp
+    src/bindings/repositories/transaccion_repository_binding.cpp
+)
+
+pybind11_add_module(papaya_backend ${PAPAYA_BINDINGS_SOURCES})
 target_link_libraries(papaya_backend PRIVATE papaya_core)
