@@ -12,14 +12,25 @@ except ImportError as e:
 
 
 def run_tests():
+    ctx = papaya_backend.PapayaContext()
+
     print("Inicializando Base de Datos (Binarios)...")
-    if not papaya_backend.init_database():
+    if not ctx.init_database():
         print("Fallo al inicializar la base de datos.")
         return
     print("Base de datos lista.\n")
 
+    integridad = ctx.admin.verificar_integridad_referencial()
+    print(
+        "Integridad -> "
+        f"Prod/Prov: {integridad[0]}, "
+        f"Trans/Relacionado: {integridad[1]}, "
+        f"Trans/Producto: {integridad[2]}, "
+        f"TipoTrans: {integridad[3]}"
+    )
+
     print("Creando Repositorio de Productos...")
-    repo_productos = papaya_backend.ProductoRepository()
+    repo_productos = ctx.productos
 
     estadisticas_result = repo_productos.obtener_estadisticas()
     if isinstance(estadisticas_result, str):

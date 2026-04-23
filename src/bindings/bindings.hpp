@@ -9,6 +9,7 @@ namespace py = pybind11;
 void bind_database_init(py::module_& m);
 void bind_header_file(py::module_& m);
 void bind_entidad_base(py::module_& m);
+void bind_database_admin(py::module_& m);
 
 void bind_producto(py::module_& m);
 void bind_proveedor(py::module_& m);
@@ -20,3 +21,5 @@ void bind_producto_repository(py::module_& m);
 void bind_proveedor_repository(py::module_& m);
 void bind_cliente_repository(py::module_& m);
 void bind_transaccion_repository(py::module_& m);
+
+void bind_papaya_context(py::module_& m);

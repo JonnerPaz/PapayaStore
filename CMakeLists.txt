@@ -77,6 +77,9 @@ find_package(pybind11 CONFIG REQUIRED)
 set(PAPAYA_BINDINGS_SOURCES
     src/bindings/module.cpp
     src/bindings/database/init_database_binding.cpp
+    src/bindings/admin/database_admin_binding.cpp
+    src/bindings/context/papaya_context.cpp
+    src/bindings/context/papaya_context_binding.cpp
     src/bindings/common/header_file_binding.cpp
     src/bindings/common/entidad_base_binding.cpp
     src/bindings/entities/producto_binding.cpp

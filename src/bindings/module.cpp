@@ -11,6 +11,7 @@ PYBIND11_MODULE(papaya_backend, m)
     bind_database_init(m);
     bind_header_file(m);
     bind_entidad_base(m);
+    bind_database_admin(m);
 
     bind_producto(m);
     bind_proveedor(m);
@@ -22,4 +23,6 @@ PYBIND11_MODULE(papaya_backend, m)
     bind_proveedor_repository(m);
     bind_cliente_repository(m);
     bind_transaccion_repository(m);
+
+    bind_papaya_context(m);
 }

@@ -3,6 +3,7 @@
 #include <fstream>
 
 #include "bindings/bindings.hpp"
+#include "bindings/database/init_database.hpp"
 #include "domain/HeaderFile.hpp"
 #include "domain/constants.hpp"
 #include "domain/entities/tienda/tienda.entity.hpp"
@@ -72,7 +73,7 @@ bool ensure_tienda_record()
     return static_cast<bool>(file);
 }
 
-bool init_database()
+bool init_database_internal()
 {
     const std::array<fs::path, 5> paths = {
         Constants::PATHS::PRODUCTOS_PATH,
@@ -96,8 +97,13 @@ bool init_database()
 
 }  // namespace
 
+bool init_database_impl()
+{
+    return init_database_internal();
+}
+
 void bind_database_init(py::module_& m)
 {
-    m.def("init_database", &init_database,
+    m.def("init_database", &init_database_impl,
           "Inicializa la base de datos de archivos binarios");
 }
