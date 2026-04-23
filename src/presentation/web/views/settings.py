@@ -23,7 +23,7 @@ def SettingsView(page: ft.Page) -> ft.Control:
             ft.Container(height=10),
             ft.Row(
                 [
-                    ft.ElevatedButton(
+                    ft.Button(
                         "Crear Backup Nuevo",
                         icon=ft.Icons.SAVE,
                         style=ft.ButtonStyle(
@@ -60,4 +60,14 @@ def SettingsView(page: ft.Page) -> ft.Control:
             ),
         ],
         expand=True,
+    )
+
+
+def register_routes(router) -> None:
+    router.register(
+        path="/settings",
+        label="Ajustes",
+        icon=ft.Icons.SETTINGS_OUTLINED,
+        selected_icon=ft.Icons.SETTINGS,
+        view_factory=SettingsView,
     )

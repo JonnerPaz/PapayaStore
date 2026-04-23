@@ -1,17 +1,17 @@
 import flet as ft
 
 
-def ProductsView(page: ft.Page) -> ft.Control:
+def ClientsView(page: ft.Page) -> ft.Control:
     return ft.Column(
         [
             ft.Row(
                 [
                     ft.Text(
-                        "Gestión de Productos",
+                        "Gestión de Clientes",
                         size=32,
                         weight=ft.FontWeight.BOLD,
                     ),
-                    ft.Button("Nuevo Producto", icon=ft.Icons.ADD),
+                    ft.Button("Nuevo Cliente", icon=ft.Icons.ADD),
                 ],
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             ),
@@ -28,9 +28,9 @@ def ProductsView(page: ft.Page) -> ft.Control:
 
 def register_routes(router) -> None:
     router.register(
-        path="/products",
-        label="Productos",
-        icon=ft.Icons.SHOPPING_CART_OUTLINED,
-        selected_icon=ft.Icons.SHOPPING_CART,
-        view_factory=ProductsView,
+        path="/clients",
+        label="Clientes",
+        icon=ft.Icons.CHILD_CARE_OUTLINED,
+        selected_icon=ft.Icons.CHILD_CARE,
+        view_factory=ClientsView,
     )

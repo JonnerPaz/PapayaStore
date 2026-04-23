@@ -33,9 +33,7 @@ def DashboardView(page: ft.Page) -> ft.Control:
                             content=ft.Column(
                                 [
                                     ft.Text("Ventas Hoy", size=16),
-                                    ft.Text(
-                                        "15", size=24, weight=ft.FontWeight.BOLD
-                                    ),
+                                    ft.Text("15", size=24, weight=ft.FontWeight.BOLD),
                                 ]
                             ),
                         )
@@ -44,4 +42,14 @@ def DashboardView(page: ft.Page) -> ft.Control:
             ),
         ],
         expand=True,
+    )
+
+
+def register_routes(router) -> None:
+    router.register(
+        path="/",
+        label="Inicio",
+        icon=ft.Icons.DASHBOARD_OUTLINED,
+        selected_icon=ft.Icons.DASHBOARD,
+        view_factory=DashboardView,
     )
