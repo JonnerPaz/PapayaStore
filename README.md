@@ -4,7 +4,7 @@
   <p>Desarrollado por <b>Jonner Paz</b></p>
 </div>
 
-> ![IMPORTANT]
+> [!IMPORTANT]
 > Esta rama pertenece a la reescritura del proyecto en rust, 
 > la cual hace cambios tanto en la estructura del proyecto, como del lenguaje,
 > así como de otros servicios. **No es compatible con la rama principal**.
