@@ -37,6 +37,26 @@ impl Client {
         })
     }
 
+    pub fn email(&self) -> &str {
+        &self.email
+    }
+
+    pub fn phone(&self) -> Option<&str> {
+        if self.phone.is_empty() {
+            None
+        } else {
+            Some(&self.phone)
+        }
+    }
+
+    pub fn address(&self) -> Option<&str> {
+        if self.address.is_empty() {
+            None
+        } else {
+            Some(&self.address)
+        }
+    }
+
     fn is_valid_email(email: &str) -> bool {
         let email = email.trim();
 
