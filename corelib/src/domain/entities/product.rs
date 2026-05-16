@@ -20,9 +20,9 @@ pub struct Product {
 }
 
 impl Product {
-    pub fn new() -> Product {
+    pub fn new(name: String) -> Product {
         Product {
-            base: BaseEntity::new(),
+            base: BaseEntity::new(0, name),
             code: String::new(),
             description: String::new(),
             price: 0.0,
