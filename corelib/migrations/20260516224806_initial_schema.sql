@@ -1,0 +1,62 @@
+CREATE TABLE clients (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    phone TEXT,
+    address TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE products (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    code TEXT NOT NULL UNIQUE,
+    description TEXT,
+    price REAL NOT NULL,
+    stock INTEGER NOT NULL,
+    min_stock INTEGER NOT NULL,
+    total_sold INTEGER NOT NULL DEFAULT 0,
+    provider_id INTEGER,
+    is_active BOOLEAN NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE stores (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    rif TEXT NOT NULL UNIQUE,
+    active_products_count INTEGER NOT NULL DEFAULT 0,
+    active_providers_count INTEGER NOT NULL DEFAULT 0,
+    active_clients_count INTEGER NOT NULL DEFAULT 0,
+    active_transactions_count INTEGER NOT NULL DEFAULT 0,
+    total_sales_amount REAL NOT NULL DEFAULT 0.0,
+    total_purchases_amount REAL NOT NULL DEFAULT 0.0,
+    is_active BOOLEAN NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE transactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    transaction_type TEXT NOT NULL,
+    related_id INTEGER NOT NULL,
+    total REAL NOT NULL DEFAULT 0.0,
+    description TEXT NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE transaction_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    transaction_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    quantity INTEGER NOT NULL,
+    unit_price REAL NOT NULL,
+    FOREIGN KEY(transaction_id) REFERENCES transactions(id) ON DELETE CASCADE,
+    FOREIGN KEY(product_id) REFERENCES products(id)
+);
